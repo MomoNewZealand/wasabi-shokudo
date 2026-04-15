@@ -486,23 +486,46 @@ async function syncFromSheets(){
       if(status) status.textContent = '';
       return;
     }
-    const ssIds = new Set(data.records.map(r => r.id));
-    const localOnly = records.filter(r => !ssIds.has(r.id));
-    const merged = [...data.records, ...localOnly]
-      .sort((a,b) => a.date.localeCompare(b.date));
-    if(merged.length >= records.length){
-      records = merged;
-      saveToStorage();
-      render();
-      if(status){
-        status.textContent = `✅ ${data.records.length}件を同期しました`;
-        setTimeout(()=>{ status.textContent=''; }, 3000);
+
+    // 日付を YYYY-MM-DD 形式に正規化
+    const normalize = (r) => {
+      let d = r.date || '';
+      // Date文字列（Thu Nov 18 2021...）の場合
+      if(d.length > 10){
+        const parsed = new Date(d);
+        if(!isNaN(parsed)){
+          const y = parsed.getFullYear();
+          const m = String(parsed.getMonth()+1).padStart(2,'0');
+          const day = String(parsed.getDate()).padStart(2,'0');
+          d = `${y}-${m}-${day}`;
+        }
       }
-    } else {
-      if(status) status.textContent = '';
+      return {...r, date: d.substring(0,10)};
+    };
+
+    const ssRecords = data.records.map(normalize);
+
+    // date + event で重複排除キーを作成
+    const ssKeys = new Set(ssRecords.map(r => r.date + '_' + (r.event||'')));
+
+    // ローカルにしかないデータ（手動入力で未同期のもの）を保持
+    const localOnly = records.filter(r =>
+      !ssKeys.has(r.date + '_' + (r.event||''))
+    );
+
+    // マージして日付でソート
+    const merged = [...ssRecords, ...localOnly]
+      .sort((a,b) => b.date.localeCompare(a.date));
+
+    records = merged;
+    saveToStorage();
+    render();
+
+    if(status){
+      status.textContent = `✅ ${ssRecords.length}件を同期しました`;
+      setTimeout(()=>{ status.textContent=''; }, 3000);
     }
   }catch(e){
-    // 読み込み失敗時はローカルデータをそのまま使用
     if(status) status.textContent = '';
   }
 }
@@ -756,7 +779,12 @@ function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather
 // ══════════════════════════════════════════
 //  履歴
 // ══════════════════════════════════════════
-function getYears(){ return [...new Set(records.map(r=>r.date.substring(0,4)))].sort().reverse(); }
+function getYears(){
+  return [...new Set(records
+    .map(r => r.date ? r.date.substring(0,4) : '')
+    .filter(y => /^\d{4}$/.test(y))
+  )].sort().reverse();
+}
 
 function renderHistory(){
   const c = document.getElementById('content'); if(!c||view!=='history') return;
