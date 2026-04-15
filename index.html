@@ -505,16 +505,21 @@ async function syncFromSheets(){
 
     const ssRecords = data.records.map(normalize);
 
-    // date + event で重複排除キーを作成
-    const ssKeys = new Set(ssRecords.map(r => r.date + '_' + (r.event||'')));
+    // スプレッドシート内の重複をdate+eventキーで除去（最初の1件を使用）
+    const seen = new Set();
+    const dedupedSS = ssRecords.filter(r => {
+      const key = r.date + '_' + (r.event||'');
+      if(seen.has(key)) return false;
+      seen.add(key); return true;
+    });
 
     // ローカルにしかないデータ（手動入力で未同期のもの）を保持
     const localOnly = records.filter(r =>
-      !ssKeys.has(r.date + '_' + (r.event||''))
+      !dedupedSS.some(s => s.date === r.date && (s.event||"") === (r.event||""))
     );
 
     // マージして日付でソート
-    const merged = [...ssRecords, ...localOnly]
+    const merged = [...dedupedSS, ...localOnly]
       .sort((a,b) => b.date.localeCompare(a.date));
 
     records = merged;
@@ -522,7 +527,7 @@ async function syncFromSheets(){
     render();
 
     if(status){
-      status.textContent = `✅ ${ssRecords.length}件を同期しました`;
+      status.textContent = `✅ ${dedupedSS.length}件を同期しました`;
       setTimeout(()=>{ status.textContent=''; }, 3000);
     }
   }catch(e){
