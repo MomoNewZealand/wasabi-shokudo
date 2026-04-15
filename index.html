@@ -416,6 +416,7 @@ let histFilter = '全て';
 let histYear = '全て';
 let expandedId = null;
 let cmpMode = '商品ランキング';
+let analyticsMode = '概要';
 
 // ══════════════════════════════════════════
 //  ユーティリティ
@@ -775,6 +776,26 @@ function renderAnalytics(){
   const active = records.filter(r => r.total > 0);
   if(!active.length){ c.innerHTML=`<div class="empty"><div class="empty-ico">📊</div><div>データがありません</div></div>`; return; }
 
+  const tabs = ['概要','天気・季節','準備の目安'];
+  c.innerHTML = `
+  <div style="display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;margin:10px 12px 0">
+    ${tabs.map(t=>`<button onclick="setAnalyticsMode('${t}')" style="flex:1;border:none;cursor:pointer;padding:8px 4px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;background:${analyticsMode===t?'var(--g2)':'none'};color:${analyticsMode===t?'#fff':'var(--text3)'}">${t}</button>`).join('')}
+  </div>
+  <div id="analytics-body"></div>`;
+
+  renderAnalyticsBody(active);
+}
+
+function setAnalyticsMode(m){ analyticsMode=m; renderAnalytics(); }
+
+function renderAnalyticsBody(active){
+  const body = document.getElementById('analytics-body'); if(!body) return;
+  if(analyticsMode==='概要') body.innerHTML = renderAnalyticsSummary(active);
+  else if(analyticsMode==='天気・季節') body.innerHTML = renderWeatherSeasonal(active);
+  else body.innerHTML = renderPreparationGuide(active);
+}
+
+function renderAnalyticsSummary(active){
   const grand = active.reduce((s,r) => s+r.total, 0);
   const ok = active.filter(r => r.loc==='奥多摩駅前');
   const ev = active.filter(r => r.loc==='イベント');
@@ -798,8 +819,7 @@ function renderAnalytics(){
   const tops = Object.values(ptot).sort((a,b) => b.qty-a.qty).slice(0,10);
   const maxQ = tops.length > 0 ? tops[0].qty : 1;
   const yr = [...new Set(active.map(r => r.date.substring(0,4)))].sort();
-
-  c.innerHTML = `<div class="an-wrap">
+  return `<div class="an-wrap">
     <div class="an-ttl">累計売上</div>
     <div class="an-big">
       <div class="an-big-lbl">TOTAL SALES</div>
@@ -830,6 +850,245 @@ function renderAnalytics(){
         <div class="rank-right"><div class="rank-qty">${p.qty}個</div><div class="rank-days">${p.days}日</div></div>
       </div>`).join('')}
     </div>` : ''}
+    <div style="height:20px"></div>
+  </div>`;
+}
+
+function normalizeWeather(w){
+  if(!w) return null;
+  if(w.includes('晴')&&!w.includes('雨')&&!w.includes('くもり')) return '晴れ';
+  if(w.includes('雨')) return '雨・くもり/雨';
+  if(w.includes('くもり')||w.includes('曇')) return 'くもり';
+  return null;
+}
+
+function renderWeatherSeasonal(active){
+  // 天気別分析（奥多摩のみ、天気データあり）
+  const withWeather = active.filter(r => r.weather && normalizeWeather(r.weather));
+  const ok_w = withWeather.filter(r => r.loc==='奥多摩駅前');
+  const ev_w = withWeather.filter(r => r.loc==='イベント');
+
+  const weatherGroups = {};
+  const weatherOrder = ['晴れ','くもり','雨・くもり/雨'];
+  ok_w.forEach(r => {
+    const w = normalizeWeather(r.weather);
+    if(!weatherGroups[w]) weatherGroups[w] = [];
+    weatherGroups[w].push(r.total);
+  });
+  const evWeatherGroups = {};
+  ev_w.forEach(r => {
+    const w = normalizeWeather(r.weather);
+    if(!evWeatherGroups[w]) evWeatherGroups[w] = [];
+    evWeatherGroups[w].push(r.total);
+  });
+
+  // 月別平均（全データ）
+  const byMonthNum = {};
+  active.forEach(r => {
+    const m = parseInt(r.date.substring(5,7));
+    if(!byMonthNum[m]) byMonthNum[m] = [];
+    byMonthNum[m].push(r.total);
+  });
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const monthAvgs = Array.from({length:12},(_,i)=>i+1).map(m => ({
+    m, name:monthNames[m-1],
+    avg: byMonthNum[m] ? Math.round(byMonthNum[m].reduce((a,b)=>a+b,0)/byMonthNum[m].length) : null,
+    count: byMonthNum[m]?.length || 0
+  })).filter(d => d.avg !== null);
+  const maxAvg = Math.max(...monthAvgs.map(d=>d.avg),1);
+
+  // 季節判定
+  const seasonAvg = {春:[], 夏:[], 秋:[], 冬:[]};
+  active.forEach(r => {
+    const m = parseInt(r.date.substring(5,7));
+    if([3,4,5].includes(m)) seasonAvg.春.push(r.total);
+    else if([6,7,8].includes(m)) seasonAvg.夏.push(r.total);
+    else if([9,10,11].includes(m)) seasonAvg.秋.push(r.total);
+    else seasonAvg.冬.push(r.total);
+  });
+
+  const wIcons = {'晴れ':'☀️','くもり':'☁️','雨・くもり/雨':'🌧'};
+
+  return `<div class="an-wrap">
+    <div class="an-ttl">☀️ 天気別 平均売上（奥多摩駅前）</div>
+    ${ok_w.length === 0 ? `<div style="font-size:12px;color:var(--text3);padding:8px 0">天気データのある記録が少ないため表示できません</div>` :
+    `<div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:10px 14px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">天気</th>
+          <th style="padding:10px 14px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">平均売上</th>
+          <th style="padding:10px 14px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">日数</th>
+          <th style="padding:10px 14px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">最高</th>
+        </tr></thead>
+        <tbody>
+          ${weatherOrder.filter(w=>weatherGroups[w]).map(w => {
+            const vals = weatherGroups[w];
+            const avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+            const max = Math.max(...vals);
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:10px 14px;font-weight:600">${wIcons[w]||''} ${w}</td>
+              <td style="padding:10px 14px;text-align:center;font-weight:700;color:var(--g2)">${fmt(avg)}</td>
+              <td style="padding:10px 14px;text-align:center;color:var(--text3)">${vals.length}日</td>
+              <td style="padding:10px 14px;text-align:center;color:var(--text3)">${fmt(max)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`}
+    ${ev_w.length>0 ? `<div class="an-ttl">🎪 天気別 平均売上（イベント）</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:10px 14px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">天気</th>
+          <th style="padding:10px 14px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">平均売上</th>
+          <th style="padding:10px 14px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">日数</th>
+        </tr></thead>
+        <tbody>
+          ${weatherOrder.filter(w=>evWeatherGroups[w]).map(w => {
+            const vals = evWeatherGroups[w];
+            const avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:10px 14px;font-weight:600">${wIcons[w]||''} ${w}</td>
+              <td style="padding:10px 14px;text-align:center;font-weight:700;color:var(--g2)">${fmt(avg)}</td>
+              <td style="padding:10px 14px;text-align:center;color:var(--text3)">${vals.length}日</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
+    <div class="an-ttl">📅 月別 平均売上</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
+      ${monthAvgs.map(d => `<div class="m-row">
+        <div class="m-label" style="min-width:40px">${d.name}</div>
+        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(d.avg/maxAvg*100)}%"></div></div>
+        <div style="font-size:12px;font-weight:600;min-width:80px;text-align:right">${fmt(d.avg)}</div>
+        <div style="font-size:10px;color:var(--text3);min-width:30px;text-align:right">${d.count}日</div>
+      </div>`).join('')}
+    </div>
+
+    <div class="an-ttl">🌸 季節別 平均売上</div>
+    <div class="stat-grid">
+      ${Object.entries(seasonAvg).map(([s,vals]) => {
+        if(!vals.length) return '';
+        const icons = {春:'🌸',夏:'☀️',秋:'🍂',冬:'❄️'};
+        const avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+        return `<div class="stat-card">
+          <div class="stat-lbl">${icons[s]||''} ${s}</div>
+          <div class="stat-val">${fmt(avg)}</div>
+          <div class="stat-sub">${vals.length}日間</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="height:20px"></div>
+  </div>`;
+}
+
+function renderPreparationGuide(active){
+  // 商品データあり記録（2025-11以降）
+  const withItems = active.filter(r => Object.keys(r.items||{}).length > 0);
+  const ok = withItems.filter(r => r.loc==='奥多摩駅前');
+  const ev = withItems.filter(r => r.loc==='イベント');
+
+  const calcItemAvg = (recs) => {
+    const totals = {};
+    recs.forEach(r => {
+      Object.entries(r.items||{}).forEach(([id,val]) => {
+        const qty = typeof val==='object'?val.qty:val; if(!qty) return;
+        const p = ALL.find(x=>x.id===id); if(!p) return;
+        if(!totals[id]) totals[id]={name:p.name,total:0,days:0,max:0};
+        totals[id].total+=qty; totals[id].days++; totals[id].max=Math.max(totals[id].max,qty);
+      });
+    });
+    return Object.values(totals)
+      .map(d=>({...d, avg:Math.round(d.total/d.days*10)/10}))
+      .filter(d=>d.avg>=1)
+      .sort((a,b)=>b.avg-a.avg);
+  };
+
+  const okAvgs = calcItemAvg(ok);
+  const evAvgs = calcItemAvg(ev);
+
+  // 天気別の比較（奥多摩）
+  const okSunny = ok.filter(r=>r.weather&&r.weather.includes('晴'));
+  const okRainy = ok.filter(r=>r.weather&&r.weather.includes('雨'));
+
+  const renderItemTable = (avgs, recs, label) => {
+    if(!avgs.length) return `<div style="font-size:12px;color:var(--text3);padding:8px 0">データが不足しています</div>`;
+    const maxA = avgs[0].avg;
+    return `<div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden;margin-bottom:4px">
+      <div style="background:var(--g5);padding:8px 14px;font-size:11px;color:var(--g2);font-weight:600">${label}（${recs.length}日分の平均）</div>
+      ${avgs.slice(0,8).map(d => `
+      <div style="display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:10px">
+        <div style="flex:1;font-size:13px;font-weight:600">${d.name}</div>
+        <div style="min-width:120px">
+          <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:3px">
+            <div style="height:100%;background:var(--g3);border-radius:3px;width:${Math.round(d.avg/maxA*100)}%"></div>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:80px">
+          <div style="font-size:13px;font-weight:700;color:var(--g2)">平均 ${d.avg}個</div>
+          <div style="font-size:10px;color:var(--text3)">最大 ${d.max}個</div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  };
+
+  // 晴れ vs 雨比較
+  const sunnyAvgs = calcItemAvg(okSunny);
+  const rainyAvgs = calcItemAvg(okRainy);
+  const commonItems = sunnyAvgs.filter(s => rainyAvgs.find(r=>r.name===s.name)).slice(0,5);
+
+  return `<div class="an-wrap">
+    <div style="background:var(--g5);border:1px solid var(--g4);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:4px">
+      <div style="font-size:12px;color:var(--amber);font-weight:600">📌 このデータについて</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.6">2025年11月〜のNotionデータ（商品別記録あり）をもとに算出しています。データが増えるほど精度が上がります。</div>
+    </div>
+
+    <div class="an-ttl">🏔 奥多摩駅前 — 商品別 平均販売数</div>
+    ${renderItemTable(okAvgs, ok, '全天気・全日')}
+
+    ${commonItems.length>=2 ? `<div class="an-ttl">☀️🌧 天気による販売数の違い（奥多摩）</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:9px 12px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">商品</th>
+          <th style="padding:9px 12px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">☀️ 晴れ<br><span style="font-weight:400">(${okSunny.length}日)</span></th>
+          <th style="padding:9px 12px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">🌧 雨<br><span style="font-weight:400">(${okRainy.length}日)</span></th>
+          <th style="padding:9px 12px;text-align:center;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">差</th>
+        </tr></thead>
+        <tbody>
+          ${commonItems.map(s => {
+            const r = rainyAvgs.find(x=>x.name===s.name);
+            const diff = s.avg - (r?.avg||0);
+            return `<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:9px 12px;font-weight:500">${s.name}</td>
+              <td style="padding:9px 12px;text-align:center;font-weight:700;color:var(--g2)">${s.avg}個</td>
+              <td style="padding:9px 12px;text-align:center;font-weight:700;color:#6B7280">${r?.avg||'-'}個</td>
+              <td style="padding:9px 12px;text-align:center;font-weight:700;color:${diff>0?'var(--g2)':'#DC2626'}">${diff>0?'+':''}${diff.toFixed(1)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
+    ${evAvgs.length>0 ? `<div class="an-ttl">🎪 イベント — 商品別 平均販売数</div>
+    ${renderItemTable(evAvgs, ev, 'イベント全体')}` : ''}
+
+    ${(() => {
+      const largeEv = withItems.filter(r => r.loc==='イベント' && r.total >= 100000);
+      const normalEv = withItems.filter(r => r.loc==='イベント' && r.total < 100000);
+      const largeAvgs = calcItemAvg(largeEv);
+      const normalAvgs = calcItemAvg(normalEv);
+      if(!largeAvgs.length && !normalAvgs.length) return '';
+      return `<div class="an-ttl">🎪 イベント規模別 — 商品別 平均販売数</div>
+      <div style="background:var(--g5);border:1px solid var(--g4);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px;font-size:12px;color:var(--amber)">
+        🔴 大規模：売上¥10万以上の日（${largeEv.length}日）　🟡 通常：¥10万未満の日（${normalEv.length}日）
+      </div>
+      ${largeAvgs.length>0 ? renderItemTable(largeAvgs, largeEv, '🔴 大規模イベント（¥10万以上/日）') : ''}
+      ${normalAvgs.length>0 ? renderItemTable(normalAvgs, normalEv, '🟡 通常イベント（¥10万未満/日）') : ''}`;
+    })()}
+
     <div style="height:20px"></div>
   </div>`;
 }
