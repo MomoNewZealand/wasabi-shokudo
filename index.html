@@ -513,15 +513,17 @@ async function syncFromSheets(){
       seen.add(key); return true;
     });
 
-    // ローカルにしかないデータ（手動入力で未同期のもの）を保持
-    const localOnly = records.filter(r =>
-      !dedupedSS.some(s => s.date === r.date && (s.event||"") === (r.event||""))
+    // スプレッドシートにないローカルのmanualデータのみ保持
+    const localManual = records.filter(r =>
+      r.source === 'manual' &&
+      !dedupedSS.some(s => s.date === r.date && (s.event||'') === (r.event||''))
     );
 
-    // マージして日付でソート
-    const merged = [...dedupedSS, ...localOnly]
+    // スプレッドシートデータ＋未同期の手動入力データをマージ
+    const merged = [...dedupedSS, ...localManual]
       .sort((a,b) => b.date.localeCompare(a.date));
 
+    // localStorageをスプレッドシートデータで上書き
     records = merged;
     saveToStorage();
     render();
