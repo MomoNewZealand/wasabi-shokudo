@@ -1,0 +1,23 @@
+{
+  "name": "わさび食堂 売上管理",
+  "short_name": "わさび食堂",
+  "description": "わさび食堂の売上管理システム",
+  "start_url": "/wasabi-shokudo/",
+  "scope": "/wasabi-shokudo/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFBEB",
+  "theme_color": "#D97706",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='%23D97706'/><path d='M38 102 Q38 152 96 152 Q154 152 154 102 Z' fill='white'/><rect x='66' y='152' width='60' height='15' rx='7' fill='white'/><path d='M72 76 Q81 60 72 42' stroke='white' stroke-width='11' fill='none' stroke-linecap='round' opacity='.9'/><path d='M96 70 Q105 54 96 36' stroke='white' stroke-width='11' fill='none' stroke-linecap='round' opacity='.9'/><path d='M120 76 Q129 60 120 42' stroke='white' stroke-width='11' fill='none' stroke-linecap='round' opacity='.9'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='%23D97706'/><path d='M100 272 Q100 405 256 405 Q412 405 412 272 Z' fill='white'/><rect x='176' y='405' width='160' height='40' rx='18' fill='white'/><path d='M192 202 Q216 160 192 112' stroke='white' stroke-width='28' fill='none' stroke-linecap='round' opacity='.9'/><path d='M256 186 Q280 144 256 96' stroke='white' stroke-width='28' fill='none' stroke-linecap='round' opacity='.9'/><path d='M320 202 Q344 160 320 112' stroke='white' stroke-width='28' fill='none' stroke-linecap='round' opacity='.9'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
