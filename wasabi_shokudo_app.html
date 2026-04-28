@@ -783,7 +783,7 @@ function renderHistory(){
           <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
             <span class="tag ${isEv?'tag-ev':'tag-ok'}">${isEv?(rec.event?'🎪 '+rec.event:'🎪 イベント'):'🏔 奥多摩駅前'}</span>
             ${period&&period!=='通常' ? `<span class="tag tag-gw">${period}</span>` : ''}
-            ${(rec.source==='register' || rec.cashTotal!=null) ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
+            ${(rec.source==='register') ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
           </div>
         </div>
         <div class="rec-total">${fmt(rec.total)}</div>
