@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="わさび食堂">
+<link rel="manifest" href="/wasabi-shokudo/manifest.json">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23D97706'/><path d='M7 17 Q7 25 16 25 Q25 25 25 17 Z' fill='white'/><rect x='11' y='25' width='10' height='2.5' rx='1.2' fill='white'/><path d='M12 13 Q13.5 10 12 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M16 12 Q17.5 9 16 6' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M20 13 Q21.5 10 20 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23D97706'/><path d='M36 96 Q36 142 90 142 Q144 142 144 96 Z' fill='white'/><rect x='62' y='142' width='56' height='14' rx='7' fill='white'/><path d='M68 72 Q76 56 68 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M90 66 Q98 50 90 34' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M112 72 Q120 56 112 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
 <title>わさび食堂 売上管理</title>
@@ -1373,6 +1374,11 @@ function renderImport(){
   </div>` : ''}
   <div style="height:16px"></div>`;
 }
+<script>
+if('serviceWorker' in navigator){
+navigator.serviceWorker.register('/wasabi-shokudo/sw.js').catch(()=>{});
+}
+</script>
 </script>
 </body>
 </html>
