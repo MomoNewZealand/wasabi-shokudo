@@ -557,9 +557,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 'use strict';
 
 // ══════════════════════════════════════════
-//  GAS URL（スプレッドシート連携用）
+//  GAS URL
 // ══════════════════════════════════════════
-const GAS_URL = ''; // ← GASのWeb App URLをここに入力（後で設定）
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oejikCkHTNVG2nDSdO11ZQRZQMaxXP-YYwS2GbJW-Yxjgy7w/exec';
 
 // ══════════════════════════════════════════
 //  商品マスタ
@@ -611,8 +611,13 @@ let currentPayment = null; // checkout中の支払方法
 
 const STORAGE_KEY = 'wasabi_reg_v2';
 
-// 本日データ
+// 本日データ（端末ローカル分）
 let todayData = loadTodayData();
+// GASから取得した全端末の集計（複数端末対応）
+let gasOrders = [];      // GASから取得した注文一覧
+let gasSummary = null;   // GASから取得した集計
+let gasLastFetched = 0;  // 最終取得時刻
+const GAS_FETCH_INTERVAL = 30000; // 30秒ごとに更新
 
 function loadTodayData() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -631,6 +636,63 @@ function todayStr() {
 }
 
 const fmt = n => '¥' + Math.round(n).toLocaleString();
+
+// ══════════════════════════════════════════
+//  GAS日次集計取得（複数端末対応）
+// ══════════════════════════════════════════
+async function fetchGasSummary(force = false) {
+  if (!GAS_URL) return;
+  const now = Date.now();
+  if (!force && now - gasLastFetched < GAS_FETCH_INTERVAL) return;
+  gasLastFetched = now;
+
+  try {
+    const url = `${GAS_URL}?action=getDailySummary&date=${todayStr()}`;
+    const res  = await fetch(url);
+    const json = await res.json();
+    if (json.success) {
+      gasOrders  = json.orders  || [];
+      gasSummary = json.summary || null;
+
+      // nextNo をGASの最大注文番号+1に同期（端末間ズレ防止）
+      if (gasOrders.length > 0) {
+        const maxNo = Math.max(...gasOrders.map(o => o.no || 0));
+        // 自端末のnextNoがGASより小さければ更新
+        if (todayData.nextNo <= maxNo) {
+          todayData.nextNo = maxNo + 1;
+          saveTodayData();
+          updateOrderNo();
+        }
+      }
+      renderDailySummary();
+      renderTabHist();
+      if (spView === 'hist') renderSpHist();
+    }
+  } catch(e) {
+    console.warn('GAS集計取得エラー:', e);
+  }
+}
+
+// GASから取得した全端末の注文を合算して表示
+function getMergedSummary() {
+  // GAS取得済みなら使う（全端末合算）、なければローカルのみ
+  if (gasSummary) return gasSummary;
+  // ローカルフォールバック
+  const orders = todayData.orders;
+  return {
+    total:  orders.reduce((s,o) => s+o.total, 0),
+    cash:   orders.filter(o=>o.payment==='cash').reduce((s,o) => s+o.total, 0),
+    paypay: orders.filter(o=>o.payment==='paypay').reduce((s,o) => s+o.total, 0),
+    qr:     orders.filter(o=>o.payment==='qr').reduce((s,o) => s+o.total, 0),
+    count:  orders.length
+  };
+}
+
+function getMergedOrders() {
+  // GAS取得済みなら全端末分を使う
+  if (gasOrders.length > 0) return [...gasOrders].reverse();
+  return [...todayData.orders].reverse();
+}
 
 // ══════════════════════════════════════════
 //  時計
@@ -855,18 +917,14 @@ function renderSpCart() {
 //  日次集計 描画
 // ══════════════════════════════════════════
 function renderDailySummary() {
-  const orders = todayData.orders;
-  const total  = orders.reduce((s,o)=>s+o.total,0);
-  const cash   = orders.filter(o=>o.payment==='cash').reduce((s,o)=>s+o.total,0);
-  const paypay = orders.filter(o=>o.payment==='paypay').reduce((s,o)=>s+o.total,0);
-  const qr     = orders.filter(o=>o.payment==='qr').reduce((s,o)=>s+o.total,0);
-  const count  = orders.length;
+  const s = getMergedSummary();
+  const isGas = !!gasSummary;
   const html = `
-    <div class="daily-item"><div class="daily-lbl">本日合計</div><div class="daily-val">${fmt(total)}</div></div>
-    <div class="daily-item"><div class="daily-lbl">💴 現金</div><div class="daily-val">${fmt(cash)}</div></div>
-    <div class="daily-item"><div class="daily-lbl">🔴 PayPay</div><div class="daily-val">${fmt(paypay)}</div></div>
-    <div class="daily-item"><div class="daily-lbl">💳 QR/Card</div><div class="daily-val">${fmt(qr)}</div></div>
-    <div class="daily-item"><div class="daily-lbl">件数</div><div class="daily-val">${count}件</div></div>`;
+    <div class="daily-item"><div class="daily-lbl">本日合計${isGas?'🔄':''}</div><div class="daily-val">${fmt(s.total)}</div></div>
+    <div class="daily-item"><div class="daily-lbl">💴 現金</div><div class="daily-val">${fmt(s.cash)}</div></div>
+    <div class="daily-item"><div class="daily-lbl">🔴 PayPay</div><div class="daily-val">${fmt(s.paypay)}</div></div>
+    <div class="daily-item"><div class="daily-lbl">💳 QR/Card</div><div class="daily-val">${fmt(s.qr)}</div></div>
+    <div class="daily-item"><div class="daily-lbl">件数</div><div class="daily-val">${s.count}件</div></div>`;
   const g = document.getElementById('tab-daily-grid');
   if (g) g.innerHTML = html;
 }
@@ -875,9 +933,11 @@ function renderDailySummary() {
 //  履歴描画
 // ══════════════════════════════════════════
 function makeHistHtml(miniMode) {
-  const orders = [...todayData.orders].reverse();
+  const orders = getMergedOrders();
   if (!orders.length) return `<div class="hist-empty"><div style="font-size:36px;opacity:.3">📋</div><div style="font-size:13px">本日の注文はまだありません</div></div>`;
-  return orders.map(o => `
+  const isGas = gasOrders.length > 0;
+  return (isGas ? `<div style="font-size:10px;color:var(--text3);padding:4px 10px 0;text-align:right">🔄 全端末の注文を表示中</div>` : '')
+    + orders.map(o => `
     <div class="hist-card">
       <div class="hist-card-top">
         <span class="hist-no">#${o.no}</span>
@@ -885,7 +945,7 @@ function makeHistHtml(miniMode) {
         <span class="hist-pay-badge ${o.payment}">${o.payment==='cash'?'💴 現金':o.payment==='paypay'?'🔴 PayPay':'💳 QR/Card'}</span>
         <span class="hist-total">${fmt(o.total)}</span>
       </div>
-      <div class="hist-items">${o.items.map(i=>`${i.name}×${i.qty}`).join('　')}</div>
+      ${o.items ? `<div class="hist-items">${o.items.map(i=>`${i.name}×${i.qty}`).join('　')}</div>` : ''}
     </div>`).join('');
 }
 
@@ -897,19 +957,15 @@ function renderTabHist() {
 function renderSpHist() {
   const el = document.getElementById('sp-hist-panel');
   if (!el) return;
-  const orders = todayData.orders;
-  const total  = orders.reduce((s,o)=>s+o.total,0);
-  const cash   = orders.filter(o=>o.payment==='cash').reduce((s,o)=>s+o.total,0);
-  const paypay = orders.filter(o=>o.payment==='paypay').reduce((s,o)=>s+o.total,0);
-  const qr     = orders.filter(o=>o.payment==='qr').reduce((s,o)=>s+o.total,0);
+  const s = getMergedSummary();
   el.innerHTML = `
     <div class="hist-summary">
       <div class="hist-sum-grid" style="grid-template-columns:repeat(5,1fr)">
-        <div class="hist-sum-item"><div class="hist-sum-lbl">本日合計</div><div class="hist-sum-val">${fmt(total)}</div></div>
-        <div class="hist-sum-item"><div class="hist-sum-lbl">💴 現金</div><div class="hist-sum-val">${fmt(cash)}</div></div>
-        <div class="hist-sum-item"><div class="hist-sum-lbl">🔴 PayPay</div><div class="hist-sum-val">${fmt(paypay)}</div></div>
-        <div class="hist-sum-item"><div class="hist-sum-lbl">💳 QR</div><div class="hist-sum-val">${fmt(qr)}</div></div>
-        <div class="hist-sum-item"><div class="hist-sum-lbl">件数</div><div class="hist-sum-val">${orders.length}件</div></div>
+        <div class="hist-sum-item"><div class="hist-sum-lbl">本日合計</div><div class="hist-sum-val">${fmt(s.total)}</div></div>
+        <div class="hist-sum-item"><div class="hist-sum-lbl">💴 現金</div><div class="hist-sum-val">${fmt(s.cash)}</div></div>
+        <div class="hist-sum-item"><div class="hist-sum-lbl">🔴 PayPay</div><div class="hist-sum-val">${fmt(s.paypay)}</div></div>
+        <div class="hist-sum-item"><div class="hist-sum-lbl">💳 QR</div><div class="hist-sum-val">${fmt(s.qr)}</div></div>
+        <div class="hist-sum-item"><div class="hist-sum-lbl">件数</div><div class="hist-sum-val">${s.count}件</div></div>
       </div>
     </div>
     <div class="hist-list">${makeHistHtml(false)}</div>`;
@@ -1385,17 +1441,19 @@ function showToast(msg) {
 // ══════════════════════════════════════════
 function init() {
   renderAll();
-  // スマホ初期状態
   if (window.innerWidth < 768) {
     document.getElementById('right-col').style.display = 'none';
     spSwitch('menu');
   } else {
-    // タブレット：right-col表示
     document.getElementById('right-col').style.display = 'flex';
     document.getElementById('tab-pay-cash').disabled = true;
     document.getElementById('tab-pay-paypay').disabled = true;
     document.getElementById('tab-pay-qr').disabled = true;
   }
+  // GASから日次集計を取得（複数端末対応）
+  fetchGasSummary(true);
+  // 30秒ごとに自動更新
+  setInterval(() => fetchGasSummary(), GAS_FETCH_INTERVAL);
 }
 
 window.addEventListener('resize', () => {
