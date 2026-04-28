@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="わさび食堂 レジ">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23D97706'/><rect x='6' y='10' width='20' height='14' rx='2.5' fill='white' opacity='.95'/><rect x='6' y='10' width='20' height='5' rx='2' fill='white'/><rect x='9' y='18' width='3' height='3' rx='.8' fill='%23D97706'/><rect x='14.5' y='18' width='3' height='3' rx='.8' fill='%23D97706'/><rect x='20' y='18' width='3' height='3' rx='.8' fill='%23D97706'/><rect x='13' y='6' width='6' height='5' rx='1' fill='white' opacity='.9'/><rect x='14.5' y='22' width='3' height='3' rx='.8' fill='%23B45309'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23D97706'/><rect x='30' y='58' width='120' height='82' rx='14' fill='white' opacity='.95'/><rect x='30' y='58' width='120' height='30' rx='14' fill='white'/><rect x='47' y='104' width='18' height='18' rx='5' fill='%23D97706'/><rect x='81' y='104' width='18' height='18' rx='5' fill='%23D97706'/><rect x='115' y='104' width='18' height='18' rx='5' fill='%23D97706'/><rect x='47' y='126' width='18' height='18' rx='5' fill='%23D97706' opacity='.4'/><rect x='81' y='126' width='18' height='18' rx='5' fill='%23B45309'/><rect x='115' y='126' width='18' height='18' rx='5' fill='%23D97706' opacity='.4'/><rect x='72' y='32' width='36' height='30' rx='6' fill='white' opacity='.9'/></svg>">
 <title>わさび食堂 レジ</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -58,15 +60,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 
 /* ══════════════════ SP NAV ══════════════════ */
 .sp-nav{display:flex;background:var(--amber-dd);flex-shrink:0}
-.sp-nav-btn{flex:1;padding:9px 4px;border:none;background:none;color:rgba(255,255,255,.55);font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .15s;border-bottom:3px solid transparent}
-.sp-nav-btn .nav-ico{font-size:17px}
+.sp-nav-btn{flex:1;height:56px;padding:0 4px;border:none;background:none;color:rgba(255,255,255,.55);font-size:10px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .15s;border-bottom:3px solid transparent}
+.sp-nav-btn .nav-ico{font-size:17px;line-height:1}
 .sp-nav-btn.on{color:#fff;border-bottom-color:#fff;background:rgba(255,255,255,.1)}
 
 /* ══════════════════ CAT TABS ══════════════════ */
-.cat-bar{display:flex;gap:6px;padding:8px 10px 6px;background:var(--amber-bg);border-bottom:1px solid var(--amber-ll);flex-shrink:0}
-.cat-btn{flex:1;padding:7px 4px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--white);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .12s}
+.cat-bar{display:flex;gap:5px;padding:8px 10px 6px;background:var(--amber-bg);border-bottom:1px solid var(--amber-ll);flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cat-bar::-webkit-scrollbar{display:none}
+.cat-btn{flex-shrink:0;padding:7px 8px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--white);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .12s;min-width:56px}
 .cat-btn-ico{font-size:15px}
 .cat-btn.on{background:var(--amber);color:#fff;border-color:var(--amber)}
+.cat-btn.preset{border-color:var(--amber-l);color:var(--amber-d);background:var(--amber-bg)}
+.cat-btn.preset.on{background:var(--amber-d);color:#fff;border-color:var(--amber-d)}
 
 /* ══════════════════ PRODUCT GRID ══════════════════ */
 .prod-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 8px 16px}
@@ -168,7 +173,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .hist-pay-badge.paypay{background:#FFF0F2;color:#E00025}
 .hist-pay-badge.qr{background:var(--blue-bg);color:var(--blue)}
 .hist-total{font-size:16px;font-weight:900;color:var(--amber-d)}
-.hist-local-badge{font-size:10px;font-weight:700;color:var(--amber-d);background:var(--amber-bg);padding:1px 6px;border-radius:4px;margin-left:4px}
+.hist-local-badge{font-size:9px;font-weight:700;color:#fff;background:var(--amber-d);padding:2px 6px;border-radius:20px;margin-left:2px;vertical-align:middle;white-space:nowrap}
 .hist-items{font-size:11px;color:var(--text3);line-height:1.7}
 .hist-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:8px;color:var(--text3);padding:40px 0}
 
@@ -266,7 +271,54 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .sent-banner-ico{font-size:20px}
 .sent-banner-txt{font-size:12px;font-weight:700;color:var(--green)}
 
-/* トースト */
+/* ══════════════════ 商品マスタ編集パネル ══════════════════ */
+.master-panel{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;flex-direction:column;background:var(--bg)}
+.master-panel.show{display:flex}
+.master-head{background:var(--amber);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.master-head-title{font-size:13px;font-weight:800;color:#fff}
+.master-add-btn{background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:var(--radius);cursor:pointer;font-family:inherit}
+.master-cat-tabs{display:flex;background:var(--amber-dd);flex-shrink:0}
+.master-cat-btn{flex:1;padding:8px 4px;border:none;background:none;color:rgba(255,255,255,.6);font-size:11px;font-weight:700;font-family:inherit;cursor:pointer;border-bottom:2px solid transparent}
+.master-cat-btn.on{color:#fff;border-bottom-color:#fff}
+.master-list{padding:8px 10px 20px}
+.master-item{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.master-item-info{flex:1;min-width:0}
+.master-item-name{font-size:13px;font-weight:700;color:var(--text)}
+.master-item-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:8px}
+.master-item-div{font-size:9px;padding:2px 6px;border-radius:20px;font-weight:700}
+.master-item-div.shokudo{background:var(--amber-bg);color:var(--amber-d)}
+.master-item-div.coffee{background:#FEF3C7;color:#92400E}
+.master-item-div.buppan{background:var(--green-bg);color:var(--green)}
+.master-edit-btn{padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);white-space:nowrap}
+.master-del-btn{padding:6px 10px;border:1.5px solid var(--red);border-radius:var(--radius);background:var(--red-bg);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--red);white-space:nowrap}
+/* 商品編集モーダル */
+.medit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:flex;align-items:flex-end;justify-content:center}
+.medit-modal{background:var(--white);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;max-width:480px;overflow:hidden}
+.medit-head{background:var(--amber-bg);padding:14px 16px;border-bottom:1px solid var(--amber-ll);display:flex;align-items:center;justify-content:space-between}
+.medit-title{font-size:14px;font-weight:800;color:var(--amber-dd)}
+.medit-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:0 4px}
+.medit-body{padding:14px 16px}
+.medit-field{margin-bottom:12px}
+.medit-label{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;display:block}
+.medit-input,.medit-select{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--white);color:var(--text);outline:none;-webkit-appearance:none}
+.medit-input:focus,.medit-select:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(217,119,6,.12)}
+.medit-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.medit-footer{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)}
+.medit-cancel{flex:1;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--white);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2)}
+.medit-save{flex:2;padding:12px;border:none;border-radius:var(--radius-lg);background:var(--amber);font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;color:#fff}
+/* ══════════════════ プリセット編集 ══════════════════ */
+.preset-section{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden}
+.preset-section-head{background:var(--amber-bg);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--amber-ll)}
+.preset-section-title{font-size:12px;font-weight:800;color:var(--amber-dd)}
+.preset-rename-btn{font-size:11px;color:var(--amber-d);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:700;padding:2px 6px}
+.preset-prod-row{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:10px}
+.preset-prod-row:last-child{border-bottom:none}
+.preset-check{width:20px;height:20px;accent-color:var(--amber);flex-shrink:0;cursor:pointer}
+.preset-prod-name{flex:1;font-size:13px;font-weight:600;color:var(--text)}
+.preset-prod-price{font-size:11px;color:var(--text3);white-space:nowrap}
+.preset-order-btns{display:flex;gap:3px;flex-shrink:0}
+.preset-ob{width:26px;height:26px;border:1.5px solid var(--border);border-radius:6px;background:var(--white);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3)}
+.preset-ob:active{background:var(--amber-bg)}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(28,20,16,.88);color:#fff;padding:9px 18px;border-radius:30px;font-size:12px;font-weight:700;z-index:500;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;backdrop-filter:blur(8px)}
 .toast.show{opacity:1}
 
@@ -305,6 +357,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
       <button class="sp-nav-btn" id="snav-hist" onclick="spSwitch('hist')">
         <span class="nav-ico">📋</span>履歴
       </button>
+      <button class="sp-nav-btn" id="snav-master" onclick="spSwitch('master')">
+        <span class="nav-ico">⚙️</span>マスタ
+      </button>
       <button class="sp-nav-btn" id="snav-send" onclick="openSendModal()">
         <span class="nav-ico">📤</span>売上送信
       </button>
@@ -312,7 +367,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 
     <!-- カテゴリタブ（商品パネル時のみ） -->
     <div class="cat-bar" id="cat-bar">
-      <button class="cat-btn on" data-cat="フード" onclick="setCat('フード')">
+      <button class="cat-btn preset on" id="cat-btn-preset-0" onclick="setCat('preset-0')">
+        <span class="cat-btn-ico">⭐</span><span id="preset-0-label">奥多摩</span>
+      </button>
+      <button class="cat-btn preset" id="cat-btn-preset-1" onclick="setCat('preset-1')">
+        <span class="cat-btn-ico">🎪</span><span id="preset-1-label">イベント</span>
+      </button>
+      <button class="cat-btn" data-cat="フード" onclick="setCat('フード')">
         <span class="cat-btn-ico">🍚</span>フード
       </button>
       <button class="cat-btn" data-cat="ドリンク" onclick="setCat('ドリンク')">
@@ -333,6 +394,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 
     <!-- SP: 履歴パネル -->
     <div class="hist-panel" id="sp-hist-panel"></div>
+
+    <!-- SP: 商品マスタ編集パネル -->
+    <div class="master-panel" id="sp-master-panel">
+      <div class="master-head">
+        <div class="master-head-title">⚙️ 商品マスタ編集</div>
+        <button class="master-add-btn" id="master-action-btn" onclick="openMasterEdit(null)">＋ 新規追加</button>
+      </div>
+      <div class="master-cat-tabs">
+        <button class="master-cat-btn on" data-mcat="フード" onclick="setMasterCat('フード')">🍚 フード</button>
+        <button class="master-cat-btn" data-mcat="ドリンク" onclick="setMasterCat('ドリンク')">☕ ドリンク</button>
+        <button class="master-cat-btn" data-mcat="物販" onclick="setMasterCat('物販')">🛍 物販</button>
+        <button class="master-cat-btn" data-mcat="preset" onclick="setMasterCat('preset')">⭐ プリセット</button>
+      </div>
+      <div class="master-list" id="master-list"></div>
+    </div>
 
   </div>
 
@@ -551,6 +627,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
   </div>
 </div>
 
+<!-- ════════ 商品マスタ編集モーダル ════════ -->
+<div class="medit-overlay" id="medit-modal" style="display:none" onclick="if(event.target===this)closeMasterEdit()">
+  <div class="medit-modal" onclick="event.stopPropagation()">
+    <div class="medit-head">
+      <div class="medit-title" id="medit-title">商品を追加</div>
+      <button class="medit-close" onclick="closeMasterEdit()">✕</button>
+    </div>
+    <div class="medit-body">
+      <input type="hidden" id="medit-id">
+      <input type="hidden" id="medit-orig-id">
+      <div class="medit-field">
+        <label class="medit-label">商品名 <span style="color:var(--red)">*</span></label>
+        <input class="medit-input" id="medit-name" type="text" placeholder="例：わさびカレー">
+      </div>
+      <div class="medit-row">
+        <div class="medit-field">
+          <label class="medit-label">価格（円）</label>
+          <input class="medit-input" id="medit-price" type="number" inputmode="numeric" placeholder="価格変動は空欄">
+        </div>
+        <div class="medit-field">
+          <label class="medit-label">地元割引（円）</label>
+          <input class="medit-input" id="medit-disc" type="number" inputmode="numeric" placeholder="0">
+        </div>
+      </div>
+      <div class="medit-row">
+        <div class="medit-field">
+          <label class="medit-label">カテゴリ</label>
+          <select class="medit-select" id="medit-cat">
+            <option value="フード">🍚 フード</option>
+            <option value="ドリンク">☕ ドリンク</option>
+            <option value="物販">🛍 物販</option>
+          </select>
+        </div>
+        <div class="medit-field">
+          <label class="medit-label">部門</label>
+          <select class="medit-select" id="medit-div">
+            <option value="shokudo">わさび食堂</option>
+            <option value="coffee">WASABI COFFEE</option>
+            <option value="buppan">物販</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="medit-footer">
+      <button class="medit-cancel" onclick="closeMasterEdit()">キャンセル</button>
+      <button class="medit-save" onclick="saveMasterItem()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -719,11 +845,130 @@ function updateOrderNo() {
 updateOrderNo();
 
 // ══════════════════════════════════════════
-//  カテゴリ
+//  カテゴリ・プリセット
 // ══════════════════════════════════════════
+const PRESET_KEY = 'wasabi_presets_v1';
+const MASTER_CACHE_KEY = 'wasabi_master_v1_cache';
+
+const DEFAULT_PRESETS = [
+  {
+    id: 'preset-0',
+    label: '奥多摩',
+    icon: '⭐',
+    items: ['wasabi_don','mini_don','pork_don','inari','onigiri','sausage_dog',
+            'wasabi_coffee','orig_blend','yuzu','fresh_wasabi','cookie_s','cookie_l']
+  },
+  {
+    id: 'preset-1',
+    label: 'イベント',
+    icon: '🎪',
+    items: ['mini_don','inari','onigiri','wasabi_coffee','yuzu']
+  }
+];
+
+function loadPresets() {
+  try {
+    const raw = localStorage.getItem(PRESET_KEY);
+    return raw ? JSON.parse(raw) : DEFAULT_PRESETS;
+  } catch(e) { return DEFAULT_PRESETS; }
+}
+
+function savePresets(presets) {
+  // localStorageにキャッシュ
+  localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+  // GASにも保存（非同期・失敗しても無視）
+  if (GAS_URL) {
+    fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'savePresets', presets })
+    }).catch(() => {});
+  }
+}
+
+function loadCustomProds() {
+  try {
+    const raw = localStorage.getItem(MASTER_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveCustomProds(data) {
+  // localStorageにキャッシュ
+  localStorage.setItem(MASTER_KEY, JSON.stringify(data));
+  // GASにも保存（非同期・失敗しても無視）
+  if (GAS_URL) {
+    fetch(GAS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveMaster', master: data })
+    }).catch(() => {});
+  }
+}
+
+// GASから設定を取得して全端末で同期
+async function syncSettingsFromGAS() {
+  if (!GAS_URL) return;
+  try {
+    const res  = await fetch(`${GAS_URL}?action=getSettings`);
+    const json = await res.json();
+    if (!json.success) return;
+
+    let updated = false;
+
+    // プリセット同期
+    if (json.presets && Array.isArray(json.presets)) {
+      localStorage.setItem(PRESET_KEY, JSON.stringify(json.presets));
+      presets = json.presets;
+      applyPresetLabels();
+      if (activeCat.startsWith('preset-')) renderGrid();
+      updated = true;
+    }
+
+    // カスタム商品マスタ同期
+    if (json.master && typeof json.master === 'object') {
+      localStorage.setItem(MASTER_KEY, JSON.stringify(json.master));
+      // PRODSに再反映
+      applyCustomProds();
+      renderGrid();
+      updated = true;
+    }
+
+    if (updated) {
+      console.log('設定をGASから同期しました');
+    }
+  } catch(e) {
+    console.warn('設定同期エラー:', e);
+  }
+}
+
+let presets = loadPresets();
+
+// プリセットラベルをタブに反映
+function applyPresetLabels() {
+  presets.forEach((preset, i) => {
+    const lbl = document.getElementById(`preset-${i}-label`);
+    if (lbl) lbl.textContent = preset.label;
+    const btn = document.getElementById(`cat-btn-preset-${i}`);
+    if (btn) {
+      const ico = btn.querySelector('.cat-btn-ico');
+      if (ico) ico.textContent = preset.icon || '⭐';
+    }
+  });
+}
+
 function setCat(cat) {
   activeCat = cat;
-  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('on', b.dataset.cat === cat));
+  // 全タブのon解除
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('on'));
+  // 対象タブをon
+  if (cat.startsWith('preset-')) {
+    document.getElementById(`cat-btn-${cat}`)?.classList.add('on');
+  } else {
+    document.querySelectorAll(`.cat-btn[data-cat="${cat}"]`).forEach(b => b.classList.add('on'));
+  }
   renderGrid();
 }
 
@@ -733,7 +978,21 @@ function setCat(cat) {
 function renderGrid() {
   const g = document.getElementById('prod-grid');
   if (!g) return;
-  g.innerHTML = PRODS[activeCat].map(p => {
+
+  let prods;
+  if (activeCat.startsWith('preset-')) {
+    const idx = parseInt(activeCat.replace('preset-', ''));
+    const preset = presets[idx];
+    if (!preset) { g.innerHTML = ''; return; }
+    // プリセットの順番通りに商品を並べる
+    prods = preset.items
+      .map(id => ALL_PRODS.find(p => p.id === id))
+      .filter(Boolean);
+  } else {
+    prods = PRODS[activeCat] || [];
+  }
+
+  g.innerHTML = prods.map(p => {
     const qty = cart.find(c => c.id === p.id)?.qty || 0;
     const priceLabel = p.price === null ? '価格変動' : fmt(p.price);
     return `<button class="prod-btn${qty > 0 ? ' in-cart' : ''}"
@@ -996,22 +1255,24 @@ function renderAll() {
 // ══════════════════════════════════════════
 function spSwitch(panel) {
   spView = panel;
-  ['menu','cart','hist'].forEach(p => {
+  ['menu','cart','hist','master'].forEach(p => {
     document.getElementById(`snav-${p}`)?.classList.toggle('on', p === panel);
   });
-  // カテゴリバー
   const cb = document.getElementById('cat-bar');
   const pp = document.getElementById('prod-panel');
   const cp = document.getElementById('sp-cart-panel');
   const hp = document.getElementById('sp-hist-panel');
+  const mp = document.getElementById('sp-master-panel');
 
-  cb.style.display = panel === 'menu' ? 'flex' : 'none';
-  pp.style.display = panel === 'menu' ? 'block' : 'none';
-  cp.classList.toggle('show', panel === 'cart');
-  hp.classList.toggle('show', panel === 'hist');
+  cb.style.display  = panel === 'menu'   ? 'flex'  : 'none';
+  pp.style.display  = panel === 'menu'   ? 'block' : 'none';
+  cp.classList.toggle('show',   panel === 'cart');
+  hp.classList.toggle('show',   panel === 'hist');
+  mp.classList.toggle('show',   panel === 'master');
 
-  if (panel === 'cart') renderSpCart();
-  if (panel === 'hist') renderSpHist();
+  if (panel === 'cart')   renderSpCart();
+  if (panel === 'hist')   renderSpHist();
+  if (panel === 'master') renderMasterList();
 }
 
 // ══════════════════════════════════════════
@@ -1158,7 +1419,7 @@ async function completeCheckout() {
   // モーダルを閉じてリセット
   document.getElementById('checkout-modal').style.display = 'none';
   cart = [];
-  isLocal = false;
+  setLocal(false); // 地元割をUIごとリセット
   renderAll();
   updateOrderNo();
   showToast(`#${order.no} 会計完了 ${fmt(order.total)}`);
@@ -1425,6 +1686,247 @@ async function sendRecordToGAS(record) {
 }
 
 // ══════════════════════════════════════════
+//  商品マスタ編集
+// ══════════════════════════════════════════
+// カスタム商品をlocalStorageで管理
+const MASTER_KEY = 'wasabi_master_v1';
+let masterCat = 'フード';
+
+function loadCustomProds() {
+  try {
+    const raw = localStorage.getItem(MASTER_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+function saveCustomProds(data) {
+  localStorage.setItem(MASTER_KEY, JSON.stringify(data));
+}
+
+// 初期化時にカスタム商品をPRODSに反映
+function applyCustomProds() {
+  const custom = loadCustomProds();
+  Object.keys(custom).forEach(cat => {
+    if (!PRODS[cat]) return;
+    custom[cat].forEach(cp => {
+      // 既存IDがあれば更新、なければ追加
+      const idx = PRODS[cat].findIndex(p => p.id === cp.id);
+      if (idx >= 0) PRODS[cat][idx] = cp;
+      else PRODS[cat].push(cp);
+    });
+    // ALL_PRODSを再構築
+    ALL_PRODS.length = 0;
+    Object.values(PRODS).flat().forEach(p => ALL_PRODS.push(p));
+  });
+}
+
+function setMasterCat(cat) {
+  masterCat = cat;
+  document.querySelectorAll('.master-cat-btn').forEach(b =>
+    b.classList.toggle('on', b.dataset.mcat === cat)
+  );
+  // 新規追加ボタンをプリセット時は非表示
+  const ab = document.getElementById('master-action-btn');
+  if (ab) ab.style.display = cat === 'preset' ? 'none' : 'block';
+  renderMasterList();
+}
+
+function renderMasterList() {
+  const el = document.getElementById('master-list'); if (!el) return;
+
+  if (masterCat === 'preset') {
+    renderPresetEditor(el); return;
+  }
+
+  const prods = PRODS[masterCat] || [];
+  const divLabels = { shokudo:'わさび食堂', coffee:'WASABI COFFEE', buppan:'物販' };
+
+  el.innerHTML = prods.map(p => `
+    <div class="master-item">
+      <div class="master-item-info">
+        <div class="master-item-name">${p.name}</div>
+        <div class="master-item-meta">
+          <span>${p.price === null ? '価格変動' : '¥' + p.price.toLocaleString()}</span>
+          <span>地元割 -¥${p.disc || 0}</span>
+          <span class="master-item-div ${p.div || 'shokudo'}">${divLabels[p.div] || p.div}</span>
+        </div>
+      </div>
+      <button class="master-edit-btn" onclick="openMasterEdit('${p.id}')">編集</button>
+      <button class="master-del-btn" onclick="deleteMasterItem('${p.id}','${masterCat}')">削除</button>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  プリセット編集
+// ══════════════════════════════════════════
+function renderPresetEditor(el) {
+  el.innerHTML = presets.map((preset, pi) => {
+    const rows = ALL_PRODS.map(p => {
+      const checked = preset.items.includes(p.id);
+      const orderIdx = preset.items.indexOf(p.id);
+      return `<div class="preset-prod-row">
+        <input type="checkbox" class="preset-check" id="pc-${pi}-${p.id}"
+          ${checked ? 'checked' : ''}
+          onchange="togglePresetItem(${pi},'${p.id}',this.checked)">
+        <label class="preset-prod-name" for="pc-${pi}-${p.id}">${p.name}</label>
+        <span class="preset-prod-price">${p.price === null ? '変動' : '¥'+p.price}</span>
+        ${checked ? `<div class="preset-order-btns">
+          <button class="preset-ob" onclick="movePresetItem(${pi},'${p.id}',-1)" title="上へ">↑</button>
+          <button class="preset-ob" onclick="movePresetItem(${pi},'${p.id}',1)" title="下へ">↓</button>
+        </div>` : '<div style="width:55px"></div>'}
+      </div>`;
+    }).join('');
+
+    return `<div class="preset-section">
+      <div class="preset-section-head">
+        <span class="preset-section-title">${preset.icon} ${preset.label}（${preset.items.length}品）</span>
+        <button class="preset-rename-btn" onclick="renamePreset(${pi})">名前変更</button>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+function togglePresetItem(presetIdx, id, checked) {
+  const preset = presets[presetIdx];
+  if (checked) {
+    if (!preset.items.includes(id)) preset.items.push(id);
+  } else {
+    preset.items = preset.items.filter(x => x !== id);
+  }
+  savePresets(presets);
+  renderPresetEditor(document.getElementById('master-list'));
+  // アクティブプリセットなら商品グリッドも更新
+  if (activeCat === `preset-${presetIdx}`) renderGrid();
+}
+
+function movePresetItem(presetIdx, id, dir) {
+  const preset = presets[presetIdx];
+  const idx = preset.items.indexOf(id);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= preset.items.length) return;
+  [preset.items[idx], preset.items[newIdx]] = [preset.items[newIdx], preset.items[idx]];
+  savePresets(presets);
+  renderPresetEditor(document.getElementById('master-list'));
+  if (activeCat === `preset-${presetIdx}`) renderGrid();
+}
+
+function renamePreset(presetIdx) {
+  const preset = presets[presetIdx];
+  const newName = prompt(`プリセット名を入力してください`, preset.label);
+  if (!newName || !newName.trim()) return;
+  preset.label = newName.trim();
+  savePresets(presets);
+  applyPresetLabels();
+  renderPresetEditor(document.getElementById('master-list'));
+}
+
+function openMasterEdit(id) {
+  const isNew = !id;
+  document.getElementById('medit-title').textContent = isNew ? '商品を追加' : '商品を編集';
+  document.getElementById('medit-orig-id').value = id || '';
+
+  if (isNew) {
+    document.getElementById('medit-id').value    = '';
+    document.getElementById('medit-name').value  = '';
+    document.getElementById('medit-price').value = '';
+    document.getElementById('medit-disc').value  = '0';
+    document.getElementById('medit-cat').value   = masterCat;
+    document.getElementById('medit-div').value   = masterCat === 'ドリンク' || masterCat === '物販' ? 'coffee' : 'shokudo';
+  } else {
+    const p = ALL_PRODS.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('medit-id').value    = p.id;
+    document.getElementById('medit-name').value  = p.name;
+    document.getElementById('medit-price').value = p.price === null ? '' : p.price;
+    document.getElementById('medit-disc').value  = p.disc || 0;
+    document.getElementById('medit-cat').value   = masterCat;
+    document.getElementById('medit-div').value   = p.div || 'shokudo';
+  }
+  document.getElementById('medit-modal').style.display = 'flex';
+}
+
+function closeMasterEdit() {
+  document.getElementById('medit-modal').style.display = 'none';
+}
+
+function saveMasterItem() {
+  const name    = document.getElementById('medit-name').value.trim();
+  const priceRaw = document.getElementById('medit-price').value.trim();
+  const disc    = parseInt(document.getElementById('medit-disc').value) || 0;
+  const cat     = document.getElementById('medit-cat').value;
+  const div     = document.getElementById('medit-div').value;
+  const origId  = document.getElementById('medit-orig-id').value;
+
+  if (!name) { showToast('商品名を入力してください'); return; }
+
+  const price = priceRaw === '' ? null : parseInt(priceRaw);
+  // IDは既存のものを使うか、名前からスネークケース生成
+  const id = origId || 'custom_' + Date.now();
+
+  const newProd = { id, name, price, disc, div };
+
+  // PRODSを更新
+  if (origId) {
+    // 元のカテゴリから削除（カテゴリ変更対応）
+    Object.keys(PRODS).forEach(c => {
+      PRODS[c] = PRODS[c].filter(p => p.id !== origId);
+    });
+  }
+  if (!PRODS[cat]) PRODS[cat] = [];
+  PRODS[cat].push(newProd);
+
+  // ALL_PRODSを再構築
+  ALL_PRODS.length = 0;
+  Object.values(PRODS).flat().forEach(p => ALL_PRODS.push(p));
+
+  // カスタム商品をlocalStorageに保存
+  const custom = loadCustomProds();
+  if (!custom[cat]) custom[cat] = [];
+  // 既存エントリを更新
+  const cidx = custom[cat].findIndex(p => p.id === id);
+  if (cidx >= 0) custom[cat][cidx] = newProd;
+  else custom[cat].push(newProd);
+  // 旧カテゴリからも削除
+  if (origId && origId !== id) {
+    Object.keys(custom).forEach(c => {
+      custom[c] = (custom[c] || []).filter(p => p.id !== origId);
+    });
+  }
+  saveCustomProds(custom);
+
+  closeMasterEdit();
+  masterCat = cat;
+  document.querySelectorAll('.master-cat-btn').forEach(b =>
+    b.classList.toggle('on', b.dataset.mcat === cat)
+  );
+  renderMasterList();
+  renderGrid(); // 商品グリッドも更新
+  showToast(`「${name}」を保存しました`);
+}
+
+function deleteMasterItem(id, cat) {
+  const p = ALL_PRODS.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`「${p.name}」を削除しますか？`)) return;
+
+  PRODS[cat] = (PRODS[cat] || []).filter(x => x.id !== id);
+  ALL_PRODS.length = 0;
+  Object.values(PRODS).flat().forEach(x => ALL_PRODS.push(x));
+
+  // カスタム商品から削除
+  const custom = loadCustomProds();
+  Object.keys(custom).forEach(c => {
+    custom[c] = (custom[c] || []).filter(x => x.id !== id);
+  });
+  saveCustomProds(custom);
+
+  renderMasterList();
+  renderGrid();
+  showToast(`「${p.name}」を削除しました`);
+}
+
+// ══════════════════════════════════════════
 //  トースト
 // ══════════════════════════════════════════
 let toastTimer;
@@ -1440,6 +1942,10 @@ function showToast(msg) {
 //  初期化
 // ══════════════════════════════════════════
 function init() {
+  applyCustomProds();
+  presets = loadPresets();
+  activeCat = 'preset-0';
+  applyPresetLabels();
   renderAll();
   if (window.innerWidth < 768) {
     document.getElementById('right-col').style.display = 'none';
@@ -1450,9 +1956,9 @@ function init() {
     document.getElementById('tab-pay-paypay').disabled = true;
     document.getElementById('tab-pay-qr').disabled = true;
   }
-  // GASから日次集計を取得（複数端末対応）
+  // GASから日次集計・設定を取得
   fetchGasSummary(true);
-  // 30秒ごとに自動更新
+  syncSettingsFromGAS(); // マスタ・プリセットをGASから同期
   setInterval(() => fetchGasSummary(), GAS_FETCH_INTERVAL);
 }
 
