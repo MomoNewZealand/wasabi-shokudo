@@ -105,7 +105,7 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .prod-item:last-child{border-bottom:none}
 .prod-item.sel{background:var(--g5)}
 .prod-info{flex:1;min-width:0}
-.prod-name{font-size:13px;font-weight:600;line-height:1.4;white-space:normal;word-break:break-all}
+.prod-name{font-size:13px;font-weight:600;line-height:1.4;white-space:normal;word-break:keep-all;overflow-wrap:break-word}
 .prod-price{font-size:11px;color:var(--text3);margin-top:2px}
 .prod-price.vp{color:var(--g2);font-weight:600}
 .qty-wrap{display:flex;align-items:center;flex-shrink:0}
@@ -519,6 +519,32 @@ async function syncToSheets(recs){
 }
 async function syncAll(){ await syncToSheets(records); }
 
+// スプレッドシートからデータを読み込んでlocalStorageを上書き
+async function syncFromSheets(){
+  const btn = document.querySelector('.sync-banner-btn');
+  if(btn){ btn.textContent = '読込中…'; btn.disabled = true; }
+  try {
+    const res  = await fetch(GAS_URL + '?action=getData');
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error || '取得失敗');
+    if(!json.records || json.records.length === 0){
+      showToast('⚠️ スプレッドシートにデータがありません');
+      return;
+    }
+    // ローカルのmanual/registerレコードとマージ（シートにないローカルデータは保持）
+    const sheetIds = new Set(json.records.map(r => r.id));
+    const localOnly = records.filter(r => !sheetIds.has(r.id) && r.source !== 'sheets');
+    records = [...json.records, ...localOnly].sort((a,b) => a.date.localeCompare(b.date));
+    saveToStorage();
+    showToast(`✅ ${json.records.length}件を読み込みました`);
+    render();
+  } catch(e) {
+    showToast('⚠️ 読込に失敗しました: ' + e.message);
+  } finally {
+    if(btn){ btn.textContent = 'シートから読込'; btn.disabled = false; }
+  }
+}
+
 // ══════════════════════════════════════════
 //  入力フォーム
 // ══════════════════════════════════════════
@@ -638,8 +664,8 @@ function renderInput(){
   const tot = calcTotals();
   c.innerHTML = `
   <div class="sync-banner">
-    <div class="sync-banner-text">📊 全データをスプレッドシートに一括送信</div>
-    <button class="sync-banner-btn" onclick="syncAll()">全データを同期</button>
+    <div class="sync-banner-text">🔄 スプレッドシートのデータで上書き同期</div>
+    <button class="sync-banner-btn" onclick="syncFromSheets()">シートから読込</button>
   </div>
   <div class="card">
     <div class="card-lbl">出店情報</div>
