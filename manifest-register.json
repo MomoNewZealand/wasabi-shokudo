@@ -3,7 +3,7 @@
   "short_name": "わさび レジ",
   "description": "わさび食堂のレジシステム",
   "start_url": "/wasabi-shokudo/wasabi_register_v2.html",
-  "scope": "/wasabi-shokudo/",
+  "scope": "/wasabi-shokudo/wasabi_register_v2.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FFFBEB",
