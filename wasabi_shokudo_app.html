@@ -55,6 +55,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
   .prod-list{display:grid;grid-template-columns:1fr 1fr;margin:0}
   .prod-item{border-right:1px solid var(--border)}
   .prod-item:nth-child(even){border-right:none}
+  .prod-name{font-size:12px!important}
+  .q-num{width:28px!important}
   .filter-bar{padding:10px 0 4px}
   .rec-card,.yr-card,.yr-cmp-card{margin:6px 0}
   .cmp-tabs{margin:10px 0 0}
@@ -104,14 +106,14 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .prod-item{display:flex;align-items:center;padding:10px 12px;background:var(--white);gap:8px;border-bottom:1px solid var(--border)}
 .prod-item:last-child{border-bottom:none}
 .prod-item.sel{background:var(--g5)}
-.prod-info{flex:1;min-width:0}
-.prod-name{font-size:13px;font-weight:600;line-height:1.4;white-space:normal;word-break:keep-all;overflow-wrap:break-word}
+.prod-name{font-size:13px;font-weight:600;line-height:1.4;word-break:break-word;overflow-wrap:anywhere}
+.prod-info{flex:1;min-width:0;padding-right:4px}
 .prod-price{font-size:11px;color:var(--text3);margin-top:2px}
 .prod-price.vp{color:var(--g2);font-weight:600}
-.qty-wrap{display:flex;align-items:center;flex-shrink:0}
-.q-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);line-height:1;font-family:inherit}
+.qty-wrap{display:flex;align-items:center;flex-shrink:0;gap:2px}
+.q-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2);line-height:1;font-family:inherit;flex-shrink:0}
 .q-btn.add{border-color:var(--g3);color:var(--g2)}
-.q-num{width:34px;text-align:center;border:none;font-size:15px;font-weight:700;background:transparent;color:var(--text);font-family:inherit;outline:none}
+.q-num{width:30px!important;text-align:center;border:none;font-size:14px;font-weight:700;background:transparent;color:var(--text);font-family:inherit;outline:none;padding:0}
 .price-row{display:flex;align-items:center;gap:4px;margin-top:5px}
 .price-in{width:72px;padding:4px 8px;border:1px solid var(--g3);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text);background:var(--white);outline:none}
 /* 合計バー */
@@ -780,7 +782,7 @@ function renderHistory(){
           <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
             <span class="tag ${isEv?'tag-ev':'tag-ok'}">${isEv?(rec.event?'🎪 '+rec.event:'🎪 イベント'):'🏔 奥多摩駅前'}</span>
             ${period&&period!=='通常' ? `<span class="tag tag-gw">${period}</span>` : ''}
-            ${rec.source==='register' ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
+            ${(rec.source==='register' || rec.cashTotal!=null) ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
           </div>
         </div>
         <div class="rec-total">${fmt(rec.total)}</div>
