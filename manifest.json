@@ -1,6 +1,6 @@
 {
   "name": "わさび食堂 売上管理",
-  "short_name": "わさび食堂",
+  "short_name": "売上管理",
   "description": "わさび食堂の売上管理システム",
   "start_url": "/wasabi-shokudo/",
   "scope": "/wasabi-shokudo/",
