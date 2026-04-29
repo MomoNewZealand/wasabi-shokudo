@@ -825,8 +825,17 @@ function getMergedSummary() {
 }
 
 function getMergedOrders() {
-  // GAS取得済みなら全端末分を使う
-  if (gasOrders.length > 0) return [...gasOrders].reverse();
+  // GAS取得済みなら全端末分を使うが、items はローカルで補完する
+  if (gasOrders.length > 0) {
+    // ローカルのordersをno→itemsのマップに
+    const localMap = {};
+    todayData.orders.forEach(o => { if (o.no) localMap[o.no] = o.items; });
+    return [...gasOrders].reverse().map(o => ({
+      ...o,
+      // GASがitemsを返していればそれを使い、なければローカルから補完
+      items: (o.items && o.items.length > 0) ? o.items : (localMap[o.no] || null)
+    }));
+  }
   return [...todayData.orders].reverse();
 }
 
