@@ -183,7 +183,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 /* ══════════════════ MODALS ══════════════════ */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-end;justify-content:center}
 @media(min-width:480px){.overlay{align-items:center}}
-.modal{background:var(--white);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;max-width:420px;max-height:90dvh;overflow:hidden;box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
+.modal{background:var(--white);border-radius:var(--radius-xl) var(--radius-xl) 0 0;width:100%;max-width:420px;max-height:85dvh;overflow:hidden;box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
 @media(min-width:480px){.modal{border-radius:var(--radius-xl)}}
 
 /* 生わさびモーダル */
@@ -212,29 +212,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .cm-ico{font-size:36px;margin-bottom:4px}
 .cm-title{font-size:17px;font-weight:900;color:#fff}
 .cm-subtitle{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px}
-.cm-body{padding:16px;overflow-y:auto;flex:1;min-height:0}
-.cm-total-box{text-align:center;padding:14px 0 12px;border-bottom:1px solid var(--border)}
+.cm-body{padding:10px 14px;overflow-y:auto;flex:1;min-height:0}
+.cm-total-box{text-align:center;padding:8px 0 8px;border-bottom:1px solid var(--border)}
 .cm-total-lbl{font-size:10px;color:var(--text3);letter-spacing:.08em;font-weight:600}
 .cm-total-val{font-size:28px;font-weight:900;color:var(--amber-d);margin-top:4px}
 
 /* お釣り計算（現金時のみ） */
-.change-area{padding:12px 0}
+.change-area{padding:6px 0}
 .change-lbl{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px}
-.received-input-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.received-input-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .received-label{font-size:12px;color:var(--text3);white-space:nowrap}
-.received-input{flex:1;padding:8px 12px;border:2px solid var(--amber);border-radius:var(--radius);font-size:16px;font-weight:800;text-align:right;font-family:inherit;color:var(--text);background:var(--amber-bg);outline:none}
-.quick-bills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.received-input{flex:1;padding:6px 10px;border:2px solid var(--amber);border-radius:var(--radius);font-size:16px;font-weight:800;text-align:right;font-family:inherit;color:var(--text);background:var(--amber-bg);outline:none}
+.quick-bills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
 .bill-btn{padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);transition:background .1s}
 .bill-btn:active{background:var(--amber-bg);border-color:var(--amber)}
-.change-result{background:var(--green-bg);border:1.5px solid var(--green);border-radius:var(--radius-lg);padding:12px;text-align:center;display:none}
+.change-result{background:var(--green-bg);border:1.5px solid var(--green);border-radius:var(--radius-lg);padding:8px;text-align:center;display:none}
 .change-result.show{display:block}
 .change-result-lbl{font-size:11px;color:var(--green);font-weight:600}
 .change-result-val{font-size:22px;font-weight:900;color:var(--green);margin-top:3px}
 
-.cm-items-list{border-top:1px solid var(--border);padding-top:10px;margin-top:4px}
+.cm-items-list{border-top:1px solid var(--border);padding-top:6px;margin-top:2px}
 .cm-item-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:var(--text2)}
 .cm-item-disc{color:var(--green)}
-.cm-next-btn{width:100%;padding:14px;border:none;background:var(--amber);color:#fff;border-radius:var(--radius-lg);font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px}
+.cm-next-btn{width:100%;padding:12px;border:none;background:var(--amber);color:#fff;border-radius:var(--radius-lg);font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:8px}
 
 /* 同期中スピナー */
 .sync-spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:4px;vertical-align:middle}
