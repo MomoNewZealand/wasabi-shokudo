@@ -177,7 +177,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .hist-pay-badge.qr{background:var(--blue-bg);color:var(--blue)}
 .hist-total{font-size:16px;font-weight:900;color:var(--amber-d)}
 .hist-local-badge{font-size:9px;font-weight:700;color:#fff;background:var(--amber-d);padding:2px 6px;border-radius:20px;margin-left:2px;vertical-align:middle;white-space:nowrap}
-.hist-items{font-size:11px;color:var(--text3);line-height:1.7}
+.hist-items{font-size:11px;color:var(--text2);line-height:1.6;margin-top:3px;padding-top:4px;border-top:1px dashed var(--border)}
 .hist-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:8px;color:var(--text3);padding:40px 0}
 
 /* ══════════════════ MODALS ══════════════════ */
@@ -220,9 +220,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 /* お釣り計算（現金時のみ） */
 .change-area{padding:6px 0}
 .change-lbl{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px}
-.received-input-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.received-label{font-size:12px;color:var(--text3);white-space:nowrap}
-.received-input{flex:1;padding:6px 10px;border:2px solid var(--amber);border-radius:var(--radius);font-size:16px;font-weight:800;text-align:right;font-family:inherit;color:var(--text);background:var(--amber-bg);outline:none}
+.received-input-row{display:block;margin-bottom:6px}
+.received-label{font-size:11px;color:var(--text3);display:block;margin-bottom:4px;font-weight:600}
+.received-input{width:100%;box-sizing:border-box;padding:8px 12px;border:2px solid var(--amber);border-radius:var(--radius);font-size:18px;font-weight:800;text-align:right;font-family:inherit;color:var(--text);background:var(--amber-bg);outline:none}
 .quick-bills{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
 .bill-btn{padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);transition:background .1s}
 .bill-btn:active{background:var(--amber-bg);border-color:var(--amber)}
