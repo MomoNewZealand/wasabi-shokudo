@@ -108,10 +108,10 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .prod-name{font-size:13px;font-weight:600;line-height:1.4;white-space:normal;word-break:break-all}
 .prod-price{font-size:11px;color:var(--text3);margin-top:2px}
 .prod-price.vp{color:var(--g2);font-weight:600}
-.qty-wrap{display:flex;align-items:center;flex-shrink:0}
+.qty-wrap{display:flex;align-items:center;flex-shrink:0;gap:2px}
 .q-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);line-height:1;font-family:inherit}
 .q-btn.add{border-color:var(--g3);color:var(--g2)}
-.q-num{width:34px;text-align:center;border:none;font-size:15px;font-weight:700;background:transparent;color:var(--text);font-family:inherit;outline:none}
+.q-num{width:34px!important;text-align:center!important;border:none!important;font-size:15px!important;font-weight:700!important;background:transparent!important;color:var(--text)!important;font-family:inherit!important;outline:none!important;padding:0!important}
 .price-row{display:flex;align-items:center;gap:4px;margin-top:5px}
 .price-in{width:72px;padding:4px 8px;border:1px solid var(--g3);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text);background:var(--white);outline:none}
 /* 合計バー */
@@ -149,6 +149,14 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .act-row{display:flex;gap:8px;padding-top:9px}
 .act-btn{flex:1;padding:9px;border-radius:var(--radius);border:1px solid var(--border);background:var(--white);font-size:12px;cursor:pointer;color:var(--text2);font-family:inherit}
 .act-btn.del{color:#DC2626;border-color:#FECACA}
+.tag-reg{background:#EFF6FF;color:#1D4ED8}
+.pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px 0 4px}
+.pay-cell{text-align:center;background:var(--bg);border-radius:var(--radius);padding:6px 4px}
+.pay-lbl{font-size:9px;color:var(--text3);font-weight:600}
+.pay-val{font-size:12px;font-weight:700;margin-top:2px}
+.pay-val.cash{color:#059669}
+.pay-val.paypay{color:#E00025}
+.pay-val.qr{color:#2563EB}
 .empty{text-align:center;padding:48px 16px;color:var(--text3)}
 .empty-ico{font-size:44px;margin-bottom:12px}
 /* 集計 */
@@ -767,8 +775,9 @@ function renderHistory(){
         <div>
           <div class="rec-date">${fmtD(rec.date)} ${getWI(rec.weather)}</div>
           <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
-            <span class="tag ${isEv?'tag-ev':'tag-ok'}">${isEv?(rec.event?'🎪 '+rec.event:'🎪 イベント'):'🏔 奥多摩駅前'}</span>
+            <span class="tag ${isEv?'tag-ev':'tag-ok'}">${isEv?(rec.event?'🎪 '+rec.event:'🎪 イベント'):'🏔 '+rec.loc}</span>
             ${period&&period!=='通常' ? `<span class="tag tag-gw">${period}</span>` : ''}
+            ${rec.source==='register' ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
           </div>
         </div>
         <div class="rec-total">${fmt(rec.total)}</div>
@@ -778,6 +787,11 @@ function renderHistory(){
           <div class="det-cell"><div class="det-lbl">🍱 フード</div><div class="det-val">${fmt(rec.foodTotal||0)}</div></div>
           <div class="det-cell"><div class="det-lbl">☕ ドリンク</div><div class="det-val">${fmt(rec.drinkTotal||0)}</div></div>
           <div class="det-cell"><div class="det-lbl">🛍 物販</div><div class="det-val">${fmt(rec.merchTotal||0)}</div></div>
+        </div>` : ''}
+        ${(rec.cashTotal!=null||rec.paypayTotal!=null||rec.qrTotal!=null) ? `<div class="pay-grid">
+          <div class="pay-cell"><div class="pay-lbl">💴 現金</div><div class="pay-val cash">${fmt(rec.cashTotal||0)}</div></div>
+          <div class="pay-cell"><div class="pay-lbl">🔴 PayPay</div><div class="pay-val paypay">${fmt(rec.paypayTotal||0)}</div></div>
+          <div class="pay-cell"><div class="pay-lbl">💳 QR/Card</div><div class="pay-val qr">${fmt(rec.qrTotal||0)}</div></div>
         </div>` : ''}
         ${sold.length>0 ? `<div class="chips">${sold.map(p => {
           const it = rec.items[p.id];
