@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="わさび食堂">
-<link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23D97706'/><path d='M7 17 Q7 25 16 25 Q25 25 25 17 Z' fill='white'/><rect x='11' y='25' width='10' height='2.5' rx='1.2' fill='white'/><path d='M12 13 Q13.5 10 12 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M16 12 Q17.5 9 16 6' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M20 13 Q21.5 10 20 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23D97706'/><path d='M36 96 Q36 142 90 142 Q144 142 144 96 Z' fill='white'/><rect x='62' y='142' width='56' height='14' rx='7' fill='white'/><path d='M68 72 Q76 56 68 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M90 66 Q98 50 90 34' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M112 72 Q120 56 112 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
 <title>わさび食堂 売上管理</title>
@@ -56,8 +55,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
   .prod-list{display:grid;grid-template-columns:1fr 1fr;margin:0}
   .prod-item{border-right:1px solid var(--border)}
   .prod-item:nth-child(even){border-right:none}
-  .prod-name{font-size:12px!important}
-  .q-num{width:28px!important;padding:0!important;background:transparent!important;border:none!important;box-shadow:none!important;text-align:center!important;color:var(--text)!important}
   .filter-bar{padding:10px 0 4px}
   .rec-card,.yr-card,.yr-cmp-card{margin:6px 0}
   .cmp-tabs{margin:10px 0 0}
@@ -107,14 +104,14 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .prod-item{display:flex;align-items:center;padding:10px 12px;background:var(--white);gap:8px;border-bottom:1px solid var(--border)}
 .prod-item:last-child{border-bottom:none}
 .prod-item.sel{background:var(--g5)}
-.prod-name{font-size:13px;font-weight:600;line-height:1.4;word-break:break-word;overflow-wrap:anywhere}
-.prod-info{flex:1;min-width:0;padding-right:4px}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-size:13px;font-weight:600;line-height:1.4;white-space:normal;word-break:break-all}
 .prod-price{font-size:11px;color:var(--text3);margin-top:2px}
 .prod-price.vp{color:var(--g2);font-weight:600}
-.qty-wrap{display:flex;align-items:center;flex-shrink:0;gap:2px}
-.q-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2);line-height:1;font-family:inherit;flex-shrink:0}
+.qty-wrap{display:flex;align-items:center;flex-shrink:0}
+.q-btn{width:28px;height:28px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text2);line-height:1;font-family:inherit}
 .q-btn.add{border-color:var(--g3);color:var(--g2)}
-.q-num{width:30px!important;text-align:center!important;border:none!important;font-size:14px!important;font-weight:700!important;background:transparent!important;color:var(--text)!important;font-family:inherit!important;outline:none!important;padding:0!important;border-radius:0!important;box-shadow:none!important}
+.q-num{width:34px;text-align:center;border:none;font-size:15px;font-weight:700;background:transparent;color:var(--text);font-family:inherit;outline:none}
 .price-row{display:flex;align-items:center;gap:4px;margin-top:5px}
 .price-in{width:72px;padding:4px 8px;border:1px solid var(--g3);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text);background:var(--white);outline:none}
 /* 合計バー */
@@ -141,14 +138,6 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .tag-ok{background:var(--g5);color:var(--g1)}
 .tag-ev{background:#FEF3C7;color:#92400E}
 .tag-gw{background:#FEE2E2;color:#991B1B}
-.tag-reg{background:#EFF6FF;color:#1D4ED8}
-.pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px 0 4px}
-.pay-cell{text-align:center;background:var(--bg);border-radius:var(--radius);padding:6px 4px}
-.pay-lbl{font-size:9px;color:var(--text3);font-weight:600}
-.pay-val{font-size:12px;font-weight:700;margin-top:2px}
-.pay-val.cash{color:#059669}
-.pay-val.paypay{color:#E00025}
-.pay-val.qr{color:#2563EB}
 .rec-total{margin-left:auto;font-size:15px;font-weight:700;color:var(--g1)}
 .rec-body{padding:0 14px 13px;border-top:1px solid var(--border)}
 .det-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:11px 0 7px}
@@ -282,49 +271,39 @@ const STORAGE_KEY = 'wasabi_v3';
 // ══════════════════════════════════════════
 const PRODS = {
   フード: [
-    {id:'wasabi_don',  name:'わさび丼',             price:900,  div:'shokudo'},
-    {id:'mini_don',    name:'ミニわさび丼',           price:700,  div:'shokudo'},
-    {id:'pork_don',    name:'わさびポーク丼',          price:1100, div:'shokudo'},
-    {id:'inari',       name:'わさびいなり',            price:500,  div:'shokudo'},
-    {id:'onigiri',     name:'わさびおにぎり',           price:500,  div:'shokudo'},
-    {id:'sausage_dog', name:'わさびソーセージドッグ',    price:1200, div:'shokudo'},
-    {id:'sausage',     name:'わさびソーセージ',         price:1000, div:'shokudo'},
-    {id:'roast',       name:'おつまみロース',           price:1000, div:'shokudo'},
+    {id:'wasabi_don',  name:'わさび丼',             price:900},
+    {id:'mini_don',    name:'ミニわさび丼',           price:700},
+    {id:'pork_don',    name:'わさびポーク丼',          price:1100},
+    {id:'inari',       name:'わさびいなり',            price:500},
+    {id:'onigiri',     name:'わさびおにぎり',           price:500},
+    {id:'sausage_dog', name:'わさびソーセージドッグ',    price:1200},
+    {id:'sausage',     name:'わさびソーセージ',         price:1000},
+    {id:'roast',       name:'おつまみロース',           price:1000},
   ],
   ドリンク: [
-    {id:'wasabi_coffee', name:'わさびコーヒー',         price:750, div:'coffee'},
-    {id:'orig_blend',    name:'オリジナルブレンド',      price:550, div:'coffee'},
-    {id:'decaf',         name:'Decaf(Coffee Supreme)',  price:550, div:'coffee'},
-    {id:'passage',       name:'Passage Coffee',         price:650, div:'coffee'},
-    {id:'peach_soda',    name:'わさびピーチソーダ',      price:600, div:'coffee'},
-    {id:'yuzu',          name:'ゆず茶',                 price:500, div:'coffee'},
-    {id:'drip1',         name:'ドリップバッグ×1',       price:200, div:'coffee'},
-    {id:'drip3',         name:'ドリップバッグ×3',       price:500, div:'coffee'},
+    {id:'wasabi_coffee', name:'わさびコーヒー',         price:750},
+    {id:'orig_blend',    name:'オリジナルブレンド',      price:550},
+    {id:'decaf',         name:'Decaf(Coffee Supreme)',  price:550},
+    {id:'passage',       name:'Passage Coffee',         price:650},
+    {id:'peach_soda',    name:'わさびピーチソーダ',      price:600},
+    {id:'yuzu',          name:'ゆず茶',                 price:500},
+    {id:'drip1',         name:'ドリップバッグ×1',       price:200},
+    {id:'drip3',         name:'ドリップバッグ×3',       price:500},
   ],
   物販: [
-    {id:'fresh_wasabi', name:'生わさび',                price:null, div:'buppan'},
-    {id:'cookie_s',     name:'わさびクッキー（小）',     price:350,  div:'coffee'},
-    {id:'cookie_l',     name:'わさびクッキー（大）',     price:550,  div:'coffee'},
-    {id:'snowball',     name:'スノーボール',             price:400,  div:'coffee'},
-    {id:'wappen',       name:'わさびワッペン',           price:660,  div:'buppan'},
-    {id:'mask',         name:'フェイスマスク',           price:660,  div:'buppan'},
-    {id:'wasabee',      name:'わさぴー',                price:660,  div:'buppan'},
-    {id:'bag',          name:'手さげ袋',                price:10,   div:'buppan'},
+    {id:'fresh_wasabi', name:'生わさび',                price:null},
+    {id:'cookie_s',     name:'わさびクッキー（小）',     price:350},
+    {id:'cookie_l',     name:'わさびクッキー（大）',     price:550},
+    {id:'snowball',     name:'スノーボール',             price:400},
+    {id:'wappen',       name:'わさびワッペン',           price:660},
+    {id:'mask',         name:'フェイスマスク',           price:660},
+    {id:'wasabee',      name:'わさぴー',                price:660},
+    {id:'bag',          name:'手さげ袋',                price:10},
   ]
 };
 const ALL = Object.values(PRODS).flat();
 const FOOD_IDS  = new Set(PRODS.フード.map(p => p.id));
 const DRINK_IDS = new Set(PRODS.ドリンク.map(p => p.id));
-// 部門別IDセット
-const SHOKUDO_IDS = new Set(ALL.filter(p=>p.div==='shokudo').map(p=>p.id));
-const COFFEE_IDS  = new Set(ALL.filter(p=>p.div==='coffee').map(p=>p.id));
-const BUPPAN_IDS  = new Set(ALL.filter(p=>p.div==='buppan').map(p=>p.id));
-// 部門ラベル定義
-const DIV_LABELS = {
-  shokudo: {label:'わさび食堂', icon:'🍚'},
-  coffee:  {label:'WASABI COFFEE', icon:'☕'},
-  buppan:  {label:'物販', icon:'🛍'},
-};
 
 // ══════════════════════════════════════════
 //  過去データ（2021〜2025）
@@ -522,29 +501,44 @@ async function syncToSheets(recs){
 }
 async function syncAll(){ await syncToSheets(records); }
 
-// スプレッドシートからデータを読み込んでlocalStorageを上書き
-async function syncFromSheets(){
-  const btn = document.querySelector('.sync-banner-btn');
-  if(btn){ btn.textContent = '読込中…'; btn.disabled = true; }
+// スプレッドシートからデータを読み込む
+async function syncFromSheets(fullLoad = false){
+  const btns = document.querySelectorAll('.sync-banner-btn');
+  btns.forEach(b => { b.textContent = '読込中…'; b.disabled = true; });
   try {
-    const res  = await fetch(GAS_URL + '?action=getData');
+    // 通常読込は直近3ヶ月のみ、全件読込はfromなし
+    const from = fullLoad ? '' : (() => {
+      const d = new Date(); d.setMonth(d.getMonth() - 3);
+      return d.toISOString().split('T')[0];
+    })();
+    const url = GAS_URL + '?action=getData' + (from ? '&from=' + from : '');
+    const res  = await fetch(url);
     const json = await res.json();
     if(!json.success) throw new Error(json.error || '取得失敗');
     if(!json.records || json.records.length === 0){
       showToast('⚠️ スプレッドシートにデータがありません');
       return;
     }
-    // ローカルのmanual/registerレコードとマージ（シートにないローカルデータは保持）
-    const sheetIds = new Set(json.records.map(r => r.id));
-    const localOnly = records.filter(r => !sheetIds.has(r.id) && r.source !== 'sheets');
-    records = [...json.records, ...localOnly].sort((a,b) => a.date.localeCompare(b.date));
+    if(fullLoad){
+      // 全件読込：シートの内容で完全上書き
+      records = json.records.sort((a,b) => a.date.localeCompare(b.date));
+      showToast(`✅ 全${json.records.length}件を読み込みました（完全上書き）`);
+    } else {
+      // 通常読込：直近3ヶ月をシートで上書き、それ以前はlocalStorageを保持
+      const older = records.filter(r => r.date < from);
+      records = [...older, ...json.records].sort((a,b) => a.date.localeCompare(b.date));
+      showToast(`✅ 直近3ヶ月 ${json.records.length}件を読み込みました`);
+    }
     saveToStorage();
-    showToast(`✅ ${json.records.length}件を読み込みました`);
     render();
   } catch(e) {
     showToast('⚠️ 読込に失敗しました: ' + e.message);
   } finally {
-    if(btn){ btn.textContent = 'シートから読込'; btn.disabled = false; }
+    btns.forEach(b => { b.disabled = false; });
+    const normal = document.querySelector('.sync-banner-btn');
+    const full   = document.querySelector('.sync-banner-btn-full');
+    if(normal) normal.textContent = '直近3ヶ月';
+    if(full)   full.textContent   = '全件読込';
   }
 }
 
@@ -552,24 +546,17 @@ async function syncFromSheets(){
 //  入力フォーム
 // ══════════════════════════════════════════
 function calcTotals(){
-  let shokudo=0, coffee=0, buppan=0;
+  let food=0, drink=0, merch=0;
   Object.entries(form.items).forEach(([id, item]) => {
     if(!item.qty) return;
     const p = ALL.find(x => x.id === id); if(!p) return;
     const price = p.price === null ? (item.price||0) : p.price;
     const sub = price * item.qty;
-    if(SHOKUDO_IDS.has(id))     shokudo += sub;
-    else if(COFFEE_IDS.has(id)) coffee  += sub;
-    else if(BUPPAN_IDS.has(id)) buppan  += sub;
+    if(FOOD_IDS.has(id)) food += sub;
+    else if(DRINK_IDS.has(id)) drink += sub;
+    else merch += sub;
   });
-  return {
-    shokudo, coffee, buppan,
-    total: shokudo + coffee + buppan,
-    // 後方互換（既存コードが参照する場合に備えて残す）
-    food: shokudo,
-    drink: coffee,
-    merch: buppan,
-  };
+  return {food, drink, merch, total: food+drink+merch};
 }
 
 function updateQty(id, d){
@@ -602,18 +589,14 @@ async function saveRecord(){
     event: form.loc === 'イベント' ? form.event : '',
     weather: form.weather||'',
     items: {...form.items},
-    shokudoTotal: tot.shokudo,
-    coffeeTotal:  tot.coffee,
-    buppanTotal:  tot.buppan,
-    // 後方互換フィールド
-    foodTotal: tot.shokudo, drinkTotal: tot.coffee, merchTotal: tot.buppan,
+    foodTotal: tot.food, drinkTotal: tot.drink, merchTotal: tot.merch,
     total: tot.total, memo: form.memo, source:'manual'
   };
   if(editId) records = records.map(r => r.id===editId ? rec : r);
   else records = [...records, rec];
   saveToStorage();
   showToast('✅ 保存しました');
-  syncToSheets([rec]);
+  syncToSheets([rec]); // 自動同期
   form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:''};
   editId = null; activeCat = 'フード';
   renderInput(); updateTotalBar();
@@ -644,7 +627,7 @@ function updateTotalBar(){
   if(view !== 'input' || t.total === 0){ bar.style.display = 'none'; return; }
   bar.style.display = 'flex';
   document.getElementById('breakdown').innerHTML =
-    `<span class="t-bit">🍚${fmt(t.shokudo)}</span><span class="t-bit">☕${fmt(t.coffee)}</span><span class="t-bit">🛍${fmt(t.buppan)}</span>`;
+    `<span class="t-bit">🍱${fmt(t.food)}</span><span class="t-bit">☕${fmt(t.drink)}</span><span class="t-bit">🛍${fmt(t.merch)}</span>`;
   document.getElementById('total-disp').textContent = fmt(t.total);
 }
 
@@ -667,8 +650,11 @@ function renderInput(){
   const tot = calcTotals();
   c.innerHTML = `
   <div class="sync-banner">
-    <div class="sync-banner-text">🔄 スプレッドシートのデータで上書き同期</div>
-    <button class="sync-banner-btn" onclick="syncFromSheets()">シートから読込</button>
+    <div class="sync-banner-text">🔄 スプレッドシートから読込</div>
+    <div style="display:flex;gap:6px">
+      <button class="sync-banner-btn" onclick="syncFromSheets(false)">直近3ヶ月</button>
+      <button class="sync-banner-btn sync-banner-btn-full" onclick="syncFromSheets(true)" style="background:var(--amber-dd,var(--g2));font-size:10px">全件読込</button>
+    </div>
   </div>
   <div class="card">
     <div class="card-lbl">出店情報</div>
@@ -783,28 +769,15 @@ function renderHistory(){
           <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
             <span class="tag ${isEv?'tag-ev':'tag-ok'}">${isEv?(rec.event?'🎪 '+rec.event:'🎪 イベント'):'🏔 奥多摩駅前'}</span>
             ${period&&period!=='通常' ? `<span class="tag tag-gw">${period}</span>` : ''}
-            ${(rec.source==='register') ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
           </div>
         </div>
         <div class="rec-total">${fmt(rec.total)}</div>
       </div>
       ${exp ? `<div class="rec-body">
-        ${(() => {
-          // 部門別合計：新フィールド優先、なければ旧フィールドにフォールバック
-          const s = rec.shokudoTotal ?? rec.foodTotal ?? 0;
-          const c = rec.coffeeTotal  ?? rec.drinkTotal ?? 0;
-          const b = rec.buppanTotal  ?? rec.merchTotal ?? 0;
-          if(!s && !c && !b) return '';
-          return `<div class="det-grid">
-            <div class="det-cell"><div class="det-lbl">🍚 わさび食堂</div><div class="det-val">${fmt(s)}</div></div>
-            <div class="det-cell"><div class="det-lbl">☕ COFFEE</div><div class="det-val">${fmt(c)}</div></div>
-            <div class="det-cell"><div class="det-lbl">🛍 物販</div><div class="det-val">${fmt(b)}</div></div>
-          </div>`;
-        })()}
-        ${(rec.cashTotal!=null||rec.paypayTotal!=null||rec.qrTotal!=null) ? `<div class="pay-grid">
-          <div class="pay-cell"><div class="pay-lbl">💴 現金</div><div class="pay-val cash">${fmt(rec.cashTotal||0)}</div></div>
-          <div class="pay-cell"><div class="pay-lbl">🔴 PayPay</div><div class="pay-val paypay">${fmt(rec.paypayTotal||0)}</div></div>
-          <div class="pay-cell"><div class="pay-lbl">💳 QR/Card</div><div class="pay-val qr">${fmt(rec.qrTotal||0)}</div></div>
+        ${(rec.foodTotal||rec.drinkTotal||rec.merchTotal) ? `<div class="det-grid">
+          <div class="det-cell"><div class="det-lbl">🍱 フード</div><div class="det-val">${fmt(rec.foodTotal||0)}</div></div>
+          <div class="det-cell"><div class="det-lbl">☕ ドリンク</div><div class="det-val">${fmt(rec.drinkTotal||0)}</div></div>
+          <div class="det-cell"><div class="det-lbl">🛍 物販</div><div class="det-val">${fmt(rec.merchTotal||0)}</div></div>
         </div>` : ''}
         ${sold.length>0 ? `<div class="chips">${sold.map(p => {
           const it = rec.items[p.id];
@@ -825,16 +798,10 @@ function setHY(y){ histYear = y; renderHistory(); }
 function toggleExp(id){ expandedId = expandedId===id ? null : id; renderHistory(); }
 
 function exportCSV(){
-  const h = ['日付','場所','イベント名','天気','合計','わさび食堂','WASABI COFFEE','物販','現金','PayPay','QR/Card','メモ', ...ALL.map(p=>p.name)];
+  const h = ['日付','場所','イベント名','天気','合計','フード','ドリンク','物販','メモ', ...ALL.map(p=>p.name)];
   const rows = records.filter(r=>r.total>0).map(r => [
     r.date, r.loc, r.event||'', r.weather||'', r.total,
-    r.shokudoTotal ?? r.foodTotal  ?? '',
-    r.coffeeTotal  ?? r.drinkTotal ?? '',
-    r.buppanTotal  ?? r.merchTotal ?? '',
-    r.cashTotal   != null ? r.cashTotal   : '',
-    r.paypayTotal != null ? r.paypayTotal : '',
-    r.qrTotal     != null ? r.qrTotal     : '',
-    r.memo||'',
+    r.foodTotal||'', r.drinkTotal||'', r.merchTotal||'', r.memo||'',
     ...ALL.map(p => { const it=r.items?.[p.id]; if(!it) return 0; return typeof it==='object'?it.qty:it; })
   ]);
   const csv = [h, ...rows].map(row => row.join(',')).join('\n');
@@ -1373,11 +1340,6 @@ function renderImport(){
     </div>
   </div>` : ''}
   <div style="height:16px"></div>`;
-}
-</script>
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
 </script>
 </body>
