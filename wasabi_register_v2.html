@@ -7,7 +7,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="わさび食堂 レジ">
-<link rel="manifest" href="manifest-register.json">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23D97706'/><rect x='6' y='10' width='20' height='14' rx='2.5' fill='white' opacity='.95'/><rect x='6' y='10' width='20' height='5' rx='2' fill='white'/><rect x='9' y='18' width='3' height='3' rx='.8' fill='%23D97706'/><rect x='14.5' y='18' width='3' height='3' rx='.8' fill='%23D97706'/><rect x='20' y='18' width='3' height='3' rx='.8' fill='%23D97706'/><rect x='13' y='6' width='6' height='5' rx='1' fill='white' opacity='.9'/><rect x='14.5' y='22' width='3' height='3' rx='.8' fill='%23B45309'/></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23D97706'/><rect x='30' y='58' width='120' height='82' rx='14' fill='white' opacity='.95'/><rect x='30' y='58' width='120' height='30' rx='14' fill='white'/><rect x='47' y='104' width='18' height='18' rx='5' fill='%23D97706'/><rect x='81' y='104' width='18' height='18' rx='5' fill='%23D97706'/><rect x='115' y='104' width='18' height='18' rx='5' fill='%23D97706'/><rect x='47' y='126' width='18' height='18' rx='5' fill='%23D97706' opacity='.4'/><rect x='81' y='126' width='18' height='18' rx='5' fill='%23B45309'/><rect x='115' y='126' width='18' height='18' rx='5' fill='%23D97706' opacity='.4'/><rect x='72' y='32' width='36' height='30' rx='6' fill='white' opacity='.9'/></svg>">
 <title>わさび食堂 レジ</title>
@@ -84,6 +83,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .prod-btn{border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--white);padding:9px 5px 8px;cursor:pointer;font-family:inherit;text-align:center;transition:transform .1s,background .1s,border-color .1s;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:68px;justify-content:center;user-select:none;-webkit-user-select:none}
 .prod-btn:active{transform:scale(.93);background:var(--amber-bg);border-color:var(--amber)}
 .prod-btn.in-cart{background:var(--amber-bg);border-color:var(--amber-l)}
+.prod-btn[data-div="shokudo"]{border-top:3px solid var(--amber)}
+.prod-btn[data-div="coffee"]{border-top:3px solid var(--blue)}
+.prod-btn[data-div="buppan"]{border-top:3px solid var(--green)}
 .prod-name{font-size:10.5px;font-weight:700;color:var(--text);line-height:1.3;word-break:break-all}
 .prod-price{font-size:10px;color:var(--text3);margin-top:1px}
 .prod-price.vari{color:var(--amber-d);font-weight:800}
@@ -210,7 +212,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .cm-ico{font-size:36px;margin-bottom:4px}
 .cm-title{font-size:17px;font-weight:900;color:#fff}
 .cm-subtitle{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px}
-.cm-body{padding:16px}
+.cm-body{padding:16px;overflow-y:auto;max-height:68vh}
 .cm-total-box{text-align:center;padding:14px 0 12px;border-bottom:1px solid var(--border)}
 .cm-total-lbl{font-size:10px;color:var(--text3);letter-spacing:.08em;font-weight:600}
 .cm-total-val{font-size:34px;font-weight:900;color:var(--amber-d);margin-top:4px}
@@ -220,7 +222,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .change-lbl{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px}
 .received-input-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .received-label{font-size:12px;color:var(--text3);white-space:nowrap}
-.received-input{flex:1;padding:10px 12px;border:2px solid var(--amber);border-radius:var(--radius);font-size:20px;font-weight:800;text-align:right;font-family:inherit;color:var(--text);background:var(--amber-bg);outline:none}
+.received-input{flex:1;padding:8px 12px;border:2px solid var(--amber);border-radius:var(--radius);font-size:16px;font-weight:800;text-align:right;font-family:inherit;color:var(--text);background:var(--amber-bg);outline:none}
 .quick-bills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
 .bill-btn{padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);transition:background .1s}
 .bill-btn:active{background:var(--amber-bg);border-color:var(--amber)}
@@ -470,7 +472,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
         </button>
         <button class="pay-btn qr" id="tab-pay-qr" onclick="openCheckout('qr')">
           <span class="pay-ico">💳</span>
-          <span class="pay-lbl">QR/カード</span>
+          <span class="pay-lbl">R Pay</span>
         </button>
       </div>
     </div>
@@ -764,6 +766,16 @@ function todayStr() {
 
 const fmt = n => '¥' + Math.round(n).toLocaleString();
 
+function fmtOrderTime(t) {
+  if (!t) return '';
+  if (typeof t === 'string' && t.length <= 5) return t;
+  try {
+    const d = new Date(t);
+    if (!isNaN(d)) return d.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'});
+  } catch(e) {}
+  return String(t).replace(/.*?(\d{2}:\d{2}).*/, '$1') || String(t);
+}
+
 // ══════════════════════════════════════════
 //  GAS日次集計取得（複数端末対応）
 // ══════════════════════════════════════════
@@ -996,7 +1008,7 @@ function renderGrid() {
   g.innerHTML = prods.map(p => {
     const qty = cart.find(c => c.id === p.id)?.qty || 0;
     const priceLabel = p.price === null ? '価格変動' : fmt(p.price);
-    return `<button class="prod-btn${qty > 0 ? ' in-cart' : ''}"
+    return `<button class="prod-btn${qty > 0 ? ' in-cart' : ''}" data-div="${p.div || 'shokudo'}"
       onclick="addItem('${p.id}')" ontouchstart="">
       ${qty > 0 ? `<div class="cart-badge">${qty}</div>` : ''}
       <div class="prod-name">${p.name}</div>
@@ -1167,7 +1179,7 @@ function renderSpCart() {
           <span class="pay-ico">🔴</span><span class="pay-lbl">PayPay</span>
         </button>
         <button class="pay-btn qr" ${!hasCart?'disabled':''} onclick="openCheckout('qr')">
-          <span class="pay-ico">💳</span><span class="pay-lbl">QR/カード</span>
+          <span class="pay-ico">💳</span><span class="pay-lbl">R Pay</span>
         </button>
       </div>
     </div>`;
@@ -1183,7 +1195,7 @@ function renderDailySummary() {
     <div class="daily-item"><div class="daily-lbl">本日合計${isGas?'🔄':''}</div><div class="daily-val">${fmt(s.total)}</div></div>
     <div class="daily-item"><div class="daily-lbl">💴 現金</div><div class="daily-val">${fmt(s.cash)}</div></div>
     <div class="daily-item"><div class="daily-lbl">🔴 PayPay</div><div class="daily-val">${fmt(s.paypay)}</div></div>
-    <div class="daily-item"><div class="daily-lbl">💳 QR/Card</div><div class="daily-val">${fmt(s.qr)}</div></div>
+    <div class="daily-item"><div class="daily-lbl">💳 R Pay</div><div class="daily-val">${fmt(s.qr)}</div></div>
     <div class="daily-item"><div class="daily-lbl">件数</div><div class="daily-val">${s.count}件</div></div>`;
   const g = document.getElementById('tab-daily-grid');
   if (g) g.innerHTML = html;
@@ -1201,8 +1213,8 @@ function makeHistHtml(miniMode) {
     <div class="hist-card">
       <div class="hist-card-top">
         <span class="hist-no">#${o.no}</span>
-        <span class="hist-time">${o.time}${o.isLocal ? '<span class="hist-local-badge">地元割</span>' : ''}</span>
-        <span class="hist-pay-badge ${o.payment}">${o.payment==='cash'?'💴 現金':o.payment==='paypay'?'🔴 PayPay':'💳 QR/Card'}</span>
+        <span class="hist-time">${fmtOrderTime(o.time)}${o.isLocal ? '<span class="hist-local-badge">地元割</span>' : ''}</span>
+        <span class="hist-pay-badge ${o.payment}">${o.payment==='cash'?'💴 現金':o.payment==='paypay'?'🔴 PayPay':'💳 R Pay'}</span>
         <span class="hist-total">${fmt(o.total)}</span>
       </div>
       ${o.items ? `<div class="hist-items">${o.items.map(i=>`${i.name}×${i.qty}`).join('　')}</div>` : ''}
@@ -1337,8 +1349,8 @@ function openCheckout(payment) {
   const head = document.getElementById('cm-head');
   head.className = `cm-head ${payment}`;
   const ico   = payment==='cash' ? '💴' : payment==='paypay' ? '🔴' : '💳';
-  const title = payment==='cash' ? '現金 会計' : payment==='paypay' ? 'PayPay 会計' : 'QR / カード 会計';
-  const sub   = payment==='cash' ? '現金でのお支払い' : payment==='paypay' ? 'PayPayでのお支払い' : 'QRコード・クレジットカード';
+  const title = payment==='cash' ? '現金 会計' : payment==='paypay' ? 'PayPay 会計' : 'R Pay 会計';
+  const sub   = payment==='cash' ? '現金でのお支払い' : payment==='paypay' ? 'PayPayでのお支払い' : 'R Payでのお支払い';
   setTxt('cm-ico', ico);
   setTxt('cm-title', title);
   setTxt('cm-subtitle', sub);
@@ -1531,7 +1543,7 @@ function renderSendSummary() {
       <div class="send-sum-val">${fmt(paypay)}</div>
     </div>
     <div class="send-sum-item">
-      <div class="send-sum-lbl">💳 QR/Card</div>
+      <div class="send-sum-lbl">💳 R Pay</div>
       <div class="send-sum-val">${fmt(qr)}</div>
     </div>`;
 }
@@ -1969,11 +1981,6 @@ window.addEventListener('resize', () => {
 });
 
 init();
-</script>
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw-register.js').catch(()=>{});
-}
 </script>
 </body>
 </html>
