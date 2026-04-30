@@ -499,6 +499,22 @@ async function syncToSheets(recs){
     icon.textContent = '✅';
     status.textContent = `${recs.length}件を送信しました`;
     showToast(`✅ スプレッドシートに${recs.length}件を同期しました`);
+
+    // 財務シートへ現金売上を反映
+    for (const rec of recs) {
+      if ((rec.cashTotal || 0) > 0) {
+        fetch(GAS_URL, {
+          method: 'POST', mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'writeToFinance',
+            date:      rec.date,
+            loc:       rec.loc,
+            cashTotal: rec.cashTotal
+          })
+        }).catch(() => {});
+      }
+    }
   } catch(e) {
     icon.textContent = '☁️';
     status.textContent = '同期に失敗しました';
