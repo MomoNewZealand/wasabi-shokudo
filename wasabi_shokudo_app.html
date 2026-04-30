@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#D97706">
+<meta name="theme-color" content="#1D4ED8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="わさび食堂">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23D97706'/><path d='M7 17 Q7 25 16 25 Q25 25 25 17 Z' fill='white'/><rect x='11' y='25' width='10' height='2.5' rx='1.2' fill='white'/><path d='M12 13 Q13.5 10 12 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M16 12 Q17.5 9 16 6' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M20 13 Q21.5 10 20 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23D97706'/><path d='M36 96 Q36 142 90 142 Q144 142 144 96 Z' fill='white'/><rect x='62' y='142' width='56' height='14' rx='7' fill='white'/><path d='M68 72 Q76 56 68 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M90 66 Q98 50 90 34' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M112 72 Q120 56 112 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
-<title>わさび食堂 売上管理</title>
+<meta name="apple-mobile-web-app-title" content="TOKYO WASABI">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231D4ED8'/><path d='M7 17 Q7 25 16 25 Q25 25 25 17 Z' fill='white'/><rect x='11' y='25' width='10' height='2.5' rx='1.2' fill='white'/><path d='M12 13 Q13.5 10 12 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M16 12 Q17.5 9 16 6' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/><path d='M20 13 Q21.5 10 20 7' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%231D4ED8'/><path d='M36 96 Q36 142 90 142 Q144 142 144 96 Z' fill='white'/><rect x='62' y='142' width='56' height='14' rx='7' fill='white'/><path d='M68 72 Q76 56 68 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M90 66 Q98 50 90 34' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/><path d='M112 72 Q120 56 112 40' stroke='white' stroke-width='10' fill='none' stroke-linecap='round' opacity='.85'/></svg>">
+<title>TOKYO WASABI 売上管理</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --g1:#D97706;--g2:#B45309;--g3:#F59E0B;--g4:#FDE68A;--g5:#FFFBEB;
-  --amber:#92400E;--amber-bg:#FEF3C7;
-  --bg:#FEFDF5;--white:#FFFFFF;--card:#FFFFFF;
-  --text:#1C1410;--text2:#44332A;--text3:#92816A;
-  --border:#EDE8D8;--border2:#D4C89A;
+  --g1:#1D4ED8;--g2:#1E40AF;--g3:#3B82F6;--g4:#BFDBFE;--g5:#EFF6FF;
+  --amber:#1E3A8A;--amber-bg:#DBEAFE;
+  --bg:#F8FAFF;--white:#FFFFFF;--card:#FFFFFF;
+  --text:#0F172A;--text2:#1E293B;--text3:#64748B;
+  --border:#E2E8F0;--border2:#BFDBFE;
   --radius:10px;--radius-lg:14px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
@@ -89,11 +89,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .field:last-child{margin-bottom:0}
 .field-lbl{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
 input[type=date],input[type=text],input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--white);color:var(--text);outline:none;-webkit-appearance:none}
-input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83,9,.15)}
-/* 場所トグル */
-.loc-wrap{display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px}
-.loc-btn{flex:1;border:none;cursor:pointer;padding:9px 4px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;background:none;color:var(--text3);transition:all .15s}
-.loc-btn.on{background:var(--g1);color:#fff;box-shadow:0 2px 8px rgba(180,83,9,.25)}
+input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,175,.15)}
+/* 場所・支払トグル */
+.loc-wrap{display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;flex-wrap:wrap}
+.loc-btn{flex:1;border:none;cursor:pointer;padding:9px 6px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;background:none;color:var(--text3);transition:all .15s;white-space:nowrap;min-width:0}
+.loc-btn.on{background:var(--g1);color:#fff;box-shadow:0 2px 8px rgba(30,64,175,.25)}
 /* カテゴリタブ */
 .cat-row{display:flex;gap:8px;padding:0 12px 6px}
 .cat-btn{flex:1;border:none;cursor:pointer;padding:9px 4px;border-radius:var(--radius);font-size:12px;font-weight:600;font-family:inherit;background:var(--white);color:var(--text3);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:2px}
@@ -120,7 +120,7 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .t-bit{font-size:11px;color:rgba(255,255,255,.75)}
 .t-total{font-size:21px;font-weight:700;color:#fff}
 /* 保存ボタン */
-.save-btn{width:calc(100% - 24px);margin:10px 12px 0;padding:15px;background:var(--g2);color:#fff;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(180,83,9,.3)}
+.save-btn{width:calc(100% - 24px);margin:10px 12px 0;padding:15px;background:var(--g2);color:#fff;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(30,64,175,.3)}
 .save-btn:disabled{opacity:.4;cursor:default;box-shadow:none}
 /* トースト */
 .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--g2);color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeup .3s ease}
@@ -138,6 +138,10 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .tag-ok{background:var(--g5);color:var(--g1)}
 .tag-ev{background:#FEF3C7;color:#92400E}
 .tag-gw{background:#FEE2E2;color:#991B1B}
+.tag-ex{background:#DCFCE7;color:#166534}
+.tag-bbq{background:#FEE2E2;color:#991B1B}
+.tag-shot{background:#F3E8FF;color:#6B21A8}
+.tag-reg{background:#EFF6FF;color:#1D4ED8}
 .rec-total{margin-left:auto;font-size:15px;font-weight:700;color:var(--g1)}
 .rec-body{padding:0 14px 13px;border-top:1px solid var(--border)}
 .det-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:11px 0 7px}
@@ -149,7 +153,6 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .act-row{display:flex;gap:8px;padding-top:9px}
 .act-btn{flex:1;padding:9px;border-radius:var(--radius);border:1px solid var(--border);background:var(--white);font-size:12px;cursor:pointer;color:var(--text2);font-family:inherit}
 .act-btn.del{color:#DC2626;border-color:#FECACA}
-.tag-reg{background:#EFF6FF;color:#1D4ED8}
 .pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:8px 0 4px}
 .pay-cell{text-align:center;background:var(--bg);border-radius:var(--radius);padding:6px 4px}
 .pay-lbl{font-size:9px;color:var(--text3);font-weight:600}
@@ -159,6 +162,11 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .pay-val.qr{color:#2563EB}
 .empty{text-align:center;padding:48px 16px;color:var(--text3)}
 .empty-ico{font-size:44px;margin-bottom:12px}
+/* 簡易入力モード */
+.simple-input-card{background:var(--g5);border:2px solid var(--g4);border-radius:var(--radius-lg);margin:0 12px;padding:20px}
+.simple-input-lbl{font-size:12px;font-weight:700;color:var(--g2);margin-bottom:8px}
+.simple-amount-input{width:100%;padding:14px 16px;border:2px solid var(--g3);border-radius:var(--radius-lg);font-size:24px;font-weight:700;text-align:right;font-family:inherit;color:var(--text);background:var(--white);outline:none}
+.simple-amount-input:focus{border-color:var(--g1);box-shadow:0 0 0 3px rgba(30,64,175,.15)}
 /* 集計 */
 .an-wrap{padding:0 12px}
 .an-ttl{font-size:13px;font-weight:600;color:var(--text2);padding:16px 0 8px}
@@ -206,10 +214,6 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .drop-zone-title{font-size:13px;font-weight:600;color:var(--text2)}
 .drop-zone-sub{font-size:11px;color:var(--text3);margin-top:3px}
 .drop-zone.loaded .drop-zone-title{color:var(--g1)}
-.import-step{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:12px;color:var(--text3)}
-.import-step-num{width:22px;height:22px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.import-step-num.active{background:var(--g2);color:#fff}
-.import-step-num.done{background:var(--g1);color:#fff}
 .preview-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:8px}
 .preview-row.new-rec{background:#F0FBF5}
 .preview-row.dup-rec{background:var(--bg);opacity:.6}
@@ -218,7 +222,7 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 .badge-dup{background:var(--border);color:var(--text3)}
 .import-parse-btn{width:100%;padding:13px;background:var(--g2);color:#fff;border:none;border-radius:var(--radius-lg);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px}
 .import-parse-btn:disabled{opacity:.4;cursor:default}
-.import-confirm-btn{width:calc(100% - 24px);margin:10px 12px;padding:14px;background:var(--g1);color:#fff;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(180,83,9,.25)}
+.import-confirm-btn{width:calc(100% - 24px);margin:10px 12px;padding:14px;background:var(--g1);color:#fff;border:none;border-radius:var(--radius-lg);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(30,64,175,.25)}
 .import-confirm-btn:disabled{opacity:.4;cursor:default;box-shadow:none}
 /* 同期バナー */
 .sync-banner{margin:10px 12px 0;background:var(--g5);border:1px solid var(--g3);border-radius:var(--radius-lg);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -230,12 +234,12 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 <div class="app">
   <div class="hdr">
     <div class="hdr-left">
-      <div class="hdr-title">わさび食堂 売上管理</div>
+      <div class="hdr-title">🌿 TOKYO WASABI 売上管理</div>
       <div class="hdr-sub">Sales Management System</div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
       <button class="sync-btn" id="sync-btn" onclick="syncAll()">
-        <span id="sync-icon">☁️</span> スプレッドシートへ同期
+        <span id="sync-icon">☁️</span> 直近3ヶ月を同期
       </button>
       <div class="sync-status" id="sync-status"></div>
     </div>
@@ -273,6 +277,18 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(180,83
 // ══════════════════════════════════════════
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oejikCkHTNVG2nDSdO11ZQRZQMaxXP-YYwS2GbJW-Yxjgy7w/exec';
 const STORAGE_KEY = 'wasabi_v3';
+
+// 簡易入力モードの部門（商品明細なし・金額直接入力）
+const SIMPLE_LOCS = ['わさび体験','BBQ','撮影等'];
+
+// 部門定義
+const LOC_CONFIG = {
+  '奥多摩駅前': {icon:'🏔', label:'食堂',    tag:'tag-ok',   financeCol: 3},
+  'イベント':   {icon:'🎪', label:'イベント', tag:'tag-ev',   financeCol: 6},
+  'わさび体験': {icon:'🌿', label:'体験',     tag:'tag-ex',   financeCol: 5},
+  'BBQ':        {icon:'🔥', label:'BBQ',      tag:'tag-bbq',  financeCol: 7},
+  '撮影等':     {icon:'📷', label:'撮影等',   tag:'tag-shot', financeCol: 8},
+};
 
 // ══════════════════════════════════════════
 //  商品マスタ
@@ -416,7 +432,7 @@ const NOTION = [
 //  アプリ状態
 // ══════════════════════════════════════════
 let records = [];
-let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:''};
+let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人'};
 let activeCat = 'フード';
 let view = 'input';
 let editId = null;
@@ -431,6 +447,7 @@ let cmpMode = '商品ランキング';
 function today(){ return new Date().toISOString().split('T')[0]; }
 function fmt(n){ return '¥' + Math.round(n).toLocaleString(); }
 function fmtD(s){ return s.replace(/-/g,'/'); }
+function isSimple(loc){ return SIMPLE_LOCS.includes(loc); }
 function getPeriod(d){
   const m = new Date(d).getMonth()+1, day = new Date(d).getDate();
   if((m===4&&day>=29)||(m===5&&day<=5)) return 'GW';
@@ -445,15 +462,22 @@ function getWI(w){
   if(w.includes('くもり')||w.includes('曇')) return '☁️';
   return '';
 }
+function getLocTag(loc, event){
+  const cfg = LOC_CONFIG[loc];
+  if(!cfg) return {cls:'tag-ok', label: loc};
+  if(loc==='イベント') return {cls: cfg.tag, label: '🎪 '+(event||'イベント')};
+  return {cls: cfg.tag, label: cfg.icon+' '+cfg.label};
+}
+function getPaymentLabel(payment){
+  const map = {'現金':'💴 現金','Rakuten Pay':'💳 R.Pay','PayPay':'🔴 PayPay','請求書':'📄 請求書','混在':'🔀 混在'};
+  return map[payment] || payment;
+}
 
 // ══════════════════════════════════════════
 //  ストレージ
 // ══════════════════════════════════════════
 function loadFromStorage(){
-  try{
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if(saved) return JSON.parse(saved);
-  }catch(e){}
+  try{ const s=localStorage.getItem(STORAGE_KEY); if(s) return JSON.parse(s); }catch(e){}
   return null;
 }
 function saveToStorage(){
@@ -464,7 +488,6 @@ function init(){
   const saved = loadFromStorage();
   if(saved && saved.length > 0){
     records = saved;
-    // 2026-02-01の修正
     const idx = records.findIndex(r => r.id === 'n_20260201');
     if(idx >= 0 && records[idx].items?.mini_don){
       records[idx] = {...records[idx], items:{inari:{qty:8},wasabi_don:{qty:9},yuzu:{qty:1}}, foodTotal:12100, drinkTotal:500, merchTotal:0};
@@ -472,10 +495,7 @@ function init(){
     }
   } else {
     const ids = new Set();
-    records = [...HIST, ...NOTION].filter(r => {
-      if(ids.has(r.id)) return false;
-      ids.add(r.id); return true;
-    });
+    records = [...HIST, ...NOTION].filter(r => { if(ids.has(r.id)) return false; ids.add(r.id); return true; });
     saveToStorage();
   }
   render();
@@ -500,17 +520,23 @@ async function syncToSheets(recs){
     status.textContent = `${recs.length}件を送信しました`;
     showToast(`✅ スプレッドシートに${recs.length}件を同期しました`);
 
-    // 財務シートへ現金売上を反映
+    // 財務シートへ反映
     for (const rec of recs) {
-      if ((rec.cashTotal || 0) > 0) {
+      const cashTotal    = rec.cashTotal    || 0;
+      const rakutenTotal = rec.rakutenTotal || 0;
+      const paypayTotal  = rec.paypayTotal  || 0;
+      if (cashTotal > 0 || rakutenTotal > 0 || paypayTotal > 0) {
         fetch(GAS_URL, {
           method: 'POST', mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'writeToFinance',
-            date:      rec.date,
-            loc:       rec.loc,
-            cashTotal: rec.cashTotal
+            action:       'writeToFinance',
+            date:         rec.date,
+            loc:          rec.loc,
+            payment:      rec.payment || '現金',
+            cashTotal,
+            rakutenTotal,
+            paypayTotal,
           })
         }).catch(() => {});
       }
@@ -523,38 +549,32 @@ async function syncToSheets(recs){
   btn.disabled = false; btn.classList.remove('syncing');
   setTimeout(() => { icon.textContent = '☁️'; status.textContent = ''; }, 5000);
 }
-async function syncAll(){ await syncToSheets(records); }
+async function syncAll(){
+  const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
+  const recent = records.filter(r => r.date >= threeMonthsAgo && r.total > 0);
+  await syncToSheets(recent);
+}
+async function syncAllFull(){ await syncToSheets(records); }
 
-// スプレッドシートからデータを読み込む
 async function syncFromSheets(fullLoad = false){
   const btns = document.querySelectorAll('.sync-banner-btn');
   btns.forEach(b => { b.textContent = '読込中…'; b.disabled = true; });
   try {
-    // 通常読込は直近3ヶ月のみ、全件読込はfromなし
-    const from = fullLoad ? '' : (() => {
-      const d = new Date(); d.setMonth(d.getMonth() - 3);
-      return d.toISOString().split('T')[0];
-    })();
-    const url = GAS_URL + '?action=getData' + (from ? '&from=' + from : '');
+    const from = fullLoad ? '' : (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
+    const url = GAS_URL + '?action=getData' + (from ? '&from='+from : '');
     const res  = await fetch(url);
     const json = await res.json();
     if(!json.success) throw new Error(json.error || '取得失敗');
-    if(!json.records || json.records.length === 0){
-      showToast('⚠️ スプレッドシートにデータがありません');
-      return;
-    }
+    if(!json.records || json.records.length === 0){ showToast('⚠️ スプレッドシートにデータがありません'); return; }
     if(fullLoad){
-      // 全件読込：シートの内容で完全上書き
       records = json.records.sort((a,b) => a.date.localeCompare(b.date));
       showToast(`✅ 全${json.records.length}件を読み込みました（完全上書き）`);
     } else {
-      // 通常読込：直近3ヶ月をシートで上書き、それ以前はlocalStorageを保持
       const older = records.filter(r => r.date < from);
       records = [...older, ...json.records].sort((a,b) => a.date.localeCompare(b.date));
       showToast(`✅ 直近3ヶ月 ${json.records.length}件を読み込みました`);
     }
-    saveToStorage();
-    render();
+    saveToStorage(); render();
   } catch(e) {
     showToast('⚠️ 読込に失敗しました: ' + e.message);
   } finally {
@@ -605,24 +625,61 @@ function showToast(msg, type=''){
   setTimeout(() => t.remove(), 3000);
 }
 
+// 支払方法 → cashTotal / rakutenTotal / paypayTotal を計算
+function calcPaymentTotals(total, payment){
+  switch(payment){
+    case '現金':      return {cashTotal: total, rakutenTotal: 0, paypayTotal: 0};
+    case 'Rakuten Pay': return {cashTotal: 0, rakutenTotal: total, paypayTotal: 0};
+    case 'PayPay':    return {cashTotal: 0, rakutenTotal: 0, paypayTotal: total};
+    case '請求書':    return {cashTotal: 0, rakutenTotal: 0, paypayTotal: 0};
+    case '混在':      return {cashTotal: 0, rakutenTotal: 0, paypayTotal: 0}; // 手動
+    default:          return {cashTotal: 0, rakutenTotal: 0, paypayTotal: 0};
+  }
+}
+
 async function saveRecord(){
-  const tot = calcTotals(); if(tot.total === 0) return;
+  const simple = isSimple(form.loc);
+  let tot;
+  if(simple){
+    const amount = parseInt(document.getElementById('simple-amount')?.value) || form.amount || 0;
+    if(amount <= 0){ showToast('金額を入力してください'); return; }
+    form.amount = amount;
+    tot = {food:0, drink:0, merch:0, total: amount};
+  } else {
+    tot = calcTotals();
+    if(tot.total === 0){ showToast('商品を入力してください'); return; }
+  }
+
+  const payTotals = calcPaymentTotals(tot.total, form.payment);
+
   const rec = {
     id: editId || Date.now().toString(),
-    date: form.date, loc: form.loc,
+    date: form.date,
+    loc: form.loc,
     event: form.loc === 'イベント' ? form.event : '',
     weather: form.weather||'',
-    items: {...form.items},
+    items: simple ? {} : {...form.items},
     foodTotal: tot.food, drinkTotal: tot.drink, merchTotal: tot.merch,
-    total: tot.total, memo: form.memo, source:'manual'
+    total: tot.total,
+    payment: form.payment,
+    cashTotal:    payTotals.cashTotal,
+    rakutenTotal: payTotals.rakutenTotal,
+    paypayTotal:  payTotals.paypayTotal,
+    tourType: form.loc === 'わさび体験' ? form.tourType : '',
+    memo: form.memo,
+    source: 'manual'
   };
+
   if(editId) records = records.map(r => r.id===editId ? rec : r);
   else records = [...records, rec];
   saveToStorage();
   showToast('✅ 保存しました');
-  syncToSheets([rec]); // 自動同期
-  form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:''};
-  editId = null; activeCat = 'フード';
+  syncToSheets([rec]);
+
+  const keepLoc = form.loc;
+  form = {date:today(), loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0};
+  editId = null;
+  if(!simple) activeCat = 'フード';
   renderInput(); updateTotalBar();
 }
 
@@ -633,8 +690,16 @@ async function delRecord(id){
 
 function editRecord(id){
   const rec = records.find(r => r.id===id); if(!rec) return;
-  form = {date:rec.date, loc:rec.loc, event:rec.event||'', weather:rec.weather||'', items:{...rec.items}, memo:rec.memo||''};
-  editId = id; activeCat = 'フード'; sv('input');
+  form = {
+    date:rec.date, loc:rec.loc, event:rec.event||'', weather:rec.weather||'',
+    items:{...rec.items}, memo:rec.memo||'',
+    payment: rec.payment || '現金',
+    amount: rec.total || 0,
+    tourType: rec.tourType || '日本人'
+  };
+  editId = id;
+  if(!isSimple(rec.loc)) activeCat = 'フード';
+  sv('input');
 }
 
 function sv(v){
@@ -646,13 +711,22 @@ function sv(v){
 }
 
 function updateTotalBar(){
-  const t = calcTotals();
   const bar = document.getElementById('total-bar');
-  if(view !== 'input' || t.total === 0){ bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  document.getElementById('breakdown').innerHTML =
-    `<span class="t-bit">🍱${fmt(t.food)}</span><span class="t-bit">☕${fmt(t.drink)}</span><span class="t-bit">🛍${fmt(t.merch)}</span>`;
-  document.getElementById('total-disp').textContent = fmt(t.total);
+  if(view !== 'input'){ bar.style.display='none'; return; }
+  if(isSimple(form.loc)){
+    const amount = parseInt(document.getElementById('simple-amount')?.value) || form.amount || 0;
+    if(amount <= 0){ bar.style.display='none'; return; }
+    bar.style.display='flex';
+    document.getElementById('breakdown').innerHTML = `<span class="t-bit">${LOC_CONFIG[form.loc]?.icon||''} ${form.loc}</span>`;
+    document.getElementById('total-disp').textContent = fmt(amount);
+  } else {
+    const t = calcTotals();
+    if(t.total === 0){ bar.style.display='none'; return; }
+    bar.style.display='flex';
+    document.getElementById('breakdown').innerHTML =
+      `<span class="t-bit">🍱${fmt(t.food)}</span><span class="t-bit">☕${fmt(t.drink)}</span><span class="t-bit">🛍${fmt(t.merch)}</span>`;
+    document.getElementById('total-disp').textContent = fmt(t.total);
+  }
 }
 
 function renderCatTabs(){
@@ -667,17 +741,33 @@ function renderCatTabs(){
   }).join('');
 }
 function setCat(cat){ activeCat = cat; renderInput(); }
+function setLoc(l){ form.loc = l; form.amount = 0; if(l!=='わさび体験') form.tourType='日本人'; renderInput(); }
+function setPayment(p){ form.payment = p; renderInput(); }
+function setTourType(t){ form.tourType = t; renderInput(); }
+function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:'',payment:'現金',amount:0,tourType:'日本人'}; editId=null; renderInput(); }
 
 function renderInput(){
   const c = document.getElementById('content'); if(!c||view!=='input') return;
-  const prods = PRODS[activeCat];
-  const tot = calcTotals();
+  const simple = isSimple(form.loc);
+  const tot = simple ? {total: form.amount||0} : calcTotals();
+
+  // 支払方法ボタン
+  const payBtns = ['現金','Rakuten Pay','PayPay','請求書','混在'].map(p =>
+    `<button class="loc-btn${form.payment===p?' on':''}" onclick="setPayment('${p}')" style="flex:none;padding:7px 10px;font-size:11px">${getPaymentLabel(p)}</button>`
+  ).join('');
+
+  // 部門ボタン
+  const locBtns = Object.entries(LOC_CONFIG).map(([l, cfg]) =>
+    `<button class="loc-btn${form.loc===l?' on':''}" onclick="setLoc('${l}')" style="flex:none;padding:8px 10px">${cfg.icon} ${cfg.label}</button>`
+  ).join('');
+
   c.innerHTML = `
   <div class="sync-banner">
     <div class="sync-banner-text">🔄 スプレッドシートから読込</div>
-    <div style="display:flex;gap:6px">
-      <button class="sync-banner-btn" onclick="syncFromSheets(false)">直近3ヶ月</button>
-      <button class="sync-banner-btn sync-banner-btn-full" onclick="syncFromSheets(true)" style="background:var(--amber-dd,var(--g2));font-size:10px">全件読込</button>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="sync-banner-btn" onclick="syncFromSheets(false)">📥 直近3ヶ月</button>
+      <button class="sync-banner-btn sync-banner-btn-full" onclick="syncFromSheets(true)" style="font-size:10px">📥 全件読込</button>
+      <button class="sync-banner-btn" onclick="syncAllFull()" style="background:var(--g1);font-size:10px">☁️ 全件同期</button>
     </div>
   </div>
   <div class="card">
@@ -687,16 +777,17 @@ function renderInput(){
       <input type="date" value="${form.date}" onchange="form.date=this.value">
     </div>
     <div class="field">
-      <div class="field-lbl">出店場所</div>
-      <div class="loc-wrap">
-        <button class="loc-btn${form.loc==='奥多摩駅前'?' on':''}" onclick="setLoc('奥多摩駅前')">🏔 奥多摩駅前</button>
-        <button class="loc-btn${form.loc==='イベント'?' on':''}" onclick="setLoc('イベント')">🎪 イベント</button>
-      </div>
+      <div class="field-lbl">部門</div>
+      <div class="loc-wrap">${locBtns}</div>
     </div>
     ${form.loc==='イベント' ? `<div class="field">
       <div class="field-lbl">イベント名</div>
       <input type="text" value="${form.event}" placeholder="例: VERTERE BEER FEST" onchange="form.event=this.value">
     </div>` : ''}
+    <div class="field">
+      <div class="field-lbl">支払方法</div>
+      <div class="loc-wrap">${payBtns}</div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="field" style="margin:0">
         <div class="field-lbl">天気</div>
@@ -712,9 +803,27 @@ function renderInput(){
       </div>
     </div>
   </div>
+
+  ${simple ? `
+  <!-- 簡易入力モード（体験・BBQ・撮影等） -->
+  <div class="simple-input-card">
+    <div class="simple-input-lbl">${LOC_CONFIG[form.loc]?.icon||''} ${form.loc} 売上金額</div>
+    ${form.loc==='わさび体験' ? `
+    <div style="display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;margin-bottom:12px">
+      <button class="loc-btn${form.tourType==='日本人'?' on':''}" onclick="setTourType('日本人')" style="flex:1;padding:8px">🇯🇵 日本人</button>
+      <button class="loc-btn${form.tourType==='インバウンド'?' on':''}" onclick="setTourType('インバウンド')" style="flex:1;padding:8px">🌍 インバウンド</button>
+    </div>` : ''}
+    <input type="number" id="simple-amount" class="simple-amount-input"
+      inputmode="numeric" placeholder="0"
+      value="${form.amount||''}"
+      oninput="form.amount=parseInt(this.value)||0;updateTotalBar()">
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">支払方法：${getPaymentLabel(form.payment)}</div>
+  </div>
+  ` : `
+  <!-- 商品明細モード（食堂・イベント） -->
   <div id="cat-tabs" class="cat-row"></div>
   <div class="prod-list">
-    ${prods.map(p => {
+    ${(PRODS[activeCat]||[]).map(p => {
       const item = form.items[p.id] || {qty:0, price:0};
       const qty = item.qty || 0;
       const isVar = p.price === null;
@@ -739,17 +848,19 @@ function renderInput(){
       </div>`;
     }).join('')}
   </div>
+  `}
+
   ${editId ? `<div style="text-align:center;padding:6px 0">
     <button onclick="cancelEdit()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);text-decoration:underline;font-family:inherit">編集をキャンセル</button>
   </div>` : ''}
-  <button class="save-btn" onclick="saveRecord()" ${tot.total===0?'disabled':''}>
+  <button class="save-btn" onclick="saveRecord()" ${tot.total===0&&!simple?'disabled':''}>
     ${editId ? '更新する' : '保存してスプレッドシートに送信'}
   </button>
   <div style="height:${tot.total>0?'90px':'20px'}"></div>`;
-  renderCatTabs(); updateTotalBar();
+
+  if(!simple) renderCatTabs();
+  updateTotalBar();
 }
-function setLoc(l){ form.loc = l; renderInput(); }
-function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:''}; editId=null; renderInput(); }
 
 // ══════════════════════════════════════════
 //  履歴
@@ -759,6 +870,7 @@ function getYears(){ return [...new Set(records.map(r=>r.date.substring(0,4)))].
 function renderHistory(){
   const c = document.getElementById('content'); if(!c||view!=='history') return;
   const years = ['全て', ...getYears()];
+  const allLocs = ['全て', ...Object.keys(LOC_CONFIG)];
   const filtered = records
     .filter(r => (r.total||0) > 0
       && (histFilter==='全て' || r.loc===histFilter)
@@ -767,10 +879,10 @@ function renderHistory(){
 
   c.innerHTML = `
   <div class="filter-bar">
-    ${['全て','奥多摩駅前','イベント'].map(f =>
-      `<button class="f-btn${histFilter===f?' on':''}" onclick="setHF('${f}')">${f}</button>`
+    ${allLocs.map(f =>
+      `<button class="f-btn${histFilter===f?' on':''}" onclick="setHF('${f}')">${f==='全て'?'全て':(LOC_CONFIG[f]?.icon+' '+LOC_CONFIG[f]?.label||f)}</button>`
     ).join('')}
-    <button class="csv-btn" onclick="exportCSV()">📥 CSV出力</button>
+    <button class="csv-btn" onclick="exportCSV()">📥 CSV</button>
   </div>
   <div style="display:flex;gap:6px;padding:0 12px 6px;flex-wrap:wrap">
     ${years.map(y =>
@@ -780,20 +892,19 @@ function renderHistory(){
   ${filtered.length===0 ? `<div class="empty"><div class="empty-ico">📋</div><div>データがありません</div></div>` : ''}
   ${filtered.map(rec => {
     const exp = expandedId === rec.id;
-    const isEv = rec.loc === 'イベント';
     const period = rec.loc==='奥多摩駅前' ? getPeriod(rec.date) : '';
-    const sold = ALL.filter(p => {
-      const it = rec.items?.[p.id];
-      return it && (typeof it==='object' ? it.qty : it) > 0;
-    });
+    const locTag = getLocTag(rec.loc, rec.event);
+    const sold = ALL.filter(p => { const it=rec.items?.[p.id]; return it&&(typeof it==='object'?it.qty:it)>0; });
     return `<div class="rec-card">
       <div class="rec-hdr" onclick="toggleExp('${rec.id}')">
         <div>
           <div class="rec-date">${fmtD(rec.date)} ${getWI(rec.weather)}</div>
           <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
-            <span class="tag ${isEv?'tag-ev':'tag-ok'}">${isEv?(rec.event?'🎪 '+rec.event:'🎪 イベント'):'🏔 '+rec.loc}</span>
+            <span class="tag ${locTag.cls}">${locTag.label}</span>
             ${period&&period!=='通常' ? `<span class="tag tag-gw">${period}</span>` : ''}
             ${rec.source==='register' ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
+            ${rec.payment && rec.payment!=='現金' ? `<span class="tag" style="background:#F1F5F9;color:#475569">${getPaymentLabel(rec.payment)}</span>` : ''}
+            ${rec.tourType ? `<span class="tag" style="background:#FEF9C3;color:#713F12">${rec.tourType==='インバウンド'?'🌍 英語':'🇯🇵 日本語'}</span>` : ''}
           </div>
         </div>
         <div class="rec-total">${fmt(rec.total)}</div>
@@ -804,13 +915,13 @@ function renderHistory(){
           <div class="det-cell"><div class="det-lbl">☕ ドリンク</div><div class="det-val">${fmt(rec.drinkTotal||0)}</div></div>
           <div class="det-cell"><div class="det-lbl">🛍 物販</div><div class="det-val">${fmt(rec.merchTotal||0)}</div></div>
         </div>` : ''}
-        ${(rec.cashTotal!=null||rec.paypayTotal!=null||rec.qrTotal!=null) ? `<div class="pay-grid">
+        ${(rec.cashTotal!=null||rec.paypayTotal!=null||rec.qrTotal!=null||rec.rakutenTotal!=null) ? `<div class="pay-grid">
           <div class="pay-cell"><div class="pay-lbl">💴 現金</div><div class="pay-val cash">${fmt(rec.cashTotal||0)}</div></div>
           <div class="pay-cell"><div class="pay-lbl">🔴 PayPay</div><div class="pay-val paypay">${fmt(rec.paypayTotal||0)}</div></div>
-          <div class="pay-cell"><div class="pay-lbl">💳 QR/Card</div><div class="pay-val qr">${fmt(rec.qrTotal||0)}</div></div>
+          <div class="pay-cell"><div class="pay-lbl">💳 R.Pay</div><div class="pay-val qr">${fmt(rec.rakutenTotal||rec.qrTotal||0)}</div></div>
         </div>` : ''}
         ${sold.length>0 ? `<div class="chips">${sold.map(p => {
-          const it = rec.items[p.id];
+          const it=rec.items[p.id];
           return `<span class="chip">${p.name}×${typeof it==='object'?it.qty:it}</span>`;
         }).join('')}</div>` : ''}
         ${rec.memo ? `<div style="font-size:11px;color:var(--text3);padding:4px 0">📝 ${rec.memo}</div>` : ''}
@@ -828,17 +939,17 @@ function setHY(y){ histYear = y; renderHistory(); }
 function toggleExp(id){ expandedId = expandedId===id ? null : id; renderHistory(); }
 
 function exportCSV(){
-  const h = ['日付','場所','イベント名','天気','合計','フード','ドリンク','物販','メモ', ...ALL.map(p=>p.name)];
+  const h = ['日付','部門','イベント名','天気','合計','支払方法','フード','ドリンク','物販','メモ', ...ALL.map(p=>p.name)];
   const rows = records.filter(r=>r.total>0).map(r => [
-    r.date, r.loc, r.event||'', r.weather||'', r.total,
+    r.date, r.loc, r.event||'', r.weather||'', r.total, r.payment||'',
     r.foodTotal||'', r.drinkTotal||'', r.merchTotal||'', r.memo||'',
     ...ALL.map(p => { const it=r.items?.[p.id]; if(!it) return 0; return typeof it==='object'?it.qty:it; })
   ]);
   const csv = [h, ...rows].map(row => row.join(',')).join('\n');
   const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url;
-  a.download = `わさび食堂_売上_${today()}.csv`; a.click();
+  const a = document.createElement('a'); a.href=url;
+  a.download=`TOKYOWASABI_売上_${today()}.csv`; a.click();
 }
 
 // ══════════════════════════════════════════
@@ -850,8 +961,9 @@ function renderAnalytics(){
   if(!active.length){ c.innerHTML=`<div class="empty"><div class="empty-ico">📊</div><div>データがありません</div></div>`; return; }
 
   const grand = active.reduce((s,r) => s+r.total, 0);
-  const ok = active.filter(r => r.loc==='奥多摩駅前');
-  const ev = active.filter(r => r.loc==='イベント');
+  const byLoc = {};
+  Object.keys(LOC_CONFIG).forEach(l => { byLoc[l] = active.filter(r=>r.loc===l); });
+
   const byMonth = {};
   active.forEach(r => {
     const m = r.date.substring(0,7);
@@ -860,6 +972,7 @@ function renderAnalytics(){
   });
   const months = Object.entries(byMonth).sort(([a],[b]) => a.localeCompare(b));
   const maxM = Math.max(...months.map(([,d]) => d.total), 1);
+
   const ptot = {};
   active.forEach(r => {
     Object.entries(r.items||{}).forEach(([id, val]) => {
@@ -873,6 +986,45 @@ function renderAnalytics(){
   const maxQ = tops.length > 0 ? tops[0].qty : 1;
   const yr = [...new Set(active.map(r => r.date.substring(0,4)))].sort();
 
+  // 体験ツアー 日本人/インバウンド集計
+  const tourRecs = byLoc['わさび体験']||[];
+  const tourJP  = tourRecs.filter(r=>r.tourType!=='インバウンド').reduce((s,r)=>s+r.total,0);
+  const tourEN  = tourRecs.filter(r=>r.tourType==='インバウンド').reduce((s,r)=>s+r.total,0);
+  const tourTotal = tourJP + tourEN;
+  const jpPct  = tourTotal>0 ? Math.round(tourJP/tourTotal*100) : 0;
+  const enPct  = 100 - jpPct;
+
+  // SVG円グラフ生成
+  function makePieChart(jpVal, enVal){
+    const total = jpVal + enVal;
+    if(total === 0) return '<div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">データなし</div>';
+    const jp = jpVal/total, en = enVal/total;
+    const r=60, cx=80, cy=70;
+    function arc(start, end, color, label, pct){
+      if(pct===0) return '';
+      if(pct===100){
+        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"/>
+        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="700">${label} ${pct}%</text>`;
+      }
+      const s = start*Math.PI*2 - Math.PI/2;
+      const e = end*Math.PI*2 - Math.PI/2;
+      const x1=cx+r*Math.cos(s), y1=cy+r*Math.sin(s);
+      const x2=cx+r*Math.cos(e), y2=cy+r*Math.sin(e);
+      const large = (end-start)>0.5?1:0;
+      const mx=cx+r*0.65*Math.cos((s+e)/2), my=cy+r*0.65*Math.sin((s+e)/2);
+      return `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${color}"/>
+      <text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="700">${pct}%</text>`;
+    }
+    return `<svg viewBox="0 0 160 140" style="width:160px;height:140px">
+      ${arc(0, jp, '#1D4ED8', '🇯🇵', jpPct)}
+      ${arc(jp, 1, '#F59E0B', '🌍', enPct)}
+    </svg>`;
+  }
+
+  // BBQ集計
+  const bbqRecs = byLoc['BBQ']||[];
+  const bbqTotal = bbqRecs.reduce((s,r)=>s+r.total,0);
+
   c.innerHTML = `<div class="an-wrap">
     <div class="an-ttl">累計売上</div>
     <div class="an-big">
@@ -880,11 +1032,47 @@ function renderAnalytics(){
       <div class="an-big-val">${fmt(grand)}</div>
       <div class="an-big-sub">${yr[0]}〜${yr[yr.length-1]}年 · 全${active.length}日間</div>
     </div>
-    <div class="an-ttl">出店場所別</div>
+
+    <div class="an-ttl">部門別売上</div>
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-lbl">🏔 奥多摩駅前</div><div class="stat-val">${fmt(ok.reduce((s,r)=>s+r.total,0))}</div><div class="stat-sub">${ok.length}日 · 平均${fmt(Math.round(ok.reduce((s,r)=>s+r.total,0)/(ok.length||1)))}</div></div>
-      <div class="stat-card"><div class="stat-lbl">🎪 イベント</div><div class="stat-val">${fmt(ev.reduce((s,r)=>s+r.total,0))}</div><div class="stat-sub">${ev.length}件 · 平均${fmt(Math.round(ev.reduce((s,r)=>s+r.total,0)/(ev.length||1)))}</div></div>
+      ${Object.entries(LOC_CONFIG).map(([l,cfg]) => {
+        const recs=byLoc[l]||[], tot=recs.reduce((s,r)=>s+r.total,0);
+        if(tot===0) return '';
+        return `<div class="stat-card"><div class="stat-lbl">${cfg.icon} ${cfg.label}</div><div class="stat-val">${fmt(tot)}</div><div class="stat-sub">${recs.length}件 · 平均${fmt(Math.round(tot/(recs.length||1)))}</div></div>`;
+      }).join('')}
     </div>
+
+    ${tourTotal>0 ? `
+    <div class="an-ttl">🌿 わさび体験 ツアー区分</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex-shrink:0">${makePieChart(tourJP, tourEN)}</div>
+      <div style="flex:1;min-width:120px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:12px;height:12px;border-radius:3px;background:#1D4ED8;flex-shrink:0"></div>
+          <div>
+            <div style="font-size:12px;font-weight:700">🇯🇵 日本人</div>
+            <div style="font-size:13px;font-weight:800;color:var(--g1)">${fmt(tourJP)}</div>
+            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType!=='インバウンド').length}件</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:12px;height:12px;border-radius:3px;background:#F59E0B;flex-shrink:0"></div>
+          <div>
+            <div style="font-size:12px;font-weight:700">🌍 インバウンド</div>
+            <div style="font-size:13px;font-weight:800;color:#D97706">${fmt(tourEN)}</div>
+            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType==='インバウンド').length}件</div>
+          </div>
+        </div>
+      </div>
+    </div>` : ''}
+
+    ${bbqTotal>0 ? `
+    <div class="an-ttl">🔥 BBQ 実績</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-lbl">累計売上</div><div class="stat-val">${fmt(bbqTotal)}</div><div class="stat-sub">${bbqRecs.length}件</div></div>
+      <div class="stat-card"><div class="stat-lbl">1件平均</div><div class="stat-val">${fmt(Math.round(bbqTotal/(bbqRecs.length||1)))}</div><div class="stat-sub">最高 ${fmt(Math.max(...bbqRecs.map(r=>r.total)))}</div></div>
+    </div>` : ''}
+
     <div class="an-ttl">月別売上</div>
     <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
       ${months.map(([m,d]) => `<div class="m-row">
@@ -893,6 +1081,7 @@ function renderAnalytics(){
         <div class="m-val">${fmt(d.total)}</div>
       </div>`).join('')}
     </div>
+
     ${tops.length>0 ? `<div class="an-ttl">商品別 販売数ランキング</div>
     <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
       ${tops.map((p,i) => `<div class="rank-row">
@@ -963,22 +1152,22 @@ function renderEvCmp(active){
     grouped[r.event].push(r);
   });
   const sorted = Object.keys(grouped).sort((a,b) => {
-    const ya = [...new Set(grouped[a].map(r=>r.date.substring(0,4)))];
-    const yb = [...new Set(grouped[b].map(r=>r.date.substring(0,4)))];
-    return yb.length - ya.length || grouped[b].reduce((s,r)=>s+r.total,0) - grouped[a].reduce((s,r)=>s+r.total,0);
+    const ya=[...new Set(grouped[a].map(r=>r.date.substring(0,4)))];
+    const yb=[...new Set(grouped[b].map(r=>r.date.substring(0,4)))];
+    return yb.length-ya.length || grouped[b].reduce((s,r)=>s+r.total,0)-grouped[a].reduce((s,r)=>s+r.total,0);
   });
   return `<div style="padding:8px 12px 0;font-size:12px;color:var(--text3)">複数年あるイベントを上位表示</div>
   ${sorted.map(ev => {
     const recs = grouped[ev].sort((a,b)=>a.date.localeCompare(b.date));
     const byYear = {};
     recs.forEach(r => {
-      const y = r.date.substring(0,4);
-      if(!byYear[y]) byYear[y] = {total:0, days:[]};
-      byYear[y].total += r.total; byYear[y].days.push(r);
+      const y=r.date.substring(0,4);
+      if(!byYear[y]) byYear[y]={total:0,days:[]};
+      byYear[y].total+=r.total; byYear[y].days.push(r);
     });
-    const ye = Object.entries(byYear).sort(([a],[b])=>a.localeCompare(b));
-    const multi = ye.length > 1;
-    const diff = multi ? ye[ye.length-1][1].total - ye[0][1].total : 0;
+    const ye=Object.entries(byYear).sort(([a],[b])=>a.localeCompare(b));
+    const multi=ye.length>1;
+    const diff=multi?ye[ye.length-1][1].total-ye[0][1].total:0;
     return `<div class="yr-card">
       <div class="yr-card-hdr">
         <div class="yr-card-name">${ev}</div>
@@ -993,10 +1182,10 @@ function renderEvCmp(active){
             <td>${[...new Set(d.days.map(r=>r.weather).filter(w=>w))].map(w=>getWI(w)).join('')||'—'}</td>
             <td class="tc">${fmt(d.total)}</td>
           </tr>`).join('')}
-          ${multi ? `<tr style="background:var(--bg)">
+          ${multi?`<tr style="background:var(--bg)">
             <td colspan="3" style="font-size:11px;color:var(--text3)">前年比</td>
             <td class="tc" style="color:${diff>=0?'var(--g1)':'#DC2626'}">${diff>=0?'▲':'▼'} ${fmt(Math.abs(diff))}</td>
-          </tr>` : ''}
+          </tr>`:''}
         </tbody>
       </table>
     </div>`;
@@ -1009,18 +1198,18 @@ function renderOkCmp(active){
   const periods = ['GW','シルバーWK','お盆','通常'];
   const bpy = {}; periods.forEach(p => { bpy[p]={}; years.forEach(y => { bpy[p][y]={total:0,count:0,recs:[]}; }); });
   ok.forEach(r => {
-    const p = getPeriod(r.date), y = r.date.substring(0,4);
+    const p=getPeriod(r.date), y=r.date.substring(0,4);
     if(bpy[p]&&bpy[p][y]){ bpy[p][y].total+=r.total; bpy[p][y].count++; bpy[p][y].recs.push(r); }
   });
   const byMY = {};
   ok.forEach(r => {
-    const m = r.date.substring(5,7), y = r.date.substring(0,4);
-    if(!byMY[m]) byMY[m] = {}; if(!byMY[m][y]) byMY[m][y]={total:0,count:0};
+    const m=r.date.substring(5,7), y=r.date.substring(0,4);
+    if(!byMY[m]) byMY[m]={}; if(!byMY[m][y]) byMY[m][y]={total:0,count:0};
     byMY[m][y].total+=r.total; byMY[m][y].count++;
   });
-  const pL = {'GW':'🌸 GW','シルバーWK':'🍂 シルバーWK','お盆':'🏖 お盆','通常':'📅 通常日'};
+  const pL={'GW':'🌸 GW','シルバーWK':'🍂 シルバーWK','お盆':'🏖 お盆','通常':'📅 通常日'};
   return periods.filter(p=>Object.values(bpy[p]).some(d=>d.count>0)).map(p => {
-    const data = bpy[p];
+    const data=bpy[p];
     return `<div class="yr-card">
       <div class="yr-card-hdr"><div class="yr-card-name">${pL[p]}</div></div>
       <table class="yr-tbl">
@@ -1065,7 +1254,6 @@ function render(){
   else if(view==='import') renderImport();
 }
 
-// 起動
 init();
 
 // ══════════════════════════════════════════
@@ -1090,13 +1278,8 @@ const NAME_MAP = {
   'フェイスマスク':'mask','わさぴー':'wasabee','手さげ袋':'bag',
 };
 
-let importState = {
-  dailyText: null, dailyName: null,
-  itemsText: null, itemsName: null,
-  preview: [], step: 'upload'
-};
+let importState = { dailyText:null, dailyName:null, itemsText:null, itemsName:null, preview:[], step:'upload' };
 
-// CSV パーサー
 function parseCSVLine(line){
   const res=[]; let cur='', inQ=false;
   for(let i=0;i<line.length;i++){
@@ -1107,228 +1290,139 @@ function parseCSVLine(line){
   res.push(cur.trim()); return res;
 }
 function parseCSV(text){
-  text = text.replace(/^\uFEFF/,'');
-  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  text=text.replace(/^\uFEFF/,'');
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
   if(lines.length<2) return [];
-  const headers = parseCSVLine(lines[0]);
+  const headers=parseCSVLine(lines[0]);
   return lines.slice(1).map(l=>{
-    const vals = parseCSVLine(l);
-    const obj={};
-    headers.forEach((h,i)=>{ obj[h.trim()] = (vals[i]||'').trim(); });
+    const vals=parseCSVLine(l); const obj={};
+    headers.forEach((h,i)=>{ obj[h.trim()]=(vals[i]||'').trim(); });
     return obj;
   }).filter(r=>Object.values(r).some(v=>v));
 }
-
-// 日付文字列を YYYY-MM-DD に正規化
 function normalizeDate(s){
   if(!s) return null;
-  // YYYY-MM-DD から始まる形式
-  const m1 = s.match(/^(\d{4}-\d{2}-\d{2})/);
-  if(m1) return m1[1];
-  // YYYY年M月D日
-  const m2 = s.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+  const m1=s.match(/^(\d{4}-\d{2}-\d{2})/); if(m1) return m1[1];
+  const m2=s.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
   if(m2) return `${m2[1]}-${m2[2].padStart(2,'0')}-${m2[3].padStart(2,'0')}`;
   return null;
 }
+function parseAmount(s){ if(!s) return 0; return parseInt(s.replace(/[￥¥,\s]/g,''))||0; }
 
-// 売上金額の文字列を数値に
-function parseAmount(s){
-  if(!s) return 0;
-  return parseInt(s.replace(/[￥¥,\s]/g,'')) || 0;
-}
-
-// 取込データを構築
 function buildImportRecords(){
-  const dailyRows = importState.dailyText ? parseCSV(importState.dailyText) : [];
-  const itemRows  = importState.itemsText ? parseCSV(importState.itemsText)  : [];
-
-  // 営業日別: 日付→{total, memo}
-  const dailyMap = {};
+  const dailyRows=importState.dailyText?parseCSV(importState.dailyText):[];
+  const itemRows=importState.itemsText?parseCSV(importState.itemsText):[];
+  const dailyMap={};
   dailyRows.forEach(r=>{
-    // 複数カラム名に対応
-    const dateRaw = r['営業日'] || r['日付'] || '';
-    const date = normalizeDate(dateRaw);
-    if(!date) return;
-    const totalRaw = r['売上合計'] || r['売上'] || '';
-    const total = parseAmount(totalRaw);
-    if(total <= 0) return;
-    // テンプレート行を除外
-    if(dateRaw.includes('テンプレート') || r['備考']?.includes('テンプレート')) return;
-    const memo = (r['備考'] || r['メモ'] || '').trim();
-    dailyMap[date] = {total, memo};
+    const dateRaw=r['営業日']||r['日付']||'';
+    const date=normalizeDate(dateRaw); if(!date) return;
+    const total=parseAmount(r['売上合計']||r['売上']||''); if(total<=0) return;
+    if(dateRaw.includes('テンプレート')||r['備考']?.includes('テンプレート')) return;
+    const memo=(r['備考']||r['メモ']||'').trim();
+    dailyMap[date]={total,memo};
   });
-
-  // 販売記録: 日付→{productId: qty}
-  const itemsMap = {};
+  const itemsMap={};
   itemRows.forEach(r=>{
-    const dateRaw = r['営業日'] || r['日付'] || '';
-    const date = normalizeDate(dateRaw);
-    if(!date) return;
-    const productName = (r['商品名'] || '').trim();
-    const pid = NAME_MAP[productName];
-    if(!pid) return;
-    const qty = parseInt(r['販売数']) || 0;
-    if(qty <= 0) return;
-    if(!itemsMap[date]) itemsMap[date] = {};
-    itemsMap[date][pid] = (itemsMap[date][pid] || 0) + qty;
+    const date=normalizeDate(r['営業日']||r['日付']||''); if(!date) return;
+    const pid=NAME_MAP[(r['商品名']||'').trim()]; if(!pid) return;
+    const qty=parseInt(r['販売数'])||0; if(qty<=0) return;
+    if(!itemsMap[date]) itemsMap[date]={};
+    itemsMap[date][pid]=(itemsMap[date][pid]||0)+qty;
   });
-
-  // マージ: dailyMapをベースに itemsMapで商品を付与
-  const allDates = new Set([...Object.keys(dailyMap), ...Object.keys(itemsMap)]);
-  const existing = new Set(records.map(r=> r.date + '_' + (r.event||'')));
-
-  const preview = [];
+  const allDates=new Set([...Object.keys(dailyMap),...Object.keys(itemsMap)]);
+  const existing=new Set(records.map(r=>r.date+'_'+(r.event||'')));
+  const preview=[];
   allDates.forEach(date=>{
-    const daily = dailyMap[date];
-    const items = itemsMap[date] || {};
-    if(!daily && Object.keys(items).length===0) return;
-
-    const memo  = daily?.memo || '';
-    const total = daily?.total || 0;
-    const loc   = (memo && memo.trim()) ? 'イベント' : '奥多摩駅前';
-    const event = loc==='イベント' ? memo.trim() : '';
-
-    // カテゴリ別合計を計算
+    const daily=dailyMap[date]; const items=itemsMap[date]||{};
+    if(!daily&&Object.keys(items).length===0) return;
+    const memo=daily?.memo||''; const total=daily?.total||0;
+    const loc=(memo&&memo.trim())?'イベント':'奥多摩駅前';
+    const event=loc==='イベント'?memo.trim():'';
     let food=0,drink=0,merch=0;
     Object.entries(items).forEach(([pid,qty])=>{
-      const p = ALL.find(x=>x.id===pid); if(!p||!p.price) return;
-      const sub = p.price * qty;
+      const p=ALL.find(x=>x.id===pid); if(!p||!p.price) return;
+      const sub=p.price*qty;
       if(FOOD_IDS.has(pid)) food+=sub;
       else if(DRINK_IDS.has(pid)) drink+=sub;
       else merch+=sub;
     });
-
-    // 商品データをapp形式に変換
-    const itemsObj = {};
+    const itemsObj={};
     Object.entries(items).forEach(([pid,qty])=>{ itemsObj[pid]={qty}; });
-
-    const key = date + '_' + event;
-    const isDup = existing.has(key);
-    const id = 'csv_' + date.replace(/-/g,'') + (event ? '_'+event.substring(0,4) : '');
-
-    preview.push({
-      id, date, loc, event, weather:'',
-      items: itemsObj,
-      foodTotal: food, drinkTotal: drink, merchTotal: merch,
-      total: total || (food+drink+merch),
-      memo: '', source:'notion',
-      _isDup: isDup
-    });
+    const key=date+'_'+event;
+    const isDup=existing.has(key);
+    const id='csv_'+date.replace(/-/g,'')+(event?'_'+event.substring(0,4):'');
+    preview.push({id,date,loc,event,weather:'',items:itemsObj,foodTotal:food,drinkTotal:drink,merchTotal:merch,total:total||(food+drink+merch),memo:'',source:'notion',_isDup:isDup});
   });
-
   return preview.sort((a,b)=>a.date.localeCompare(b.date));
 }
 
-// ファイル読み込み
-function handleFileDrop(e, type){
+function handleFileDrop(e,type){
   e.preventDefault();
-  const file = e.dataTransfer?.files[0] || e.target.files?.[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    if(type==='daily'){
-      importState.dailyText = ev.target.result;
-      importState.dailyName = file.name;
-    } else {
-      importState.itemsText = ev.target.result;
-      importState.itemsName = file.name;
-    }
-    importState.step = 'upload';
-    renderImport();
+  const file=e.dataTransfer?.files[0]||e.target.files?.[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    if(type==='daily'){importState.dailyText=ev.target.result;importState.dailyName=file.name;}
+    else{importState.itemsText=ev.target.result;importState.itemsName=file.name;}
+    importState.step='upload'; renderImport();
   };
-  reader.readAsText(file, 'UTF-8');
+  reader.readAsText(file,'UTF-8');
 }
-
 function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
 function dragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
-
-function doParseImport(){
-  importState.preview = buildImportRecords();
-  importState.step = 'preview';
-  renderImport();
-}
+function doParseImport(){ importState.preview=buildImportRecords(); importState.step='preview'; renderImport(); }
 
 async function confirmImport(){
-  const newRecs = importState.preview.filter(r => !r._isDup);
-  if(newRecs.length === 0){ showToast('新しいデータがありません'); return; }
-
-  // _isDup フラグを除去して追加
-  const clean = newRecs.map(r=>{ const {_isDup,...rest}=r; return rest; });
-  records = [...records, ...clean].sort((a,b)=>a.date.localeCompare(b.date));
-  saveToStorage();
-  showToast(`✅ ${clean.length}件を取り込みました`);
-
-  // スプレッドシートにも同期
+  const newRecs=importState.preview.filter(r=>!r._isDup);
+  if(newRecs.length===0){showToast('新しいデータがありません');return;}
+  const clean=newRecs.map(r=>{const{_isDup,...rest}=r;return rest;});
+  records=[...records,...clean].sort((a,b)=>a.date.localeCompare(b.date));
+  saveToStorage(); showToast(`✅ ${clean.length}件を取り込みました`);
   syncToSheets(clean);
-
-  // リセット
-  importState = { dailyText:null, dailyName:null, itemsText:null, itemsName:null, preview:[], step:'done' };
+  importState={dailyText:null,dailyName:null,itemsText:null,itemsName:null,preview:[],step:'done'};
   renderImport();
 }
-
-function resetImport(){
-  importState = { dailyText:null, dailyName:null, itemsText:null, itemsName:null, preview:[], step:'upload' };
-  renderImport();
-}
+function resetImport(){ importState={dailyText:null,dailyName:null,itemsText:null,itemsName:null,preview:[],step:'upload'}; renderImport(); }
 
 function renderImport(){
-  const c = document.getElementById('content'); if(!c||view!=='import') return;
-  const { dailyName, itemsName, preview, step } = importState;
-  const hasAny = dailyName || itemsName;
-  const canParse = hasAny;
-  const newCount  = preview.filter(r=>!r._isDup).length;
-  const dupCount  = preview.filter(r=>r._isDup).length;
-
-  if(step === 'done'){
-    c.innerHTML = `<div style="text-align:center;padding:48px 24px">
+  const c=document.getElementById('content'); if(!c||view!=='import') return;
+  const{dailyName,itemsName,preview,step}=importState;
+  const newCount=preview.filter(r=>!r._isDup).length;
+  const dupCount=preview.filter(r=>r._isDup).length;
+  if(step==='done'){
+    c.innerHTML=`<div style="text-align:center;padding:48px 24px">
       <div style="font-size:48px;margin-bottom:16px">✅</div>
       <div style="font-size:16px;font-weight:700;color:var(--g1);margin-bottom:8px">取り込み完了！</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:24px">データを履歴・集計タブで確認できます</div>
-      <button onclick="resetImport()" style="background:var(--g2);color:#fff;border:none;border-radius:var(--radius-lg);padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
-        続けて取り込む
-      </button>
-    </div>`;
-    return;
+      <button onclick="resetImport()" style="background:var(--g2);color:#fff;border:none;border-radius:var(--radius-lg);padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">続けて取り込む</button>
+    </div>`; return;
   }
-
-  c.innerHTML = `
+  c.innerHTML=`
   <div class="card" style="margin-top:10px">
     <div class="card-lbl">Notionデータ取り込み</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
-      NotionからエクスポートしたCSVファイルをドロップしてください。<br>
-      どちらか一方だけでも取り込めます。
-    </p>
-
-    <!-- 営業日別CSV -->
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">NotionからエクスポートしたCSVファイルをドロップしてください。</p>
     <div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text3)">① 営業日別販売記録（売上合計）</div>
     <div class="drop-zone ${dailyName?'loaded':''}" id="drop-daily"
       ondragover="dragOver(event)" ondragleave="dragLeave(event)"
       ondrop="handleFileDrop(event,'daily');this.classList.remove('drag-over')"
       onclick="document.getElementById('file-daily').click()">
       <input type="file" id="file-daily" accept=".csv" style="display:none" onchange="handleFileDrop(event,'daily')">
-      <div class="drop-zone-icon">${dailyName ? '📗' : '📄'}</div>
-      <div class="drop-zone-title">${dailyName || 'ここにドロップ または タップして選択'}</div>
-      <div class="drop-zone-sub">${dailyName ? '✓ 読み込み済み（タップで変更）' : '営業日別販売記録_〇〇〇.csv'}</div>
+      <div class="drop-zone-icon">${dailyName?'📗':'📄'}</div>
+      <div class="drop-zone-title">${dailyName||'ここにドロップ または タップして選択'}</div>
+      <div class="drop-zone-sub">${dailyName?'✓ 読み込み済み（タップで変更）':'営業日別販売記録_〇〇〇.csv'}</div>
     </div>
-
-    <!-- 販売記録CSV -->
     <div style="margin-bottom:6px;font-size:11px;font-weight:600;color:var(--text3)">② 販売記録（商品別内訳）</div>
     <div class="drop-zone ${itemsName?'loaded':''}" id="drop-items"
       ondragover="dragOver(event)" ondragleave="dragLeave(event)"
       ondrop="handleFileDrop(event,'items');this.classList.remove('drag-over')"
       onclick="document.getElementById('file-items').click()">
       <input type="file" id="file-items" accept=".csv" style="display:none" onchange="handleFileDrop(event,'items')">
-      <div class="drop-zone-icon">${itemsName ? '📗' : '📄'}</div>
-      <div class="drop-zone-title">${itemsName || 'ここにドロップ または タップして選択'}</div>
-      <div class="drop-zone-sub">${itemsName ? '✓ 読み込み済み（タップで変更）' : '販売記録_〇〇〇.csv'}</div>
+      <div class="drop-zone-icon">${itemsName?'📗':'📄'}</div>
+      <div class="drop-zone-title">${itemsName||'ここにドロップ または タップして選択'}</div>
+      <div class="drop-zone-sub">${itemsName?'✓ 読み込み済み（タップで変更）':'販売記録_〇〇〇.csv'}</div>
     </div>
-
-    <button class="import-parse-btn" onclick="doParseImport()" ${canParse?'':'disabled'}>
-      解析してプレビューを表示
-    </button>
+    <button class="import-parse-btn" onclick="doParseImport()" ${(dailyName||itemsName)?'':'disabled'}>解析してプレビューを表示</button>
   </div>
-
-  ${step==='preview' && preview.length > 0 ? `
+  ${step==='preview'&&preview.length>0?`
   <div class="card" style="margin-top:0">
     <div class="card-lbl">プレビュー</div>
     <div style="display:flex;gap:10px;margin-bottom:12px">
@@ -1342,33 +1436,26 @@ function renderImport(){
       </div>
     </div>
     <div style="border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)">
-      ${preview.map(r => `
+      ${preview.map(r=>`
       <div class="preview-row ${r._isDup?'dup-rec':'new-rec'}">
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600">${fmtD(r.date)}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:1px">
-            ${r.loc==='イベント'?'🎪 '+r.event:'🏔 奥多摩駅前'}
-          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">${r.loc==='イベント'?'🎪 '+r.event:'🏔 奥多摩駅前'}</div>
         </div>
         <div style="font-size:13px;font-weight:700;color:var(--g1);margin-right:8px">${fmt(r.total)}</div>
         <span class="preview-badge ${r._isDup?'badge-dup':'badge-new'}">${r._isDup?'重複':'新規'}</span>
       </div>`).join('')}
     </div>
   </div>
-
-  ${newCount > 0 ? `<button class="import-confirm-btn" onclick="confirmImport()">
-    ${newCount}件を取り込む → スプレッドシートにも送信
-  </button>` : `<div style="text-align:center;padding:12px;font-size:13px;color:var(--text3)">
-    すべてのデータがすでに取り込み済みです
-  </div>`}
+  ${newCount>0?`<button class="import-confirm-btn" onclick="confirmImport()">${newCount}件を取り込む → スプレッドシートにも送信</button>`:`<div style="text-align:center;padding:12px;font-size:13px;color:var(--text3)">すべてのデータがすでに取り込み済みです</div>`}
   <div style="height:20px"></div>
-  ` : step==='preview' && preview.length===0 ? `
+  `:step==='preview'&&preview.length===0?`
   <div class="card" style="margin-top:0">
     <div style="text-align:center;padding:20px;color:var(--text3)">
       <div style="font-size:32px;margin-bottom:8px">🔍</div>
-      <div style="font-size:13px">データが見つかりませんでした。<br>ファイルを確認してください。</div>
+      <div style="font-size:13px">データが見つかりませんでした。</div>
     </div>
-  </div>` : ''}
+  </div>`:''}
   <div style="height:16px"></div>`;
 }
 </script>
