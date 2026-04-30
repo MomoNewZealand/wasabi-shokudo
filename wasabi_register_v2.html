@@ -354,7 +354,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
     <div class="hist-panel" id="sp-hist-panel"></div>
     <div class="master-panel" id="sp-master-panel">
       <div class="master-head">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+          <button onclick="spSwitch('menu')" style="background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:var(--radius);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">← 商品</button>
         <div class="master-head-title">⚙️ 設定・商品マスタ</div>
+        </div>
         <button class="master-add-btn" id="master-action-btn" onclick="openMasterEdit(null)">＋ 新規追加</button>
       </div>
       <div class="master-cat-tabs">
@@ -881,6 +884,15 @@ function renderAll() { renderGrid(); renderTabCart(); renderTabTotal(); renderDa
 //  SP パネル切替
 // ══════════════════════════════════════════
 function spSwitch(panel) {
+  // PC/タブレット幅では master パネルを left-col に重ねて表示するが、
+  // menu への切り替えは cat-bar と prod-panel を必ず復元する
+  if (window.innerWidth >= 768 && panel === 'menu') {
+    document.getElementById('cat-bar').style.display = 'flex';
+    document.getElementById('prod-panel').style.display = 'block';
+    document.getElementById('sp-master-panel').classList.remove('show');
+    spView = 'menu';
+    return;
+  }
   spView = panel;
   ['menu','cart','hist','master'].forEach(p => document.getElementById(`snav-${p}`)?.classList.toggle('on', p===panel));
   const cb=document.getElementById('cat-bar'), pp=document.getElementById('prod-panel');
