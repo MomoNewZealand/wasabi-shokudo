@@ -68,15 +68,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 @media(min-width:400px) and (max-width:767px){.prod-grid{grid-template-columns:repeat(4,1fr)}}
 @media(min-width:768px){
   .prod-grid{grid-template-columns:repeat(3,1fr)}
-  .prod-btn{min-height:90px;padding:14px 8px 12px}
-  .prod-name{font-size:13px}
-  .prod-price{font-size:12px}
+  .prod-btn{min-height:110px;padding:16px 10px 14px}
+  .prod-name{font-size:15px}
+  .prod-price{font-size:13px}
 }
 @media(min-width:1024px){
   .prod-grid{grid-template-columns:repeat(4,1fr)}
-  .prod-btn{min-height:100px}
-  .prod-name{font-size:14px}
-  .prod-price{font-size:12px}
+  .prod-btn{min-height:120px;padding:18px 10px 16px}
+  .prod-name{font-size:16px}
+  .prod-price{font-size:13px}
 }
 .prod-btn{border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--white);padding:9px 5px 8px;cursor:pointer;font-family:inherit;text-align:center;transition:transform .1s,background .1s,border-color .1s;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:68px;justify-content:center;user-select:none;-webkit-user-select:none}
 .prod-btn:active{transform:scale(.93);background:var(--amber-bg);border-color:var(--amber)}
@@ -683,11 +683,16 @@ async function fetchGasSummary(force = false) {
 }
 
 function getMergedSummary() {
-  // 日付が変わっていたらgasSummaryをリセット
   if (gasSummary && gasSummary.date && gasSummary.date !== todayStr()) {
     gasSummary = null; gasOrders = [];
   }
-  if (gasSummary) return gasSummary;
+  if (gasSummary) return {
+    total:  gasSummary.grandTotal  || gasSummary.total  || 0,
+    cash:   gasSummary.cashTotal   || gasSummary.cash   || 0,
+    paypay: gasSummary.paypayTotal || gasSummary.paypay || 0,
+    qr:     gasSummary.qrTotal     || gasSummary.qr     || 0,
+    count:  gasSummary.orderCount  || gasSummary.count  || 0,
+  };
   const orders = todayData.orders;
   return {
     total:  orders.reduce((s,o)=>s+o.total,0),
