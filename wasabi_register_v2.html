@@ -66,8 +66,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .prod-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 8px 16px}
 .prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 @media(min-width:400px) and (max-width:767px){.prod-grid{grid-template-columns:repeat(4,1fr)}}
-@media(min-width:768px){.prod-grid{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:1024px){.prod-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:768px){
+  .prod-grid{grid-template-columns:repeat(3,1fr)}
+  .prod-btn{min-height:90px;padding:14px 8px 12px}
+  .prod-name{font-size:13px}
+  .prod-price{font-size:12px}
+}
+@media(min-width:1024px){
+  .prod-grid{grid-template-columns:repeat(4,1fr)}
+  .prod-btn{min-height:100px}
+  .prod-name{font-size:14px}
+  .prod-price{font-size:12px}
+}
 .prod-btn{border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--white);padding:9px 5px 8px;cursor:pointer;font-family:inherit;text-align:center;transition:transform .1s,background .1s,border-color .1s;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:68px;justify-content:center;user-select:none;-webkit-user-select:none}
 .prod-btn:active{transform:scale(.93);background:var(--amber-bg);border-color:var(--amber)}
 .prod-btn.in-cart{background:var(--amber-bg);border-color:var(--amber-l)}
@@ -660,7 +670,8 @@ async function fetchGasSummary(force = false) {
     const json = await res.json();
     if (json.success) {
       gasOrders  = json.orders  || [];
-      gasSummary = json.summary || null;
+      // summaryに日付を付与して保存
+      gasSummary = json.summary ? { ...json.summary, date: todayStr() } : null;
       if (gasOrders.length > 0) {
         const maxNo = Math.max(...gasOrders.map(o => o.no || 0));
         if (todayData.nextNo <= maxNo) { todayData.nextNo = maxNo + 1; saveTodayData(); updateOrderNo(); }
@@ -672,6 +683,10 @@ async function fetchGasSummary(force = false) {
 }
 
 function getMergedSummary() {
+  // 日付が変わっていたらgasSummaryをリセット
+  if (gasSummary && gasSummary.date && gasSummary.date !== todayStr()) {
+    gasSummary = null; gasOrders = [];
+  }
   if (gasSummary) return gasSummary;
   const orders = todayData.orders;
   return {
@@ -1161,17 +1176,99 @@ function saveDeviceNameFromInput() {
 //  プリセット編集
 // ══════════════════════════════════════════
 function renderPresetEditor(el){
-  el.innerHTML=presets.map((preset,pi)=>{
-    const rows=ALL_PRODS.map(p=>{
-      const checked=preset.items.includes(p.id);
-      return`<div class="preset-prod-row"><input type="checkbox" class="preset-check" id="pc-${pi}-${p.id}" ${checked?'checked':''} onchange="togglePresetItem(${pi},'${p.id}',this.checked)">
-        <label class="preset-prod-name" for="pc-${pi}-${p.id}">${p.name}</label>
+  el.innerHTML = presets.map((preset, pi) => {
+    // プリセット内の商品（チェック済みのもの）をドラッグ可能なリストで表示
+    const checkedRows = preset.items.map(id => {
+      const p = ALL_PRODS.find(x => x.id === id); if(!p) return '';
+      return `<div class="preset-prod-row drag-item" draggable="true"
+        data-pi="${pi}" data-id="${id}"
+        ondragstart="dragStart(event)" ondragover="dragOver(event)"
+        ondrop="dragDrop(event)" ondragend="dragEnd(event)"
+        style="cursor:grab">
+        <span style="color:var(--text3);font-size:16px;margin-right:4px;cursor:grab">☰</span>
+        <input type="checkbox" class="preset-check" id="pc-${pi}-${id}" checked
+          onchange="togglePresetItem(${pi},'${id}',this.checked)">
+        <label class="preset-prod-name" for="pc-${pi}-${id}">${p.name}</label>
         <span class="preset-prod-price">${p.price===null?'変動':'¥'+p.price}</span>
-        ${checked?`<div class="preset-order-btns"><button class="preset-ob" onclick="movePresetItem(${pi},'${p.id}',-1)">↑</button><button class="preset-ob" onclick="movePresetItem(${pi},'${p.id}',1)">↓</button></div>`:'<div style="width:55px"></div>'}
       </div>`;
     }).join('');
-    return`<div class="preset-section"><div class="preset-section-head"><span class="preset-section-title">${preset.icon} ${preset.label}（${preset.items.length}品）</span><button class="preset-rename-btn" onclick="renamePreset(${pi})">名前変更</button></div>${rows}</div>`;
+
+    // 未選択の商品
+    const uncheckedRows = ALL_PRODS.filter(p => !preset.items.includes(p.id)).map(p =>
+      `<div class="preset-prod-row">
+        <span style="width:20px;display:inline-block"></span>
+        <input type="checkbox" class="preset-check" id="pc-${pi}-${p.id}"
+          onchange="togglePresetItem(${pi},'${p.id}',this.checked)">
+        <label class="preset-prod-name" for="pc-${pi}-${p.id}">${p.name}</label>
+        <span class="preset-prod-price">${p.price===null?'変動':'¥'+p.price}</span>
+      </div>`
+    ).join('');
+
+    return `<div class="preset-section">
+      <div class="preset-section-head">
+        <span class="preset-section-title">${preset.icon} ${preset.label}（${preset.items.length}品）</span>
+        <button class="preset-rename-btn" onclick="renamePreset(${pi})">名前変更</button>
+      </div>
+      <div style="padding:6px 14px;font-size:10px;color:var(--text3);background:var(--amber-bg);border-bottom:1px solid var(--amber-ll)">
+        ☰ をドラッグして並び替え／チェックで表示切替
+      </div>
+      <div id="preset-list-${pi}">${checkedRows}</div>
+      ${uncheckedRows ? `<div style="padding:6px 14px;font-size:10px;color:var(--text3);border-top:1px solid var(--border)">── 未選択 ──</div>${uncheckedRows}` : ''}
+    </div>`;
   }).join('');
+}
+
+// ドラッグ&ドロップ用の変数と関数
+let dragSrcEl = null;
+let dragSrcPi = null;
+let dragSrcId = null;
+
+function dragStart(e) {
+  dragSrcEl = e.currentTarget;
+  dragSrcPi = parseInt(dragSrcEl.dataset.pi);
+  dragSrcId = dragSrcEl.dataset.id;
+  e.dataTransfer.effectAllowed = 'move';
+  dragSrcEl.style.opacity = '0.4';
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const target = e.currentTarget;
+  if (target !== dragSrcEl && target.classList.contains('drag-item')) {
+    target.style.borderTop = '2px solid var(--amber)';
+  }
+  return false;
+}
+
+function dragEnd(e) {
+  document.querySelectorAll('.drag-item').forEach(el => {
+    el.style.opacity = '1';
+    el.style.borderTop = '';
+  });
+}
+
+function dragDrop(e) {
+  e.stopPropagation();
+  const target = e.currentTarget;
+  const targetPi = parseInt(target.dataset.pi);
+  const targetId = target.dataset.id;
+
+  if (dragSrcId === targetId || dragSrcPi !== targetPi) return;
+
+  const p = presets[dragSrcPi];
+  const fromIdx = p.items.indexOf(dragSrcId);
+  const toIdx   = p.items.indexOf(targetId);
+  if (fromIdx < 0 || toIdx < 0) return;
+
+  // 並び替え
+  p.items.splice(fromIdx, 1);
+  p.items.splice(toIdx, 0, dragSrcId);
+
+  savePresets(presets);
+  renderPresetEditor(document.getElementById('master-list'));
+  if (activeCat === `preset-${dragSrcPi}`) renderGrid();
+  return false;
 }
 function togglePresetItem(pi,id,checked){const p=presets[pi];if(checked){if(!p.items.includes(id))p.items.push(id);}else{p.items=p.items.filter(x=>x!==id);}savePresets(presets);renderPresetEditor(document.getElementById('master-list'));if(activeCat===`preset-${pi}`)renderGrid();}
 function movePresetItem(pi,id,dir){const p=presets[pi];const idx=p.items.indexOf(id);if(idx<0)return;const ni=idx+dir;if(ni<0||ni>=p.items.length)return;[p.items[idx],p.items[ni]]=[p.items[ni],p.items[idx]];savePresets(presets);renderPresetEditor(document.getElementById('master-list'));if(activeCat===`preset-${pi}`)renderGrid();}
