@@ -69,14 +69,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 @media(min-width:768px){
   .prod-grid{grid-template-columns:repeat(3,1fr)}
   .prod-btn{min-height:150px;padding:20px 14px 18px}
-  .prod-name{font-size:20px}
-  .prod-price{font-size:16px}
+  .prod-name{font-size:20px !important}
+  .prod-price{font-size:16px !important}
 }
 @media(min-width:1024px){
   .prod-grid{grid-template-columns:repeat(4,1fr)}
   .prod-btn{min-height:160px;padding:22px 14px 20px}
-  .prod-name{font-size:22px}
-  .prod-price{font-size:17px}
+  .prod-name{font-size:22px !important}
+  .prod-price{font-size:17px !important}
 }
 .prod-btn{border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--white);padding:9px 5px 8px;cursor:pointer;font-family:inherit;text-align:center;transition:transform .1s,background .1s,border-color .1s;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:68px;justify-content:center;user-select:none;-webkit-user-select:none}
 .prod-btn:active{transform:scale(.93);background:var(--amber-bg);border-color:var(--amber)}
