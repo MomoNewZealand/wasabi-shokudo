@@ -275,14 +275,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .unsent-send-btn{padding:6px 10px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
 .unsent-dismiss-btn{padding:6px 8px;background:none;color:var(--text3);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;cursor:pointer;font-family:inherit}
 /* ★ プリセット表示のカテゴリグループ */
-.preset-cat-section{margin-bottom:8px}
-.preset-cat-section:last-child{margin-bottom:0}
-.preset-cat-label{
-  font-size:10px;font-weight:800;color:var(--text3);letter-spacing:.1em;
-  padding:3px 4px 4px;
-  display:flex;align-items:center;gap:4px;
-  border-bottom:1.5px solid var(--border);
-  margin-bottom:4px;
+.preset-cat-section{margin-bottom:0}
+.preset-cat-section:first-child .preset-cat-divider{display:none} /* 最初のセクションは区切り線不要 */
+.preset-cat-divider{
+  height:1px;background:var(--border2);
+  margin:6px 2px 5px;
 }
 .preset-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 @media(min-width:400px) and (max-width:767px){.preset-cat-grid{grid-template-columns:repeat(4,1fr)}}
@@ -866,23 +863,19 @@ function renderGrid(){
 
   // カテゴリ順に分類
   const CAT_ORDER=['フード','ドリンク','物販'];
-  const CAT_ICON={'フード':'🍚','ドリンク':'☕','物販':'🛍'};
   const grouped={};
   allItems.forEach(p=>{
-    // どのカテゴリに属するか判定
     const cat=CAT_ORDER.find(c=>PRODS[c]?.some(x=>x.id===p.id))||'フード';
     if(!grouped[cat])grouped[cat]=[];
     grouped[cat].push(p);
   });
 
-  // カテゴリにまたがるグリッドを作る
-  // prod-gridをwrapperに変えて、カテゴリセクションを内包
-  g.style.display='block'; // gridをいったんblock化
-  g.innerHTML=CAT_ORDER.filter(cat=>grouped[cat]?.length>0).map(cat=>{
-    const prods=grouped[cat];
+  g.style.display='block';
+  const sections=CAT_ORDER.filter(cat=>grouped[cat]?.length>0);
+  g.innerHTML=sections.map((cat,i)=>{
     return `<div class="preset-cat-section">
-      <div class="preset-cat-label">${CAT_ICON[cat]} ${cat}</div>
-      <div class="preset-cat-grid">${prods.map(p=>prodBtnHtml(p)).join('')}</div>
+      ${i>0?'<div class="preset-cat-divider"></div>':''}
+      <div class="preset-cat-grid">${grouped[cat].map(p=>prodBtnHtml(p)).join('')}</div>
     </div>`;
   }).join('');
 }
