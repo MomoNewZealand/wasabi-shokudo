@@ -37,6 +37,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
   .sp-nav{display:none!important}
   .sp-panel{display:flex!important}
   .tab-panel{display:flex!important}
+  /* ★ タブレット：上部UIをコンパクト化して商品エリアを最大化 */
+  .tab-header{padding:4px 12px}
+  .hdr-title{font-size:13px}
+  .hdr-date{display:none}                /* 日付非表示（時計だけ残す） */
+  .hdr-clock{font-size:15px}
+  .hdr-order-no{font-size:10px;margin-top:0}
+  .device-banner{display:none!important} /* ★ 端末バナーを非表示（ヘッダー内に統合） */
+  .tab-header-device{display:inline!important} /* ヘッダー内の端末名を表示 */
+  .cat-bar{padding:4px 8px 3px;gap:4px}
+  .cat-btn{padding:5px 6px;font-size:10px;min-width:46px}
+  .cat-btn-ico{font-size:13px}
 }
 @media(max-width:767px){
   .left-col{display:flex;flex-direction:column;flex:1;overflow:hidden}
@@ -68,20 +79,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 /* iPad縦向き（768px〜1023px） */
 @media(min-width:768px) and (max-width:1023px){
   .prod-grid{grid-template-columns:repeat(4,1fr)}
-  .prod-btn{min-height:72px !important;padding:10px 8px !important}
+  .prod-btn{min-height:90px !important;padding:14px 8px !important}
   .prod-name{font-size:12px !important}
   .prod-price{font-size:11px !important}
 }
 /* iPad横向き・デスクトップ（1024px以上） */
 @media(min-width:1024px){
   .prod-grid{grid-template-columns:repeat(5,1fr)}
-  .prod-btn{min-height:72px !important;padding:10px 8px !important}
-  .prod-name{font-size:13px !important}
+  .prod-btn{min-height:90px !important;padding:14px 8px !important}
+  .prod-name{font-size:12px !important}
   .prod-price{font-size:11px !important}
 }
 /* iPad Proなど大画面横向き（1180px以上） */
 @media(min-width:1180px){
   .prod-grid{grid-template-columns:repeat(6,1fr)}
+  .prod-btn{min-height:90px !important}
 }
 .prod-btn{border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--white);padding:9px 5px 8px;cursor:pointer;font-family:inherit;text-align:center;transition:transform .1s,background .1s,border-color .1s;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:68px;justify-content:center;user-select:none;-webkit-user-select:none}
 .prod-btn:active{transform:scale(.93);background:var(--amber-bg);border-color:var(--amber)}
@@ -263,14 +275,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .unsent-send-btn{padding:6px 10px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
 .unsent-dismiss-btn{padding:6px 8px;background:none;color:var(--text3);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;cursor:pointer;font-family:inherit}
 /* ★ プリセット表示のカテゴリグループ */
-.preset-cat-section{margin-bottom:10px}
+.preset-cat-section{margin-bottom:8px}
 .preset-cat-section:last-child{margin-bottom:0}
 .preset-cat-label{
   font-size:10px;font-weight:800;color:var(--text3);letter-spacing:.1em;
-  padding:4px 4px 5px;
+  padding:3px 4px 4px;
   display:flex;align-items:center;gap:4px;
   border-bottom:1.5px solid var(--border);
-  margin-bottom:5px;
+  margin-bottom:4px;
 }
 .preset-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 @media(min-width:400px) and (max-width:767px){.preset-cat-grid{grid-template-columns:repeat(4,1fr)}}
@@ -436,6 +448,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
       <div class="hdr-brand">
         <div class="hdr-title">🌿 わさび食堂 レジ</div>
         <div class="hdr-date" id="tab-date"></div>
+        <!-- ★ タブレット時：端末名をヘッダー内に小さく表示 -->
+        <div class="tab-header-device" id="tab-header-device" style="display:none;font-size:9px;color:rgba(255,255,255,.75);margin-top:1px"></div>
       </div>
       <div style="text-align:right">
         <div class="hdr-clock" id="tab-clock"></div>
@@ -613,9 +627,13 @@ function getDeviceName(){return localStorage.getItem(DEVICE_NAME_KEY)||'';}
 function saveDeviceName(name){localStorage.setItem(DEVICE_NAME_KEY,name.trim());updateDeviceBanner();}
 function updateDeviceBanner(){
   const name=getDeviceName(),b=document.getElementById('device-banner'),t=document.getElementById('device-banner-txt');
-  if(!b||!t)return;
-  if(name){t.textContent=`📱 この端末：${name}`;b.style.background='var(--green-bg)';b.style.borderBottom='1px solid var(--green)';t.style.color='var(--green)';}
-  else{t.textContent='⚠️ 端末名が未設定です（2台同時出店の場合は必ず設定）';b.style.background='var(--amber-bg)';b.style.borderBottom='1px solid var(--amber-ll)';t.style.color='var(--amber-dd)';}
+  if(b&&t){
+    if(name){t.textContent=`📱 この端末：${name}`;b.style.background='var(--green-bg)';b.style.borderBottom='1px solid var(--green)';t.style.color='var(--green)';}
+    else{t.textContent='⚠️ 端末名が未設定です（2台同時出店の場合は必ず設定）';b.style.background='var(--amber-bg)';b.style.borderBottom='1px solid var(--amber-ll)';t.style.color='var(--amber-dd)';}
+  }
+  // ★ タブレット用ヘッダー内端末名も更新
+  const hd=document.getElementById('tab-header-device');
+  if(hd){hd.textContent=name?`📱 ${name}`:'';hd.style.display=name?'block':'none';}
 }
 
 // ── 商品マスタ ──
@@ -1190,7 +1208,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 // ── 初期化 ──
 function init(){
-  applyCustomProds();presets=loadPresets();activeCat='フード';applyPresetLabels();
+  applyCustomProds();presets=loadPresets();activeCat='preset-0';applyPresetLabels();
   updateDeviceBanner();
   checkUnsentPreviousData(); // ★NEW 前日未送信チェック
   renderAll();
