@@ -499,8 +499,39 @@ function init(){
     saveToStorage();
   }
   render();
+  syncCustomProdsFromGAS();
 }
 
+async function syncCustomProdsFromGAS() {
+  try {
+    const res  = await fetch(`${GAS_URL}?action=getProductMaster`);
+    const json = await res.json();
+    if (!json.success || !json.products) return;
+    const gasProds = json.products;
+    const baseIds  = new Set(ALL.map(p => p.id));
+    let addedCount = 0;
+    Object.keys(gasProds).forEach(cat => {
+      if (!Array.isArray(gasProds[cat])) return;
+      if (!PRODS[cat]) PRODS[cat] = [];
+      gasProds[cat].forEach(gp => {
+        if (baseIds.has(gp.id)) return;
+        const idx = PRODS[cat].findIndex(p => p.id === gp.id);
+        const prod = { id: gp.id, name: gp.name, price: gp.price };
+        if (idx >= 0) { PRODS[cat][idx] = prod; }
+        else { PRODS[cat].push(prod); addedCount++; }
+      });
+    });
+    if (addedCount > 0) {
+      ALL.length = 0;
+      Object.values(PRODS).flat().forEach(p => ALL.push(p));
+      FOOD_IDS.clear();  PRODS.フード.forEach(p => FOOD_IDS.add(p.id));
+      DRINK_IDS.clear(); PRODS.ドリンク.forEach(p => DRINK_IDS.add(p.id));
+      if (view === 'input') render();
+      showToast(`✅ カスタム商品を${addedCount}件追加しました`);
+    }
+  } catch(e) { console.warn('カスタム商品取得エラー:', e); }
+}
+  
 // ══════════════════════════════════════════
 //  スプレッドシート同期
 // ══════════════════════════════════════════
