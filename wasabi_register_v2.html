@@ -62,20 +62,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .cat-btn.on{background:var(--amber);color:#fff;border-color:var(--amber)}
 .cat-btn.preset{border-color:var(--amber-l);color:var(--amber-d);background:var(--amber-bg)}
 .cat-btn.preset.on{background:var(--amber-d);color:#fff;border-color:var(--amber-d)}
-.prod-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 8px 16px}
-.prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.prod-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 6px 12px}
+.prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 @media(min-width:400px) and (max-width:767px){.prod-grid{grid-template-columns:repeat(4,1fr)}}
-@media(min-width:768px){
-  .prod-grid{grid-template-columns:repeat(3,1fr)}
-  .prod-btn{min-height:90px !important;padding:20px 14px 18px !important}
-  .prod-name{font-size:14px !important}
-  .prod-price{font-size:12px !important}
-}
-@media(min-width:1024px){
+/* iPad縦向き（768px〜1023px） */
+@media(min-width:768px) and (max-width:1023px){
   .prod-grid{grid-template-columns:repeat(4,1fr)}
-  .prod-btn{min-height:90px !important;padding:22px 14px 20px !important}
-  .prod-name{font-size:15px !important}
-  .prod-price{font-size:13px !important}
+  .prod-btn{min-height:72px !important;padding:10px 8px !important}
+  .prod-name{font-size:12px !important}
+  .prod-price{font-size:11px !important}
+}
+/* iPad横向き・デスクトップ（1024px以上） */
+@media(min-width:1024px){
+  .prod-grid{grid-template-columns:repeat(5,1fr)}
+  .prod-btn{min-height:72px !important;padding:10px 8px !important}
+  .prod-name{font-size:13px !important}
+  .prod-price{font-size:11px !important}
+}
+/* iPad Proなど大画面横向き（1180px以上） */
+@media(min-width:1180px){
+  .prod-grid{grid-template-columns:repeat(6,1fr)}
 }
 .prod-btn{border:1.5px solid var(--border);border-radius:var(--radius-lg);background:var(--white);padding:9px 5px 8px;cursor:pointer;font-family:inherit;text-align:center;transition:transform .1s,background .1s,border-color .1s;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:68px;justify-content:center;user-select:none;-webkit-user-select:none}
 .prod-btn:active{transform:scale(.93);background:var(--amber-bg);border-color:var(--amber)}
@@ -168,12 +174,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .pm-body{padding:14px}
 .pm-display{background:var(--amber-bg);border:2px solid var(--amber);border-radius:var(--radius-lg);padding:10px 14px;text-align:right;font-size:28px;font-weight:900;color:var(--amber-d);margin-bottom:12px;min-height:54px;letter-spacing:.02em}
 .pm-display.empty{color:var(--text3);font-size:18px;font-weight:500}
-.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.numpad{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px}
 .nk{padding:13px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:18px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;transition:background .1s;color:var(--text)}
 .nk:active{background:var(--amber-bg)}
 .nk.del{color:var(--red);font-size:14px}
-.nk.zero{grid-column:span 2}
 .nk.clr{font-size:12px;color:var(--text3)}
+/* 数字7〜9は4列グリッドで3列分 */
+.nk.span3{grid-column:span 3}
 .pm-footer{display:flex;gap:8px}
 .pm-cancel{flex:1;padding:12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2)}
 .pm-ok{flex:2;padding:12px;border:none;border-radius:var(--radius);background:var(--amber);font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;color:#fff}
@@ -201,10 +208,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .change-result.show{display:block}
 .change-result-lbl{font-size:11px;color:var(--green);font-weight:600}
 .change-result-val{font-size:28px;font-weight:900;color:var(--green);margin-top:3px}
+/* ★ 現金テンキー用お預かり表示 */
+.received-display{background:var(--amber-bg);border:2px solid var(--amber);border-radius:var(--radius-lg);padding:10px 14px;text-align:right;font-size:28px;font-weight:900;color:var(--amber-d);min-height:54px;letter-spacing:.02em;margin-bottom:8px}
+.received-display.empty{color:var(--text3);font-size:16px;font-weight:500;display:flex;align-items:center;justify-content:flex-end}
 .cm-items-list{border-top:1px solid var(--border);padding-top:10px;margin-top:4px}
 .cm-item-row{display:flex;justify-content:space-between;font-size:12px;padding:2px 0;color:var(--text2)}
 .cm-item-disc{color:var(--green)}
-.cm-next-btn{width:100%;padding:14px;border:none;background:var(--amber);color:#fff;border-radius:var(--radius-lg);font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:12px}
+.cm-next-btn{width:100%;padding:20px;border:none;background:var(--amber);color:#fff;border-radius:var(--radius-lg);font-size:17px;font-weight:800;cursor:pointer;font-family:inherit;margin-top:14px;letter-spacing:.04em}
 .sync-spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:4px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 .send-head{background:var(--amber);padding:16px 18px;display:flex;align-items:center;gap:10px}
@@ -252,6 +262,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .unsent-banner-actions{display:flex;gap:5px;flex-shrink:0}
 .unsent-send-btn{padding:6px 10px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
 .unsent-dismiss-btn{padding:6px 8px;background:none;color:var(--text3);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;cursor:pointer;font-family:inherit}
+/* ★ プリセット表示のカテゴリグループ */
+.preset-cat-section{margin-bottom:10px}
+.preset-cat-section:last-child{margin-bottom:0}
+.preset-cat-label{
+  font-size:10px;font-weight:800;color:var(--text3);letter-spacing:.1em;
+  padding:4px 4px 5px;
+  display:flex;align-items:center;gap:4px;
+  border-bottom:1.5px solid var(--border);
+  margin-bottom:5px;
+}
+.preset-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+@media(min-width:400px) and (max-width:767px){.preset-cat-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:768px) and (max-width:1023px){.preset-cat-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:1024px){.preset-cat-grid{grid-template-columns:repeat(5,1fr)}}
+@media(min-width:1180px){.preset-cat-grid{grid-template-columns:repeat(6,1fr)}}
 /* ★NEW カスタム商品バッジ・マスタ同期 */
 .custom-badge{font-size:9px;padding:1px 5px;background:#EFF6FF;color:var(--blue);border-radius:10px;font-weight:700;margin-left:4px;vertical-align:middle}
 .master-sync-badge{font-size:10px;color:rgba(255,255,255,.75);padding:2px 8px;background:rgba(0,0,0,.15);border-radius:20px;white-space:nowrap}
@@ -462,14 +487,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
     <div class="pm-body">
       <div class="pm-display empty" id="pm-display">金額を入力</div>
       <div class="numpad">
-        <button class="nk" onclick="pmKey('7')">7</button><button class="nk" onclick="pmKey('8')">8</button><button class="nk" onclick="pmKey('9')">9</button>
-        <button class="nk" onclick="pmKey('4')">4</button><button class="nk" onclick="pmKey('5')">5</button><button class="nk" onclick="pmKey('6')">6</button>
-        <button class="nk" onclick="pmKey('1')">1</button><button class="nk" onclick="pmKey('2')">2</button><button class="nk" onclick="pmKey('3')">3</button>
-        <button class="nk clr" onclick="pmKey('C')">クリア</button><button class="nk zero" onclick="pmKey('0')">0</button><button class="nk del" onclick="pmKey('D')">⌫</button>
+        <button class="nk" onclick="pmKey('7')">7</button><button class="nk" onclick="pmKey('8')">8</button><button class="nk" onclick="pmKey('9')">9</button><button class="nk del" onclick="pmKey('D')">⌫</button>
+        <button class="nk" onclick="pmKey('4')">4</button><button class="nk" onclick="pmKey('5')">5</button><button class="nk" onclick="pmKey('6')">6</button><button class="nk clr" onclick="pmKey('C')">クリア</button>
+        <button class="nk" onclick="pmKey('1')">1</button><button class="nk" onclick="pmKey('2')">2</button><button class="nk" onclick="pmKey('3')">3</button><button class="nk" onclick="pmKey('00')" style="font-size:15px">00</button>
+        <button class="nk" style="grid-column:span 4;font-size:22px;padding:16px" onclick="pmKey('0')">0</button>
       </div>
       <div class="pm-footer">
         <button class="pm-cancel" onclick="closePriceModal()">キャンセル</button>
-        <button class="pm-ok" id="pm-ok" onclick="confirmPrice()" disabled>カートへ追加</button>
+        <button class="pm-ok" id="pm-ok" onclick="confirmPrice()">カートへ追加</button>
       </div>
     </div>
   </div>
@@ -485,10 +510,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
         <div class="change-lbl">💴 お釣り計算</div>
         <div class="received-input-row">
           <span class="received-label">お預かり</span>
-          <input class="received-input" id="received-input" type="text" inputmode="numeric" placeholder="0" oninput="calcChange()">
+          <div class="received-display" id="received-display">金額を入力</div>
         </div>
         <div class="quick-bills" id="quick-bills"></div>
         <div class="change-result" id="change-result"><div class="change-result-lbl">お釣り</div><div class="change-result-val" id="change-val"></div></div>
+        <!-- ★ テンキーパッド -->
+        <div class="numpad" style="margin-top:10px;margin-bottom:0">
+          <button class="nk" onclick="cashKey('7')">7</button><button class="nk" onclick="cashKey('8')">8</button><button class="nk" onclick="cashKey('9')">9</button><button class="nk del" onclick="cashKey('D')">⌫</button>
+          <button class="nk" onclick="cashKey('4')">4</button><button class="nk" onclick="cashKey('5')">5</button><button class="nk" onclick="cashKey('6')">6</button><button class="nk clr" onclick="cashKey('C')">クリア</button>
+          <button class="nk" onclick="cashKey('1')">1</button><button class="nk" onclick="cashKey('2')">2</button><button class="nk" onclick="cashKey('3')">3</button><button class="nk" onclick="cashKey('00')" style="font-size:15px">00</button>
+          <button class="nk" style="grid-column:span 4;font-size:22px;padding:14px" onclick="cashKey('0')">0</button>
+        </div>
       </div>
       <div class="cm-items-list" id="cm-items-list"></div>
       <button class="cm-next-btn" id="cm-next-btn" onclick="completeCheckout()">会計完了 → 次の注文へ</button>
@@ -787,15 +819,59 @@ async function syncSettingsFromGAS(){
 
 let presets=loadPresets();
 function applyPresetLabels(){presets.forEach((p,i)=>{const lbl=document.getElementById(`preset-${i}-label`);if(lbl)lbl.textContent=p.label;const btn=document.getElementById(`cat-btn-preset-${i}`);if(btn){const ico=btn.querySelector('.cat-btn-ico');if(ico)ico.textContent=p.icon||'⭐';}});}
-function setCat(cat){activeCat=cat;document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('on'));if(cat.startsWith('preset-'))document.getElementById(`cat-btn-${cat}`)?.classList.add('on');else document.querySelectorAll(`.cat-btn[data-cat="${cat}"]`).forEach(b=>b.classList.add('on'));renderGrid();}
+function setCat(cat){
+  activeCat=cat;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('on'));
+  if(cat.startsWith('preset-'))document.getElementById(`cat-btn-${cat}`)?.classList.add('on');
+  else document.querySelectorAll(`.cat-btn[data-cat="${cat}"]`).forEach(b=>b.classList.add('on'));
+  // カテゴリ単体のときはprod-gridをgridに戻す
+  const g=document.getElementById('prod-grid');
+  if(g)g.style.display=cat.startsWith('preset-')?'block':'grid';
+  renderGrid();
+}
 
 // ── 商品グリッド ──
 function renderGrid(){
   const g=document.getElementById('prod-grid');if(!g)return;
-  let prods;
-  if(activeCat.startsWith('preset-')){const idx=parseInt(activeCat.replace('preset-',''));const preset=presets[idx];if(!preset){g.innerHTML='';return;}prods=preset.items.map(id=>ALL_PRODS.find(p=>p.id===id)).filter(Boolean);}
-  else{prods=PRODS[activeCat]||[];}
-  g.innerHTML=prods.map(p=>{const qty=cart.find(c=>c.id===p.id)?.qty||0;return`<button class="prod-btn${qty>0?' in-cart':''}" data-div="${p.div||'shokudo'}" onclick="addItem('${p.id}')" ontouchstart="">${qty>0?`<div class="cart-badge">${qty}</div>`:''}<div class="prod-name">${p.name}</div><div class="prod-price${p.price===null?' vari':''}">${p.price===null?'価格変動':fmt(p.price)}</div></button>`;}).join('');
+
+  if(!activeCat.startsWith('preset-')){
+    // カテゴリ単体表示：従来通りフラットグリッド
+    const prods=PRODS[activeCat]||[];
+    g.innerHTML=prods.map(p=>prodBtnHtml(p)).join('');
+    return;
+  }
+
+  // プリセット表示：カテゴリ別にグループ化
+  const idx=parseInt(activeCat.replace('preset-',''));
+  const preset=presets[idx];if(!preset){g.innerHTML='';return;}
+  const allItems=preset.items.map(id=>ALL_PRODS.find(p=>p.id===id)).filter(Boolean);
+
+  // カテゴリ順に分類
+  const CAT_ORDER=['フード','ドリンク','物販'];
+  const CAT_ICON={'フード':'🍚','ドリンク':'☕','物販':'🛍'};
+  const grouped={};
+  allItems.forEach(p=>{
+    // どのカテゴリに属するか判定
+    const cat=CAT_ORDER.find(c=>PRODS[c]?.some(x=>x.id===p.id))||'フード';
+    if(!grouped[cat])grouped[cat]=[];
+    grouped[cat].push(p);
+  });
+
+  // カテゴリにまたがるグリッドを作る
+  // prod-gridをwrapperに変えて、カテゴリセクションを内包
+  g.style.display='block'; // gridをいったんblock化
+  g.innerHTML=CAT_ORDER.filter(cat=>grouped[cat]?.length>0).map(cat=>{
+    const prods=grouped[cat];
+    return `<div class="preset-cat-section">
+      <div class="preset-cat-label">${CAT_ICON[cat]} ${cat}</div>
+      <div class="preset-cat-grid">${prods.map(p=>prodBtnHtml(p)).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function prodBtnHtml(p){
+  const qty=cart.find(c=>c.id===p.id)?.qty||0;
+  return`<button class="prod-btn${qty>0?' in-cart':''}" data-div="${p.div||'shokudo'}" onclick="addItem('${p.id}')" ontouchstart="">${qty>0?`<div class="cart-badge">${qty}</div>`:''}<div class="prod-name">${p.name}</div><div class="prod-price${p.price===null?' vari':''}">${p.price===null?'価格変動':fmt(p.price)}</div></button>`;
 }
 
 // ── カート操作 ──
@@ -846,14 +922,49 @@ function spSwitch(panel){
 // ── 生わさびモーダル ──
 function openPriceModal(){pmVal='';updatePmDisplay();document.getElementById('price-modal').style.display='flex';}
 function closePriceModal(){document.getElementById('price-modal').style.display='none';}
-function pmKey(k){if(k==='C')pmVal='';else if(k==='D')pmVal=pmVal.slice(0,-1);else if(pmVal.length<6)pmVal+=k;updatePmDisplay();}
-function updatePmDisplay(){const d=document.getElementById('pm-display'),ok=document.getElementById('pm-ok'),n=parseInt(pmVal,10);if(!pmVal){d.textContent='金額を入力';d.classList.add('empty');}else{d.textContent=fmt(n);d.classList.remove('empty');}ok.disabled=!pmVal||n<=0;}
-function confirmPrice(){const price=parseInt(pmVal,10);if(!price||price<=0)return;const ex=cart.find(c=>c.id==='fresh_wasabi');if(ex){ex.totalPrice=(ex.totalPrice||ex.unitPrice)+price;ex.qty++;ex.unitPrice=Math.round(ex.totalPrice/ex.qty);}else{cart.push({id:'fresh_wasabi',name:'生わさび',qty:1,unitPrice:price,disc:0,totalPrice:price});}closePriceModal();renderAll();}
+function pmKey(k){
+  if(k==='C'){pmVal='';}
+  else if(k==='D'){pmVal=pmVal.slice(0,-1);}
+  else if(k==='00'){if(pmVal.length>0&&pmVal.length<5)pmVal+='00';}  // ★ 00ボタン：すでに入力がある場合のみ追加、6桁超えない
+  else if(pmVal.length<6){pmVal+=k;}
+  updatePmDisplay();
+}
+function updatePmDisplay(){
+  const d=document.getElementById('pm-display'),ok=document.getElementById('pm-ok'),n=parseInt(pmVal,10)||0;
+  if(!pmVal){d.textContent='金額を入力';d.classList.add('empty');}
+  else{d.textContent=fmt(n);d.classList.remove('empty');}
+  // ★ disabled属性の代わりにopacityとpointer-eventsで制御（iOSのdisabledバグ対策）
+  if(!pmVal||n<=0){ok.style.opacity='0.4';ok.style.pointerEvents='none';}
+  else{ok.style.opacity='1';ok.style.pointerEvents='auto';}
+}
+function confirmPrice(){
+  const price=parseInt(pmVal,10);if(!price||price<=0)return;
+  const ex=cart.find(c=>c.id==='fresh_wasabi');
+  if(ex){ex.totalPrice=(ex.totalPrice||ex.unitPrice)+price;ex.qty++;ex.unitPrice=Math.round(ex.totalPrice/ex.qty);}
+  else{cart.push({id:'fresh_wasabi',name:'生わさび',qty:1,unitPrice:price,disc:0,totalPrice:price});}
+  closePriceModal();renderAll();
+}
 
-// ── 会計モーダル ──
+// ── 会計モーダル（現金テンキー） ──
+let cashVal='';
+function cashKey(k){
+  if(k==='C'){cashVal='';}
+  else if(k==='D'){cashVal=cashVal.slice(0,-1);}
+  else if(k==='00'){if(cashVal.length>0&&cashVal.length<6)cashVal+='00';}
+  else if(cashVal.length<7){cashVal+=k;}
+  updateCashDisplay();
+}
+function updateCashDisplay(){
+  const d=document.getElementById('received-display');
+  if(!d)return;
+  const n=parseInt(cashVal,10)||0;
+  if(!cashVal){d.textContent='金額を入力';d.classList.add('empty');}
+  else{d.textContent=fmt(n);d.classList.remove('empty');}
+  calcChange();
+}
 function openCheckout(payment){
   if(!cart.length)return;
-  currentPayment=payment;
+  currentPayment=payment;cashVal='';
   const{subtotal,discount,total}=calcTotals();const isCash=payment==='cash';
   document.getElementById('cm-head').className=`cm-head ${payment}`;
   setTxt('cm-ico',payment==='cash'?'💴':payment==='paypay'?'🔴':'💳');
@@ -862,8 +973,13 @@ function openCheckout(payment){
   setTxt('cm-total-val',fmt(total));
   document.getElementById('change-area').style.display=isCash?'block':'none';
   if(isCash){
-    document.getElementById('received-input').value='';document.getElementById('change-result').classList.remove('show');
-    const bills=[1000,2000,5000,10000].filter(b=>b>=total);const uniq=[...new Set([total,...bills])];
+    // ★ テンキー表示リセット
+    const rd=document.getElementById('received-display');
+    if(rd){rd.textContent='金額を入力';rd.classList.add('empty');}
+    document.getElementById('change-result').classList.remove('show');
+    // ちょうど・おつり切りのよいボタン
+    const bills=[1000,2000,5000,10000].filter(b=>b>=total);
+    const uniq=[...new Set([total,...bills])];
     document.getElementById('quick-bills').innerHTML=uniq.map(v=>`<button class="bill-btn" onclick="setReceived(${v})">${v===total?'ちょうど':fmt(v)}</button>`).join('');
   }
   const rows=cart.map(item=>{const disc=isLocal?item.disc:0;return`<div class="cm-item-row"><span>${item.name} × ${item.qty}</span><span>${fmt((item.unitPrice-disc)*item.qty)}</span></div>`;}).join('');
@@ -871,9 +987,20 @@ function openCheckout(payment){
   document.getElementById('cm-items-list').innerHTML=rows+discRow;
   document.getElementById('checkout-modal').style.display='flex';
 }
-function setReceived(amount){document.getElementById('received-input').value=amount;calcChange();}
-function calcChange(){const{total}=calcTotals();const r=parseInt(document.getElementById('received-input').value,10)||0;const res=document.getElementById('change-result');if(r>=total){res.classList.add('show');setTxt('change-val',fmt(r-total));}else{res.classList.remove('show');}}
-function closeCheckout(){document.getElementById('checkout-modal').style.display='none';currentPayment=null;}
+function setReceived(amount){
+  cashVal=String(amount);
+  const rd=document.getElementById('received-display');
+  if(rd){rd.textContent=fmt(amount);rd.classList.remove('empty');}
+  calcChange();
+}
+function calcChange(){
+  const{total}=calcTotals();
+  const r=parseInt(cashVal,10)||0;
+  const res=document.getElementById('change-result');
+  if(r>=total){res.classList.add('show');setTxt('change-val',fmt(r-total));}
+  else{res.classList.remove('show');}
+}
+function closeCheckout(){document.getElementById('checkout-modal').style.display='none';currentPayment=null;cashVal='';}
 async function completeCheckout(){
   const{subtotal,discount,total}=calcTotals();const now=new Date();
   const order={no:todayData.nextNo,time:now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}),payment:currentPayment,isLocal,items:cart.map(c=>({id:c.id,name:c.name,qty:c.qty,unitPrice:c.unitPrice,disc:c.disc})),subtotal,discount,total,date:todayStr(),timestamp:now.toISOString()};
@@ -1063,7 +1190,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 // ── 初期化 ──
 function init(){
-  applyCustomProds();presets=loadPresets();activeCat='preset-0';applyPresetLabels();
+  applyCustomProds();presets=loadPresets();activeCat='フード';applyPresetLabels();
   updateDeviceBanner();
   checkUnsentPreviousData(); // ★NEW 前日未送信チェック
   renderAll();
