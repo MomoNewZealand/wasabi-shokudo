@@ -1097,7 +1097,7 @@ async function executeSend(){
       date:targetData.date,loc,event:loc==='イベント'?event:'',weather:sendWeather,memo,
       items:merged.items,shokudoTotal:merged.shokudoTotal,coffeeTotal:merged.coffeeTotal,buppanTotal:merged.buppanTotal,
       foodTotal:merged.shokudoTotal,drinkTotal:merged.coffeeTotal,merchTotal:merged.buppanTotal,
-      cashTotal:merged.cashTotal,paypayTotal:merged.paypayTotal,qrTotal:merged.qrTotal,
+      cashTotal:merged.cashTotal,paypayTotal:merged.paypayTotal,qrTotal:merged.qrTotal,rakutenTotal:merged.qrTotal,
       total:merged.total,source:'register'
     };
     const raw=localStorage.getItem(SALES_APP_KEY);
