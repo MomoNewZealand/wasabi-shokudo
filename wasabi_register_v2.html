@@ -448,9 +448,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
         <!-- ★ タブレット時：端末名をヘッダー内に小さく表示 -->
         <div class="tab-header-device" id="tab-header-device" style="display:none;font-size:9px;color:rgba(255,255,255,.75);margin-top:1px"></div>
       </div>
-      <div style="text-align:right">
-        <div class="hdr-clock" id="tab-clock"></div>
-        <div class="hdr-order-no" id="tab-order-no"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="text-align:right">
+          <div class="hdr-clock" id="tab-clock"></div>
+          <div class="hdr-order-no" id="tab-order-no"></div>
+        </div>
+        <!-- ★ タブレット用設定ボタン -->
+        <button onclick="spSwitch('master')" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:var(--radius);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">⚙️ 設定</button>
       </div>
     </div>
     <div class="cart-hdr">
