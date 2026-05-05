@@ -214,7 +214,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .received-label{font-size:11px;color:var(--text3);display:block;margin-bottom:4px;font-weight:600}
 .received-input{display:block;width:100%;box-sizing:border-box;padding:8px 12px;border:2px solid var(--amber);border-radius:var(--radius);font-size:18px;font-weight:800;text-align:right;font-family:inherit;color:var(--text);background:var(--amber-bg);outline:none}
 .quick-bills{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
-.bill-btn{padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);transition:background .1s}
+.bill-btn{padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);transition:background .1s}
 .bill-btn:active{background:var(--amber-bg);border-color:var(--amber)}
 .change-result{background:var(--green-bg);border:1.5px solid var(--green);border-radius:var(--radius-lg);padding:12px;text-align:center;display:none}
 .change-result.show{display:block}
@@ -274,7 +274,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .unsent-banner-actions{display:flex;gap:5px;flex-shrink:0}
 .unsent-send-btn{padding:6px 10px;background:var(--orange);color:#fff;border:none;border-radius:var(--radius);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap}
 .unsent-dismiss-btn{padding:6px 8px;background:none;color:var(--text3);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;cursor:pointer;font-family:inherit}
-/* ★ プリセット表示のカテゴリグループ */
+/* ★ 注文編集モーダル */
+.oedit-pay-btn{flex:1;padding:8px 6px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);transition:all .12s}
+.oedit-pay-btn.on{background:var(--amber);color:#fff;border-color:var(--amber)}
+.oedit-item-row{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--white)}
+.oedit-item-row:last-child{border-bottom:none}
+.oedit-item-name{flex:1;font-size:12px;font-weight:600;color:var(--text)}
+.oedit-item-qty{width:44px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-weight:700;text-align:center;font-family:inherit}
+.oedit-item-price{width:72px;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;text-align:right}
+.oedit-item-del{width:24px;height:24px;border:1.5px solid var(--red);border-radius:6px;background:var(--red-bg);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--red);flex-shrink:0}
 .preset-cat-section{margin-bottom:0}
 .preset-cat-section:first-child .preset-cat-divider{display:none} /* 最初のセクションは区切り線不要 */
 .preset-cat-divider{
@@ -617,6 +625,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
   </div>
 </div>
 
+<!-- ★ 注文編集モーダル -->
+<div class="medit-overlay" id="order-edit-modal" style="display:none" onclick="if(event.target===this)closeOrderEdit()">
+  <div class="medit-modal" style="max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()">
+    <div class="medit-head">
+      <div class="medit-title" id="oedit-title">注文を編集</div>
+      <button class="medit-close" onclick="closeOrderEdit()">✕</button>
+    </div>
+    <div class="medit-body">
+      <!-- 支払方法 -->
+      <div class="medit-field">
+        <label class="medit-label">支払方法</label>
+        <div style="display:flex;gap:6px">
+          <button class="oedit-pay-btn" id="oedit-pay-cash" onclick="oeditSetPay('cash')">💴 現金</button>
+          <button class="oedit-pay-btn" id="oedit-pay-paypay" onclick="oeditSetPay('paypay')">🔴 PayPay</button>
+          <button class="oedit-pay-btn" id="oedit-pay-qr" onclick="oeditSetPay('qr')">💳 R Pay</button>
+        </div>
+      </div>
+      <!-- 地元割 -->
+      <div class="medit-field">
+        <label class="medit-label">地元割</label>
+        <div style="display:flex;gap:6px">
+          <button class="oedit-pay-btn" id="oedit-local-off" onclick="oeditSetLocal(false)">通常料金</button>
+          <button class="oedit-pay-btn" id="oedit-local-on" onclick="oeditSetLocal(true)">🏔 地元割</button>
+        </div>
+      </div>
+      <!-- 商品内訳 -->
+      <div class="medit-field">
+        <label class="medit-label">商品内訳</label>
+        <div id="oedit-items-list" style="border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden"></div>
+        <button onclick="oeditAddItem()" style="width:100%;margin-top:6px;padding:8px;border:1.5px dashed var(--border2);border-radius:var(--radius);background:none;font-size:12px;font-weight:700;color:var(--amber-d);cursor:pointer;font-family:inherit">＋ 商品を追加</button>
+      </div>
+      <!-- 合計 -->
+      <div class="medit-field" style="background:var(--amber-bg);border-radius:var(--radius);padding:10px 12px">
+        <label class="medit-label">合計金額（自動計算）</label>
+        <div id="oedit-total" style="font-size:22px;font-weight:900;color:var(--amber-d)">¥0</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">手動で変更する場合：</div>
+        <input class="medit-input" id="oedit-manual-total" type="number" inputmode="numeric" placeholder="空欄で自動計算" style="margin-top:4px" oninput="oeditUpdateTotal()">
+      </div>
+    </div>
+    <div class="medit-footer">
+      <button class="medit-cancel" onclick="closeOrderEdit()">キャンセル</button>
+      <button style="flex:1;padding:12px;border:1.5px solid var(--red);border-radius:var(--radius-lg);background:var(--red-bg);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--red)" onclick="deleteOrder()">🗑 削除</button>
+      <button class="medit-save" onclick="saveOrderEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 'use strict';
@@ -917,7 +972,139 @@ function renderSpCart(){
   el.innerHTML=`<div style="background:var(--amber-bg);border-bottom:1px solid var(--amber-ll);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0"><span style="font-size:12px;font-weight:800;color:var(--amber-dd)">🧾 注文カート</span><button class="cart-clear-btn" onclick="clearCart();renderSpCart()">全クリア</button></div><div style="display:flex;gap:4px;padding:6px 10px;background:var(--bg);flex-shrink:0;border-bottom:1px solid var(--border)"><button class="local-btn ${isLocal?'off':'on-normal'}" onclick="setLocal(false);renderSpCart()">通常料金</button><button class="local-btn ${isLocal?'on-local':'off'}" onclick="setLocal(true);renderSpCart()">🏔 地元割</button></div><div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">${cH}</div><div class="total-area"><div class="subtotal-rows">${dH}</div><div class="total-row-big"><div class="total-lbl">合計（税込）</div><div class="total-val">${fmt(total)}</div></div></div><div class="checkout-area"><div class="checkout-lbl">支払方法を選択して会計</div><div class="pay-btns"><button class="pay-btn cash" ${!h?'disabled':''} onclick="openCheckout('cash')"><span class="pay-ico">💴</span><span class="pay-lbl">現金</span></button><button class="pay-btn paypay" ${!h?'disabled':''} onclick="openCheckout('paypay')"><span class="pay-ico">🔴</span><span class="pay-lbl">PayPay</span></button><button class="pay-btn qr" ${!h?'disabled':''} onclick="openCheckout('qr')"><span class="pay-ico">💳</span><span class="pay-lbl">R Pay</span></button></div></div>`;
 }
 function renderDailySummary(){const s=getMergedSummary();const ig=!!gasSummary;document.getElementById('tab-daily-grid').innerHTML=`<div class="daily-item"><div class="daily-lbl">本日合計${ig?'🔄':''}</div><div class="daily-val">${fmt(s.total)}</div></div><div class="daily-item"><div class="daily-lbl">💴 現金</div><div class="daily-val">${fmt(s.cash)}</div></div><div class="daily-item"><div class="daily-lbl">🔴 PayPay</div><div class="daily-val">${fmt(s.paypay)}</div></div><div class="daily-item"><div class="daily-lbl">💳 R Pay</div><div class="daily-val">${fmt(s.qr)}</div></div><div class="daily-item"><div class="daily-lbl">件数</div><div class="daily-val">${s.count}件</div></div>`;}
-function makeHistHtml(){const orders=getMergedOrders();if(!orders.length)return'<div class="hist-empty"><div style="font-size:36px;opacity:.3">📋</div><div style="font-size:13px">本日の注文はまだありません</div></div>';const ig=gasOrders.length>0;return(ig?'<div style="font-size:10px;color:var(--text3);padding:4px 10px 0;text-align:right">🔄 全端末の注文を表示中</div>':'')+orders.map(o=>`<div class="hist-card"><div class="hist-card-top"><span class="hist-no">#${o.no}</span><span class="hist-time">${fmtOrderTime(o.time)}${o.isLocal?'<span class="hist-local-badge">地元割</span>':''}</span><span class="hist-pay-badge ${o.payment}">${o.payment==='cash'?'💴 現金':o.payment==='paypay'?'🔴 PayPay':'💳 R Pay'}</span><span class="hist-total">${fmt(o.total)}</span></div>${o.items?`<div class="hist-items">${o.items.map(i=>`${i.name}×${i.qty}`).join('　')}</div>`:''}</div>`).join('');}
+function makeHistHtml(){
+  const orders=getMergedOrders();
+  if(!orders.length)return'<div class="hist-empty"><div style="font-size:36px;opacity:.3">📋</div><div style="font-size:13px">本日の注文はまだありません</div></div>';
+  const ig=gasOrders.length>0;
+  return(ig?'<div style="font-size:10px;color:var(--text3);padding:4px 10px 0;text-align:right">🔄 全端末の注文を表示中</div>':'')
+    +orders.map(o=>`<div class="hist-card">
+      <div class="hist-card-top">
+        <span class="hist-no">#${o.no}</span>
+        <span class="hist-time">${fmtOrderTime(o.time)}${o.isLocal?'<span class="hist-local-badge">地元割</span>':''}</span>
+        <span class="hist-pay-badge ${o.payment}">${o.payment==='cash'?'💴 現金':o.payment==='paypay'?'🔴 PayPay':'💳 R Pay'}</span>
+        <span class="hist-total">${fmt(o.total)}</span>
+        <button onclick="openOrderEdit(${o.no})" style="padding:4px 8px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:var(--text2);flex-shrink:0">✏️</button>
+      </div>
+      ${o.items?`<div class="hist-items">${o.items.map(i=>`${i.name}×${i.qty}`).join('　')}</div>`:''}
+    </div>`).join('');
+}
+
+// ── ★ 注文編集 ──
+let oeditOrderNo = null;
+let oeditItems = [];
+let oeditPayment = 'cash';
+let oeditIsLocal = false;
+
+function openOrderEdit(no) {
+  // localStorageから該当注文を取得
+  const order = todayData.orders.find(o => o.no === no);
+  if (!order) { showToast('この注文は編集できません（他端末の注文）'); return; }
+  oeditOrderNo = no;
+  oeditPayment = order.payment;
+  oeditIsLocal = order.isLocal || false;
+  // itemsをディープコピー
+  oeditItems = (order.items || []).map(i => ({...i}));
+  document.getElementById('oedit-title').textContent = `#${no} を編集`;
+  document.getElementById('oedit-manual-total').value = '';
+  oeditRenderPayBtns();
+  oeditRenderLocalBtns();
+  oeditRenderItems();
+  oeditUpdateTotal();
+  document.getElementById('order-edit-modal').style.display = 'flex';
+}
+function closeOrderEdit() { document.getElementById('order-edit-modal').style.display = 'none'; oeditOrderNo = null; }
+
+function oeditSetPay(p) { oeditPayment = p; oeditRenderPayBtns(); }
+function oeditSetLocal(v) { oeditIsLocal = v; oeditRenderLocalBtns(); oeditUpdateTotal(); }
+
+function oeditRenderPayBtns() {
+  ['cash','paypay','qr'].forEach(p => {
+    document.getElementById(`oedit-pay-${p}`)?.classList.toggle('on', oeditPayment === p);
+  });
+}
+function oeditRenderLocalBtns() {
+  document.getElementById('oedit-local-off')?.classList.toggle('on', !oeditIsLocal);
+  document.getElementById('oedit-local-on')?.classList.toggle('on', oeditIsLocal);
+}
+
+function oeditRenderItems() {
+  const el = document.getElementById('oedit-items-list');
+  if (!el) return;
+  if (!oeditItems.length) { el.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--text3)">商品なし</div>'; return; }
+  el.innerHTML = oeditItems.map((item, i) => `
+    <div class="oedit-item-row">
+      <div class="oedit-item-name">${item.name}</div>
+      <input class="oedit-item-qty" type="number" inputmode="numeric" value="${item.qty}" min="0"
+        onchange="oeditItems[${i}].qty=Math.max(0,parseInt(this.value)||0);oeditUpdateTotal()" style="width:44px">
+      <span style="font-size:11px;color:var(--text3)">×</span>
+      <input class="oedit-item-price" type="number" inputmode="numeric" value="${item.unitPrice}"
+        onchange="oeditItems[${i}].unitPrice=parseInt(this.value)||0;oeditUpdateTotal()">
+      <button class="oedit-item-del" onclick="oeditItems.splice(${i},1);oeditRenderItems();oeditUpdateTotal()">✕</button>
+    </div>`).join('');
+}
+
+function oeditUpdateTotal() {
+  const manual = parseInt(document.getElementById('oedit-manual-total')?.value) || 0;
+  let auto = 0;
+  oeditItems.forEach(item => {
+    const disc = oeditIsLocal ? (item.disc || 0) : 0;
+    auto += (item.unitPrice - disc) * item.qty;
+  });
+  const total = manual > 0 ? manual : auto;
+  const el = document.getElementById('oedit-total');
+  if (el) el.textContent = fmt(total);
+}
+
+function oeditAddItem() {
+  // 全商品からセレクト追加
+  const name = prompt('商品名を入力してください');
+  if (!name) return;
+  const price = parseInt(prompt('単価を入力してください（円）')) || 0;
+  const qty = parseInt(prompt('数量を入力してください')) || 1;
+  oeditItems.push({ id: 'manual_' + Date.now(), name, qty, unitPrice: price, disc: 0 });
+  oeditRenderItems();
+  oeditUpdateTotal();
+}
+
+function deleteOrder() {
+  if (!confirm(`#${oeditOrderNo} を削除しますか？`)) return;
+  todayData.orders = todayData.orders.filter(o => o.no !== oeditOrderNo);
+  saveTodayData();
+  closeOrderEdit();
+  renderAll();
+  showToast(`#${oeditOrderNo} を削除しました`);
+}
+
+function saveOrderEdit() {
+  const idx = todayData.orders.findIndex(o => o.no === oeditOrderNo);
+  if (idx < 0) return;
+  const manual = parseInt(document.getElementById('oedit-manual-total')?.value) || 0;
+  let auto = 0;
+  oeditItems.forEach(item => {
+    const disc = oeditIsLocal ? (item.disc || 0) : 0;
+    auto += (item.unitPrice - disc) * item.qty;
+  });
+  const total = manual > 0 ? manual : auto;
+  // 部門別集計
+  let subtotal = 0, discount = 0;
+  oeditItems.forEach(item => {
+    subtotal += item.unitPrice * item.qty;
+    if (oeditIsLocal) discount += (item.disc || 0) * item.qty;
+  });
+  todayData.orders[idx] = {
+    ...todayData.orders[idx],
+    payment: oeditPayment,
+    isLocal: oeditIsLocal,
+    items: oeditItems.filter(i => i.qty > 0),
+    subtotal, discount, total
+  };
+  saveTodayData();
+  closeOrderEdit();
+  renderAll();
+  showToast(`#${oeditOrderNo} を更新しました`);
+  // GASにも再送信
+  if (GAS_URL) sendToGAS(todayData.orders[idx]);
+}
 function renderTabHist(){const el=document.getElementById('tab-hist-list');if(el)el.innerHTML=makeHistHtml();}
 function renderSpHist(){const el=document.getElementById('sp-hist-panel');if(!el)return;const s=getMergedSummary();el.innerHTML=`<div class="hist-summary"><div class="hist-sum-grid" style="grid-template-columns:repeat(5,1fr)"><div class="hist-sum-item"><div class="hist-sum-lbl">本日合計</div><div class="hist-sum-val">${fmt(s.total)}</div></div><div class="hist-sum-item"><div class="hist-sum-lbl">💴 現金</div><div class="hist-sum-val">${fmt(s.cash)}</div></div><div class="hist-sum-item"><div class="hist-sum-lbl">🔴 PayPay</div><div class="hist-sum-val">${fmt(s.paypay)}</div></div><div class="hist-sum-item"><div class="hist-sum-lbl">💳 R Pay</div><div class="hist-sum-val">${fmt(s.qr)}</div></div><div class="hist-sum-item"><div class="hist-sum-lbl">件数</div><div class="hist-sum-val">${s.count}件</div></div></div></div><div class="hist-list">${makeHistHtml()}</div>`;}
 function updateCartNavLabel(){const t=cart.reduce((s,c)=>s+c.qty,0);setTxt('cart-nav-label',t>0?`カート(${t})`:'カート');}
@@ -954,9 +1141,14 @@ function updatePmDisplay(){
 }
 function confirmPrice(){
   const price=parseInt(pmVal,10);if(!price||price<=0)return;
-  const ex=cart.find(c=>c.id==='fresh_wasabi');
-  if(ex){ex.totalPrice=(ex.totalPrice||ex.unitPrice)+price;ex.qty++;ex.unitPrice=Math.round(ex.totalPrice/ex.qty);}
-  else{cart.push({id:'fresh_wasabi',name:'生わさび',qty:1,unitPrice:price,disc:0,totalPrice:price});}
+  // 同じ価格の生わさびがあればqtyを増やす、違う価格は別エントリ
+  const cartId='fresh_wasabi_'+price; // 価格ごとに一意のID
+  const samePrice=cart.find(c=>c.id===cartId);
+  if(samePrice){
+    samePrice.qty++;
+  } else {
+    cart.push({id:cartId,name:'生わさび',qty:1,unitPrice:price,disc:0});
+  }
   closePriceModal();renderAll();
 }
 
@@ -1074,7 +1266,14 @@ function _buildMergedItems(orders){
   const items={};let st=0,ct=0,bt=0,cash=0,paypay=0,qr=0,total=0;
   orders.forEach(order=>{
     if(order.payment==='cash')cash+=order.total;if(order.payment==='paypay')paypay+=order.total;if(order.payment==='qr')qr+=order.total;total+=order.total;
-    order.items.forEach(item=>{if(!items[item.id])items[item.id]={qty:0};items[item.id].qty+=item.qty;const disc=order.isLocal?item.disc:0,lt=(item.unitPrice-disc)*item.qty;const prod=findProd(item.id),div=prod?.div||'buppan';if(div==='shokudo')st+=lt;else if(div==='coffee')ct+=lt;else bt+=lt;});
+    order.items.forEach(item=>{
+      // ★ fresh_wasabi_XXXX → fresh_wasabi に正規化
+      const reportId=item.id.startsWith('fresh_wasabi')?'fresh_wasabi':item.id;
+      if(!items[reportId])items[reportId]={qty:0};items[reportId].qty+=item.qty;
+      const disc=order.isLocal?item.disc:0,lt=(item.unitPrice-disc)*item.qty;
+      const prod=findProd(reportId),div=prod?.div||'buppan';
+      if(div==='shokudo')st+=lt;else if(div==='coffee')ct+=lt;else bt+=lt;
+    });
   });
   return{items,shokudoTotal:st,coffeeTotal:ct,buppanTotal:bt,foodTotal:st,drinkTotal:ct,merchTotal:bt,cashTotal:cash,paypayTotal:paypay,qrTotal:qr,total};
 }
