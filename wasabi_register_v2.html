@@ -823,7 +823,23 @@ function getMergedOrders(){
 }
 
 // ── 時計 ──
-function tick(){const now=new Date();const time=now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});const date=now.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});setTxt('sp-clock',time);setTxt('tab-clock',time);setTxt('sp-date',date);setTxt('tab-date',date);}
+function tick(){
+  // ★ 日付をまたいだら自動リセット
+  if(todayData.date !== todayStr()){
+    todayData = loadTodayData();
+    cart = [];
+    isLocal = false;
+    updateOrderNo();
+    renderAll();
+  }
+  const now=new Date();
+  const time=now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  const date=now.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  setTxt('sp-clock',time);
+  setTxt('tab-clock',time);
+  setTxt('sp-date',date);
+  setTxt('tab-date',date);
+}
 function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 tick();setInterval(tick,1000);
 function updateOrderNo(){const no=`次の注文番号: #${todayData.nextNo}`;setTxt('sp-order-no',no);setTxt('tab-order-no',no);}
