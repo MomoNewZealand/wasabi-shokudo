@@ -1317,7 +1317,7 @@ async function executeSend(){
     };
     const raw=localStorage.getItem(SALES_APP_KEY);
     let records=raw?JSON.parse(raw):[];if(!Array.isArray(records))records=[];
-    const dupIdx=records.findIndex(r=>r.date===record.date&&r.loc===record.loc&&r.source==='register');
+    const dupIdx=records.findIndex(r=>r.date===record.date&&r.source==='register');
     if(dupIdx>=0){if(!confirm(`${record.date} の ${loc} のレジデータが既に存在します。上書きしますか？`)){btn.disabled=false;btn.className='send-ok';document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';return;}records.splice(dupIdx,1);}
     records.push(record);localStorage.setItem(SALES_APP_KEY,JSON.stringify(records));
     // ★NEW 送信済みフラグ
