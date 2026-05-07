@@ -714,6 +714,55 @@ async function saveRecord(){
   renderInput(); updateTotalBar();
 }
 
+async function restoreFromRegister(date, recId){
+  if(!confirm(`${date} のレジデータをスプレッドシートから再取得して上書きしますか？`)) return;
+  showToast('取得中…');
+  try{
+    const res = await fetch(`${GAS_URL}?action=getRegisterOrders&date=${date}`);
+    const json = await res.json();
+    if(!json.success || !json.orders || !json.orders.length){
+      showToast('❌ データが見つかりませんでした'); return;
+    }
+    const orders = json.orders;
+    // 集計
+    let total=0, cashTotal=0, paypayTotal=0, qrTotal=0, foodTotal=0, drinkTotal=0, merchTotal=0;
+    const items = {};
+    const FOOD_IDS  = new Set(['wasabi_don','mini_don','pork_don','inari','onigiri','sausage_dog','sausage','roast']);
+    const DRINK_IDS = new Set(['wasabi_coffee','orig_blend','decaf','passage','peach_soda','yuzu','drip1','drip3']);
+    orders.forEach(o => {
+      total    += o.total;
+      if(o.payment==='cash')   cashTotal   += o.total;
+      if(o.payment==='paypay') paypayTotal += o.total;
+      if(o.payment==='qr')     qrTotal     += o.total;
+      (o.items||[]).forEach(item => {
+        const id = item.id.startsWith('fresh_wasabi') ? 'fresh_wasabi' : item.id;
+        if(!items[id]) items[id] = {qty:0};
+        items[id].qty += item.qty;
+        const disc = o.isLocal ? (item.disc||0) : 0;
+        const lt   = (item.unitPrice - disc) * item.qty;
+        if(FOOD_IDS.has(id))       foodTotal  += lt;
+        else if(DRINK_IDS.has(id)) drinkTotal += lt;
+        else                       merchTotal += lt;
+      });
+    });
+    const rec = {
+      id: recId || `reg_${date}_restored_${Date.now()}`,
+      date, loc:'奥多摩駅前', event:'', weather:'', memo:'🔄 GASから復元',
+      items, foodTotal, drinkTotal, merchTotal,
+      total, cashTotal, paypayTotal, qrTotal, rakutenTotal: qrTotal,
+      source:'register'
+    };
+    // 既存のレジ連携レコード（同日）をすべて削除して差し替え
+    records = records.filter(r => !(r.date===date && r.source==='register'));
+    records = [...records, rec].sort((a,b)=>a.date.localeCompare(b.date));
+    saveToStorage();
+    showToast(`✅ ${date} を復元しました（${orders.length}件 ${fmt(total)}）`);
+    renderHistory();
+  } catch(err){
+    console.error(err); showToast('❌ 取得エラー: ' + err.message);
+  }
+}
+
 async function delRecord(id){
   records = records.filter(r => r.id !== id);
   saveToStorage(); renderHistory();
@@ -933,7 +982,7 @@ function renderHistory(){
           <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
             <span class="tag ${locTag.cls}">${locTag.label}</span>
             ${period&&period!=='通常' ? `<span class="tag tag-gw">${period}</span>` : ''}
-            ${rec.source==='register' ? `<span class="tag tag-reg">🧾 レジ連携</span>` : ''}
+            ${rec.source==='register' ? `<span class="tag tag-reg">🧾 レジ連携</span> <button onclick="restoreFromRegister('${rec.date}','${rec.id}')" style="font-size:10px;padding:2px 7px;border:1px solid var(--border2);border-radius:10px;background:var(--white);cursor:pointer;font-family:inherit;color:var(--text2)">🔄 再取得</button>` : ''}
             ${rec.payment && rec.payment!=='現金' ? `<span class="tag" style="background:#F1F5F9;color:#475569">${getPaymentLabel(rec.payment)}</span>` : ''}
             ${rec.tourType ? `<span class="tag" style="background:#FEF9C3;color:#713F12">${rec.tourType==='インバウンド'?'🌍 英語':'🇯🇵 日本語'}</span>` : ''}
           </div>
