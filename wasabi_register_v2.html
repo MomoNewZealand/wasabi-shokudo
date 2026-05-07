@@ -1225,6 +1225,14 @@ function calcChange(){
 }
 function closeCheckout(){document.getElementById('checkout-modal').style.display='none';currentPayment=null;cashVal='';}
 async function completeCheckout(){
+  // ★ 端末名未設定チェック
+  if(!getDeviceName()){
+    if(!confirm('⚠️ 端末名が未設定です。\nこのまま会計すると売上が正しく管理されない可能性があります。\n\nキャンセルして設定画面へ移動しますか？\n（「OK」→設定へ／「キャンセル」→このまま会計）')){
+      // キャンセル→そのまま会計続行
+    } else {
+      closeCheckout();spSwitch('master');setMasterCat('設定');return;
+    }
+  }
   const{subtotal,discount,total}=calcTotals();const now=new Date();
   const order={no:todayData.nextNo,time:now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}),payment:currentPayment,isLocal,items:cart.map(c=>({id:c.id,name:c.name,qty:c.qty,unitPrice:c.unitPrice,disc:c.disc})),subtotal,discount,total,date:todayStr(),timestamp:now.toISOString()};
   todayData.orders.push(order);todayData.nextNo++;saveTodayData();
@@ -1242,6 +1250,14 @@ const SALES_APP_KEY='wasabi_v3';
 let sendWeather='';
 
 function openSendModal(){
+  // ★ 端末名未設定チェック
+  if(!getDeviceName()){
+    if(!confirm('⚠️ 端末名が未設定です。\n端末名を設定せずに送信すると、他の端末のデータを上書きする可能性があります。\n\nキャンセルして設定画面へ移動しますか？\n（「OK」→設定へ／「キャンセル」→このまま送信）')){
+      // キャンセル→そのまま送信続行
+    } else {
+      spSwitch('master');setMasterCat('設定');return;
+    }
+  }
   const orders=todayData.orders;
   if(!orders.length){showToast('本日の売上データがありません');return;}
   _openSendModal(todayData);
@@ -1317,7 +1333,7 @@ async function executeSend(){
     };
     const raw=localStorage.getItem(SALES_APP_KEY);
     let records=raw?JSON.parse(raw):[];if(!Array.isArray(records))records=[];
-    const dupIdx=records.findIndex(r=>r.date===record.date&&r.source==='register');
+    const dupIdx=records.findIndex(r=>r.date===record.date&&r.loc===record.loc&&r.source==='register');
     if(dupIdx>=0){if(!confirm(`${record.date} の ${loc} のレジデータが既に存在します。上書きしますか？`)){btn.disabled=false;btn.className='send-ok';document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';return;}records.splice(dupIdx,1);}
     records.push(record);localStorage.setItem(SALES_APP_KEY,JSON.stringify(records));
     // ★NEW 送信済みフラグ
