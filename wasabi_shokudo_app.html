@@ -745,9 +745,13 @@ async function restoreFromRegister(date, recId){
         else                       merchTotal += lt;
       });
     });
+    // 既存レコードのメモを退避（「🔄 GASから復元」以外のメモは引き継ぐ）
+    const existingRec = records.find(r => r.date===date && r.source==='register');
+    const existingMemo = existingRec?.memo && existingRec.memo !== '🔄 GASから復元' ? existingRec.memo : '';
+
     const rec = {
       id: recId || `reg_${date}_restored_${Date.now()}`,
-      date, loc:'奥多摩駅前', event:'', weather:'', memo:'🔄 GASから復元',
+      date, loc:'奥多摩駅前', event:'', weather:'', memo: existingMemo || '🔄 GASから復元',
       items, foodTotal, drinkTotal, merchTotal,
       total, cashTotal, paypayTotal, qrTotal, rakutenTotal: qrTotal,
       source:'register'
