@@ -238,7 +238,7 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
       <div class="hdr-sub">Sales Management System</div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-      <button class="sync-btn" id="sync-btn" onclick="syncAll()">
+      <button class="sync-btn" id="sync-btn" onclick="syncAllConfirm()">
         <span id="sync-icon">☁️</span> 直近3ヶ月を同期
       </button>
       <div class="sync-status" id="sync-status"></div>
@@ -586,6 +586,12 @@ async function syncAll(){
   await syncToSheets(recent);
 }
 async function syncAllFull(){ await syncToSheets(records); }
+async function syncAllConfirm(){
+  const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
+  const recent = records.filter(r => r.date >= threeMonthsAgo && r.total > 0);
+  if(!confirm('直近3ヶ月のデータ ' + recent.length + '件 をスプレッドシートに送信します。\n（既存データは上書きされます）\n\nよろしいですか？')) return;
+  await syncToSheets(recent);
+}
 
 async function syncFromSheets(fullLoad = false){
   const btns = document.querySelectorAll('.sync-banner-btn');
@@ -851,7 +857,6 @@ function renderInput(){
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="sync-banner-btn" onclick="syncFromSheets(false)">📥 直近3ヶ月</button>
       <button class="sync-banner-btn sync-banner-btn-full" onclick="syncFromSheets(true)" style="font-size:10px">📥 全件読込</button>
-      <button class="sync-banner-btn" onclick="syncAllFull()" style="background:var(--g1);font-size:10px">☁️ 全件同期</button>
     </div>
   </div>
   <div class="card">
