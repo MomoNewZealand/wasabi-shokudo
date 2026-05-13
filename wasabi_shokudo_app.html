@@ -527,7 +527,6 @@ async function syncCustomProdsFromGAS() {
       FOOD_IDS.clear();  PRODS.フード.forEach(p => FOOD_IDS.add(p.id));
       DRINK_IDS.clear(); PRODS.ドリンク.forEach(p => DRINK_IDS.add(p.id));
       if (view === 'input') render();
-      showToast(`✅ カスタム商品を${addedCount}件追加しました`);
     }
   } catch(e) { console.warn('カスタム商品取得エラー:', e); }
 }
