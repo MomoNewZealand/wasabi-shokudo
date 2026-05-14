@@ -1,13 +1,13 @@
 {
-  "name": "わさび食堂 売上管理",
+  "name": "TOKYO WASABI 売上管理",
   "short_name": "売上管理",
   "description": "わさび食堂の売上管理システム",
-  "start_url": "/wasabi-shokudo/",
+  "start_url": "/wasabi-shokudo/wasabi_shokudo_app.html",
   "scope": "/wasabi-shokudo/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FFFBEB",
-  "theme_color": "#D97706",
+  "background_color": "#1D4ED8",
+  "theme_color": "#1D4ED8",
   "icons": [
     {
       "src": "icon-192.png",
