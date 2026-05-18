@@ -528,6 +528,7 @@ async function syncCustomProdsFromGAS() {
       FOOD_IDS.clear();  PRODS.フード.forEach(p => FOOD_IDS.add(p.id));
       DRINK_IDS.clear(); PRODS.ドリンク.forEach(p => DRINK_IDS.add(p.id));
       if (view === 'input') render();
+      showToast(`✅ カスタム商品を${addedCount}件追加しました`);
     }
   } catch(e) { console.warn('カスタム商品取得エラー:', e); }
 }
@@ -540,19 +541,19 @@ async function syncToSheets(recs){
   const icon = document.getElementById('sync-icon');
   const status = document.getElementById('sync-status');
   btn.disabled = true; btn.classList.add('syncing');
-  icon.textContent = '⏳'; status.textContent = `${recs.length}件を送信中...`;
+  const valid = recs.filter(r => r.total > 0);
+  icon.textContent = '⏳'; status.textContent = `0 / ${valid.length}件 送信中...`;
   try {
-    await fetch(GAS_URL, {
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(recs.filter(r => r.total > 0))
-    });
-    icon.textContent = '✅';
-    status.textContent = `${recs.length}件を送信しました`;
-    showToast(`✅ スプレッドシートに${recs.length}件を同期しました`);
-
-    // 財務シートへ反映
-    for (const rec of recs) {
+    // 1件ずつ addSalesRecord として送信（Notionにも確実に書き込まれる）
+    for (let i = 0; i < valid.length; i++) {
+      const rec = valid[i];
+      status.textContent = `${i + 1} / ${valid.length}件 送信中...`;
+      await fetch(GAS_URL, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'addSalesRecord', ...rec })
+      });
+      // 財務シートへ反映
       const cashTotal    = rec.cashTotal    || 0;
       const rakutenTotal = rec.rakutenTotal || 0;
       const paypayTotal  = rec.paypayTotal  || 0;
@@ -572,6 +573,9 @@ async function syncToSheets(recs){
         }).catch(() => {});
       }
     }
+    icon.textContent = '✅';
+    status.textContent = `${valid.length}件を送信しました`;
+    showToast(`✅ スプレッドシートに${valid.length}件を同期しました`);
   } catch(e) {
     icon.textContent = '☁️';
     status.textContent = '同期に失敗しました';
@@ -751,13 +755,9 @@ async function restoreFromRegister(date, recId){
         else                       merchTotal += lt;
       });
     });
-    // 既存レコードのメモを退避（「🔄 GASから復元」以外のメモは引き継ぐ）
-    const existingRec = records.find(r => r.date===date && r.source==='register');
-    const existingMemo = existingRec?.memo && existingRec.memo !== '🔄 GASから復元' ? existingRec.memo : '';
-
     const rec = {
       id: recId || `reg_${date}_restored_${Date.now()}`,
-      date, loc:'奥多摩駅前', event:'', weather:'', memo: existingMemo || '🔄 GASから復元',
+      date, loc:'奥多摩駅前', event:'', weather:'', memo:'🔄 GASから復元',
       items, foodTotal, drinkTotal, merchTotal,
       total, cashTotal, paypayTotal, qrTotal, rakutenTotal: qrTotal,
       source:'register'
