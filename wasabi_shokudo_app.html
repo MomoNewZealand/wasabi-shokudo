@@ -544,7 +544,6 @@ async function syncToSheets(recs){
   const valid = recs.filter(r => r.total > 0);
   icon.textContent = '⏳'; status.textContent = `0 / ${valid.length}件 送信中...`;
   try {
-    // 1件ずつ addSalesRecord として送信（Notionにも確実に書き込まれる）
     for (let i = 0; i < valid.length; i++) {
       const rec = valid[i];
       status.textContent = `${i + 1} / ${valid.length}件 送信中...`;
@@ -553,8 +552,9 @@ async function syncToSheets(recs){
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ action:'addSalesRecord', ...rec })
       });
-      // 財務シートへ反映（現金のみ）
-    for (const rec of recs) {
+    }
+    // 財務シートへ反映（現金のみ）
+    for (const rec of valid) {
       const cashTotal = rec.cashTotal || 0;
       if (cashTotal > 0) {
         fetch(GAS_URL, {
