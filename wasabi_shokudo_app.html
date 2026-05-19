@@ -553,22 +553,18 @@ async function syncToSheets(recs){
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ action:'addSalesRecord', ...rec })
       });
-      // 財務シートへ反映
-      const cashTotal    = rec.cashTotal    || 0;
-      const rakutenTotal = rec.rakutenTotal || 0;
-      const paypayTotal  = rec.paypayTotal  || 0;
+      // 財務シートへ反映（現金のみ）
+    for (const rec of recs) {
+      const cashTotal = rec.cashTotal || 0;
       if (cashTotal > 0) {
         fetch(GAS_URL, {
           method: 'POST', mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action:       'writeToFinance',
-            date:         rec.date,
-            loc:          rec.loc,
-            payment:      rec.payment || '現金',
+            action:    'writeToFinance',
+            date:      rec.date,
+            loc:       rec.loc,
             cashTotal,
-            rakutenTotal,
-            paypayTotal,
           })
         }).catch(() => {});
       }
