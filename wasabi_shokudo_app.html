@@ -684,6 +684,8 @@ async function saveRecord(){
   if (dateEl?.value) form.date = dateEl.value;
   const mixedCashEl = document.getElementById('mixed-cash-input');
   if (mixedCashEl?.value) form.mixedCash = parseInt(mixedCashEl.value) || 0;
+  const weatherEl = document.getElementById('weather-select');
+  if (weatherEl) form.weather = weatherEl.value;
   const simple = isSimple(form.loc);
   let tot;
   if(simple){
@@ -872,6 +874,8 @@ function renderInput(){
   if (existingDate) form.date = existingDate;
   const existingMixedCash = document.getElementById('mixed-cash-input')?.value;
   if (existingMixedCash) form.mixedCash = parseInt(existingMixedCash) || 0;
+  const existingWeather = document.getElementById('weather-select')?.value;
+  if (existingWeather !== undefined) form.weather = existingWeather;
   const simple = isSimple(form.loc);
   const tot = simple ? {total: form.amount||0} : calcTotals();
 
@@ -920,7 +924,7 @@ function renderInput(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="field" style="margin:0">
         <div class="field-lbl">天気</div>
-        <select onchange="form.weather=this.value">
+        <select id="weather-select" onchange="form.weather=this.value">
           ${['','晴れ','くもり','雨','くもり/雨','晴れ/くもり'].map(w =>
             `<option value="${w}" ${form.weather===w?'selected':''}>${w||'—'}</option>`
           ).join('')}
@@ -1027,9 +1031,10 @@ function renderHistory(){
     return `<div class="rec-card">
       <div class="rec-hdr" onclick="toggleExp('${rec.id}')">
         <div>
-          <div class="rec-date">${fmtD(rec.date)} ${getWI(rec.weather)}</div>
+          <div class="rec-date">${fmtD(rec.date)}</div>
           <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">
             <span class="tag ${locTag.cls}">${locTag.label}</span>
+            ${rec.weather ? `<span class="tag" style="background:#F0FDF4;color:#166534">${getWI(rec.weather)} ${rec.weather}</span>` : ''}
             ${period&&period!=='通常' ? `<span class="tag tag-gw">${period}</span>` : ''}
             ${rec.source==='register' ? `<span class="tag tag-reg">🧾 レジ連携</span> <button onclick="restoreFromRegister('${rec.date}','${rec.id}')" style="font-size:10px;padding:2px 7px;border:1px solid var(--border2);border-radius:10px;background:var(--white);cursor:pointer;font-family:inherit;color:var(--text2)">🔄 再取得</button>` : ''}
             ${rec.payment && rec.payment!=='現金' ? `<span class="tag" style="background:#F1F5F9;color:#475569">${getPaymentLabel(rec.payment)}</span>` : ''}
