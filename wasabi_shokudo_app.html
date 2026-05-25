@@ -556,7 +556,7 @@ async function syncToSheets(recs){
       const cashTotal    = rec.cashTotal    || 0;
       const rakutenTotal = rec.rakutenTotal || 0;
       const paypayTotal  = rec.paypayTotal  || 0;
-      if (cashTotal > 0 || rakutenTotal > 0 || paypayTotal > 0) {
+      if (cashTotal > 0) {
         fetch(GAS_URL, {
           method: 'POST', mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
