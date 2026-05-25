@@ -876,6 +876,8 @@ function renderInput(){
   if (existingMixedCash) form.mixedCash = parseInt(existingMixedCash) || 0;
   const existingWeather = document.getElementById('weather-select')?.value;
   if (existingWeather !== undefined) form.weather = existingWeather;
+  const existingAmount = document.getElementById('simple-amount')?.value;
+  if (existingAmount) form.amount = parseInt(existingAmount) || 0;
   const simple = isSimple(form.loc);
   const tot = simple ? {total: form.amount||0} : calcTotals();
 
