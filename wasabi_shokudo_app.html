@@ -695,6 +695,8 @@ async function saveRecord(){
   }
 
   const payTotals = calcPaymentTotals(tot.total, form.payment);
+  // 混在の場合は入力された現金額をcashTotalにセット
+  if (form.payment === '混在' && form.mixedCash > 0) payTotals.cashTotal = form.mixedCash;
 
   const rec = {
     id: editId || Date.now().toString(),
@@ -722,7 +724,7 @@ async function saveRecord(){
 
   const keepLoc = form.loc;
   const keepDate = form.date; // 連続入力時に日付を維持
-  form = {date:keepDate, loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0};
+  form = {date:keepDate, loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, mixedCash:0};
   editId = null;
   if(!simple) activeCat = 'フード';
   renderInput(); updateTotalBar();
@@ -838,7 +840,7 @@ function setCat(cat){ activeCat = cat; renderInput(); }
 function setLoc(l){ form.loc = l; form.amount = 0; if(l!=='わさび体験') form.tourType='日本人'; renderInput(); }
 function setPayment(p){ form.payment = p; renderInput(); }
 function setTourType(t){ form.tourType = t; renderInput(); }
-function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:'',payment:'現金',amount:0,tourType:'日本人'}; editId=null; renderInput(); }
+function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:'',payment:'現金',amount:0,tourType:'日本人',mixedCash:0}; editId=null; renderInput(); }
 
 function renderInput(){
   const c = document.getElementById('content'); if(!c||view!=='input') return;
@@ -884,6 +886,12 @@ function renderInput(){
       <div class="field-lbl">支払方法</div>
       <div class="loc-wrap">${payBtns}</div>
     </div>
+    ${form.payment === '混在' ? `
+    <div class="field">
+      <div class="field-lbl">💴 うち現金</div>
+      <input type="number" inputmode="numeric" placeholder="0" value="${form.mixedCash||''}"
+        oninput="form.mixedCash=parseInt(this.value)||0" style="font-size:18px;font-weight:600;text-align:right">
+    </div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="field" style="margin:0">
         <div class="field-lbl">天気</div>
