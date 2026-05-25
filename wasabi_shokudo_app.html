@@ -565,6 +565,7 @@ async function syncToSheets(recs){
             date:         rec.date,
             loc:          rec.loc,
             payment:      rec.payment || '現金',
+            eventName:    rec.event   || '',
             cashTotal,
             rakutenTotal,
             paypayTotal,
