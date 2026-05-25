@@ -842,6 +842,9 @@ function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather
 
 function renderInput(){
   const c = document.getElementById('content'); if(!c||view!=='input') return;
+  // 再描画前に日付入力の現在値を保持（場所ボタン等を押した時のリセット防止）
+  const existingDate = document.querySelector('input[type=date]')?.value;
+  if (existingDate) form.date = existingDate;
   const simple = isSimple(form.loc);
   const tot = simple ? {total: form.amount||0} : calcTotals();
 
