@@ -544,6 +544,7 @@ async function syncToSheets(recs){
   const valid = recs.filter(r => r.total > 0);
   icon.textContent = '⏳'; status.textContent = `0 / ${valid.length}件 送信中...`;
   try {
+    // 1件ずつ addSalesRecord として送信（Notionにも確実に書き込まれる）
     for (let i = 0; i < valid.length; i++) {
       const rec = valid[i];
       status.textContent = `${i + 1} / ${valid.length}件 送信中...`;
@@ -552,19 +553,22 @@ async function syncToSheets(recs){
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ action:'addSalesRecord', ...rec })
       });
-    }
-    // 財務シートへ反映（現金のみ）
-    for (const rec of valid) {
-      const cashTotal = rec.cashTotal || 0;
-      if (cashTotal > 0) {
+      // 財務シートへ反映
+      const cashTotal    = rec.cashTotal    || 0;
+      const rakutenTotal = rec.rakutenTotal || 0;
+      const paypayTotal  = rec.paypayTotal  || 0;
+      if (cashTotal > 0 || rakutenTotal > 0 || paypayTotal > 0) {
         fetch(GAS_URL, {
           method: 'POST', mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action:    'writeToFinance',
-            date:      rec.date,
-            loc:       rec.loc,
+            action:       'writeToFinance',
+            date:         rec.date,
+            loc:          rec.loc,
+            payment:      rec.payment || '現金',
             cashTotal,
+            rakutenTotal,
+            paypayTotal,
           })
         }).catch(() => {});
       }
@@ -714,7 +718,8 @@ async function saveRecord(){
   syncToSheets([rec]);
 
   const keepLoc = form.loc;
-  form = {date:today(), loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0};
+  const keepDate = form.date; // 連続入力時に日付を維持
+  form = {date:keepDate, loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0};
   editId = null;
   if(!simple) activeCat = 'フード';
   renderInput(); updateTotalBar();
