@@ -947,6 +947,7 @@ function renderInput(){
     <div style="display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;margin-bottom:12px">
       <button class="loc-btn${form.tourType==='日本人'?' on':''}" onclick="setTourType('日本人')" style="flex:1;padding:8px">🇯🇵 日本人</button>
       <button class="loc-btn${form.tourType==='インバウンド'?' on':''}" onclick="setTourType('インバウンド')" style="flex:1;padding:8px">🌍 インバウンド</button>
+      <button class="loc-btn${form.tourType===''?' on':''}" onclick="setTourType('')" style="flex:1;padding:8px">— 混合</button>
     </div>` : ''}
     <input type="number" id="simple-amount" class="simple-amount-input"
       inputmode="numeric" placeholder="0"
