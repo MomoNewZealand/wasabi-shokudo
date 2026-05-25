@@ -679,6 +679,9 @@ function calcPaymentTotals(total, payment){
 }
 
 async function saveRecord(){
+  // 保存ボタン押下時にonchangeが未発火でも確実に日付を取得
+  const dateEl = document.querySelector('input[type=date]');
+  if (dateEl?.value) form.date = dateEl.value;
   const simple = isSimple(form.loc);
   let tot;
   if(simple){
@@ -864,7 +867,7 @@ function renderInput(){
     <div class="card-lbl">出店情報</div>
     <div class="field">
       <div class="field-lbl">日付</div>
-      <input type="date" value="${form.date}" onchange="form.date=this.value">
+      <input type="date" value="${form.date}" oninput="form.date=this.value" onchange="form.date=this.value">
     </div>
     <div class="field">
       <div class="field-lbl">部門</div>
