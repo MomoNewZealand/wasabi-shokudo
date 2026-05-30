@@ -698,15 +698,26 @@ async function saveRecord(){
     if(tot.total === 0){ showToast('商品を入力してください'); return; }
   }
 
-  const payTotals = calcPaymentTotals(tot.total, form.payment);
+  // 編集中の既存レコードを取得（source・支払い内訳の引き継ぎ判定に使用）
+  const existingRec = editId ? records.find(r => r.id === editId) : null;
+  // レジ連携データの編集時は既存の支払い内訳を保持（再計算すると全額現金になるため）
+  const payTotals = (existingRec?.source === 'register')
+    ? {
+        cashTotal:    existingRec.cashTotal    || 0,
+        rakutenTotal: existingRec.rakutenTotal || existingRec.qrTotal || 0,
+        paypayTotal:  existingRec.paypayTotal  || 0
+      }
+    : calcPaymentTotals(tot.total, form.payment);
   // 混在の場合は入力された現金額をcashTotalにセット
   if (form.payment === '混在' && form.mixedCash > 0) payTotals.cashTotal = form.mixedCash;
+  // イベント名はフォーカスを外す前に保存ボタンを押しても確実に取得する
+  const eventVal = document.getElementById('input-event-name')?.value ?? form.event;
 
   const rec = {
     id: editId || Date.now().toString(),
     date: form.date,
     loc: form.loc,
-    event: form.loc === 'イベント' ? form.event : '',
+    event: form.loc === 'イベント' ? eventVal : '',
     weather: form.weather||'',
     items: simple ? {} : {...form.items},
     foodTotal: tot.food, drinkTotal: tot.drink, merchTotal: tot.merch,
@@ -717,7 +728,7 @@ async function saveRecord(){
     paypayTotal:  payTotals.paypayTotal,
     tourType: form.loc === 'わさび体験' ? form.tourType : '',
     memo: form.memo,
-    source: 'manual'
+    source: existingRec?.source || 'manual'  // レジ連携バッジを保持する
   };
 
   if(editId) records = records.map(r => r.id===editId ? rec : r);
@@ -765,9 +776,15 @@ async function restoreFromRegister(date, recId){
         else                       merchTotal += lt;
       });
     });
+    // 既存レコードのloc/event/weather/memoを引き継ぐ（イベント日の再取得でlocが上書きされるのを防ぐ）
+    const existingRec = records.find(r => r.date === date);
     const rec = {
       id: recId || `reg_${date}_restored_${Date.now()}`,
-      date, loc:'奥多摩駅前', event:'', weather:'', memo:'🔄 GASから復元',
+      date,
+      loc:     existingRec?.loc     || '奥多摩駅前',
+      event:   existingRec?.event   || '',
+      weather: existingRec?.weather || '',
+      memo: '🔄 GASから復元',
       items, foodTotal, drinkTotal, merchTotal,
       total, cashTotal, paypayTotal, qrTotal, rakutenTotal: qrTotal,
       source:'register'
@@ -911,7 +928,7 @@ function renderInput(){
     </div>
     ${form.loc==='イベント' ? `<div class="field">
       <div class="field-lbl">イベント名</div>
-      <input type="text" value="${form.event}" placeholder="例: VERTERE BEER FEST" onchange="form.event=this.value">
+      <input type="text" id="input-event-name" value="${form.event}" placeholder="例: VERTERE BEER FEST" oninput="form.event=this.value">
     </div>` : ''}
     <div class="field">
       <div class="field-lbl">支払方法</div>

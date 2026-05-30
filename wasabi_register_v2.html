@@ -1271,10 +1271,12 @@ function _openSendModal(targetData){
   _renderSendSummary(orders);_renderSendProdPreview(orders);
   const deviceName=getDeviceName();const locSel=document.getElementById('send-loc');
   if(deviceName&&locSel){const exists=Array.from(locSel.options).some(o=>o.value===deviceName);if(!exists){const opt=document.createElement('option');opt.value=deviceName;opt.textContent=`🏔 ${deviceName}`;locSel.insertBefore(opt,locSel.options[locSel.options.length-1]);}locSel.value=deviceName;}
-  document.getElementById('send-loc').onchange=function(){document.getElementById('send-event-field').style.display=this.value==='イベント'?'block':'none';};
+  // イベント名欄の表示切り替え（モーダルを開いた時点で即時評価する）
+  function updateEventField(){const v=document.getElementById('send-loc').value;document.getElementById('send-event-field').style.display=v==='イベント'?'block':'none';}
+  document.getElementById('send-loc').onchange=updateEventField;
   sendWeather='';document.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('send-memo').value='';document.getElementById('send-event').value='';
-  document.getElementById('send-event-field').style.display='none';
+  updateEventField(); // すでに「イベント」が選択されている場合も欄を表示する
   document.getElementById('sent-banner').classList.remove('show');
   document.getElementById('send-ok-btn').disabled=false;
   document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';
