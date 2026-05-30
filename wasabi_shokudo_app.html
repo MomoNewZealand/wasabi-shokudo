@@ -679,6 +679,11 @@ function calcPaymentTotals(total, payment){
 }
 
 async function saveRecord(){
+  // 保存直前にinputから直接値を取得（oninputが効かない場合のフォールバック）
+  const memoEl = document.getElementById('memo-input');
+  if(memoEl) form.memo = memoEl.value;
+  const eventEl = document.getElementById('input-event-name');
+  if(eventEl) form.event = eventEl.value;
   // 保存ボタン押下時にonchangeが未発火でも確実に日付を取得
   const dateEl = document.querySelector('input[type=date]');
   if (dateEl?.value) form.date = dateEl.value;
@@ -951,7 +956,7 @@ function renderInput(){
       </div>
       <div class="field" style="margin:0">
         <div class="field-lbl">メモ</div>
-        <input type="text" value="${form.memo}" placeholder="客数など..." oninput="form.memo=this.value">
+        <input type="text" id="memo-input" value="${form.memo}" placeholder="客数など..." oninput="form.memo=this.value" onchange="form.memo=this.value">
       </div>
     </div>
   </div>
