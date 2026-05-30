@@ -784,7 +784,7 @@ async function restoreFromRegister(date, recId){
       loc:     existingRec?.loc     || '奥多摩駅前',
       event:   existingRec?.event   || '',
       weather: existingRec?.weather || '',
-      memo: '🔄 GASから復元',
+      memo:    existingRec?.memo    || '',
       items, foodTotal, drinkTotal, merchTotal,
       total, cashTotal, paypayTotal, qrTotal, rakutenTotal: qrTotal,
       source:'register'
