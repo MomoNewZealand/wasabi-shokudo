@@ -463,6 +463,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
         </div>
         <!-- ★ タブレット用設定ボタン -->
         <button onclick="spSwitch('master')" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:var(--radius);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">⚙️ 設定</button>
+        <!-- ★ 未送信キューバッジ -->
+        <span id="queue-badge" style="display:none;font-size:10px;font-weight:700;color:#fff;background:var(--red);padding:3px 8px;border-radius:20px;white-space:nowrap"></span>
       </div>
     </div>
     <div class="cart-hdr">
@@ -677,24 +679,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 'use strict';
 const GAS_URL='https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oejikCkHTNVG2nDSdO11ZQRZQMaxXP-YYwS2GbJW-Yxjgy7w/exec';
 
-// ── 端末設定 ──
-const DEVICE_OPTIONS=[
-  {name:'奥多摩駅前',abbr:'OT'},
-  {name:'イベント',  abbr:'EV'},
-  {name:'その他',    abbr:'SP'},
-];
+// ── 端末名 ──
 const DEVICE_NAME_KEY='wasabi_device_name';
-const DEVICE_ABBR_KEY='wasabi_device_abbr';
 function getDeviceName(){return localStorage.getItem(DEVICE_NAME_KEY)||'';}
-function getDeviceAbbr(){return localStorage.getItem(DEVICE_ABBR_KEY)||'';}
 function saveDeviceName(name){localStorage.setItem(DEVICE_NAME_KEY,name.trim());updateDeviceBanner();}
-function setDeviceAbbr(abbr){localStorage.setItem(DEVICE_ABBR_KEY,abbr.trim());}
-// 名前と略称を同時に保存
-function saveDeviceOption(name,abbr){
-  localStorage.setItem(DEVICE_NAME_KEY,name);
-  localStorage.setItem(DEVICE_ABBR_KEY,abbr);
-  updateDeviceBanner();
-}
 function updateDeviceBanner(){
   const name=getDeviceName(),b=document.getElementById('device-banner'),t=document.getElementById('device-banner-txt');
   if(b&&t){
@@ -813,6 +801,8 @@ async function fetchGasSummary(force=false){
   const now=Date.now();
   if(!force&&now-gasLastFetched<GAS_FETCH_INTERVAL)return;
   gasLastFetched=now;
+  // ★ キューに未送信があれば先に再送信を試みる
+  await retryGasQueue();
   try{
     const res=await fetch(`${GAS_URL}?action=getDailySummary&date=${todayStr()}`);
     const json=await res.json();
@@ -827,24 +817,12 @@ async function fetchGasSummary(force=false){
 }
 function getMergedSummary(){
   if(gasSummary&&gasSummary.date&&gasSummary.date!==todayStr()){gasSummary=null;gasOrders=[];}
-  // ③ 自端末のみに絞る
-  const deviceName=getDeviceName();
-  if(gasSummary){
-    const myOrders=gasOrders.filter(o=>!deviceName||!o.device||o.device===deviceName);
-    if(myOrders.length>0)return{total:myOrders.reduce((s,x)=>s+x.total,0),cash:myOrders.filter(x=>x.payment==='cash').reduce((s,x)=>s+x.total,0),paypay:myOrders.filter(x=>x.payment==='paypay').reduce((s,x)=>s+x.total,0),qr:myOrders.filter(x=>x.payment==='qr').reduce((s,x)=>s+x.total,0),count:myOrders.length};
-    return{total:gasSummary.grandTotal||gasSummary.total||0,cash:gasSummary.cashTotal||gasSummary.cash||0,paypay:gasSummary.paypayTotal||gasSummary.paypay||0,qr:gasSummary.qrTotal||gasSummary.qr||0,count:gasSummary.orderCount||gasSummary.count||0};
-  }
+  if(gasSummary)return{total:gasSummary.grandTotal||gasSummary.total||0,cash:gasSummary.cashTotal||gasSummary.cash||0,paypay:gasSummary.paypayTotal||gasSummary.paypay||0,qr:gasSummary.qrTotal||gasSummary.qr||0,count:gasSummary.orderCount||gasSummary.count||0};
   const o=todayData.orders;
   return{total:o.reduce((s,x)=>s+x.total,0),cash:o.filter(x=>x.payment==='cash').reduce((s,x)=>s+x.total,0),paypay:o.filter(x=>x.payment==='paypay').reduce((s,x)=>s+x.total,0),qr:o.filter(x=>x.payment==='qr').reduce((s,x)=>s+x.total,0),count:o.length};
 }
 function getMergedOrders(){
-  if(gasOrders.length>0){
-    // ③ 自端末のみに絞る
-    const deviceName=getDeviceName();
-    const myOrders=gasOrders.filter(o=>!deviceName||!o.device||o.device===deviceName);
-    const lm={};todayData.orders.forEach(o=>{if(o.no)lm[o.no]=o.items;});
-    return[...myOrders].reverse().map(o=>({...o,items:(o.items&&o.items.length>0)?o.items:(lm[o.no]||null)}));
-  }
+  if(gasOrders.length>0){const lm={};todayData.orders.forEach(o=>{if(o.no)lm[o.no]=o.items;});return[...gasOrders].reverse().map(o=>({...o,items:(o.items&&o.items.length>0)?o.items:(lm[o.no]||null)}));}
   return[...todayData.orders].reverse();
 }
 
@@ -868,9 +846,7 @@ function tick(){
 }
 function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 tick();setInterval(tick,1000);
-// ② 注文番号を略称付きでフォーマット
-function fmtOrderNo(no){const abbr=getDeviceAbbr();return abbr?`${abbr}-${no}`:`${no}`;}
-function updateOrderNo(){const no=`次の注文番号: #${fmtOrderNo(todayData.nextNo)}`;setTxt('sp-order-no',no);setTxt('tab-order-no',no);}
+function updateOrderNo(){const no=`次の注文番号: #${todayData.nextNo}`;setTxt('sp-order-no',no);setTxt('tab-order-no',no);}
 updateOrderNo();
 
 // ── カテゴリ・プリセット ──
@@ -1023,7 +999,7 @@ function makeHistHtml(){
   return(ig?'<div style="font-size:10px;color:var(--text3);padding:4px 10px 0;text-align:right">🔄 全端末の注文を表示中</div>':'')
     +orders.map(o=>`<div class="hist-card">
       <div class="hist-card-top">
-        <span class="hist-no">#${fmtOrderNo(o.no)}</span>
+        <span class="hist-no">#${o.no}</span>
         <span class="hist-time">${fmtOrderTime(o.time)}${o.isLocal?'<span class="hist-local-badge">地元割</span>':''}</span>
         <span class="hist-pay-badge ${o.payment}">${o.payment==='cash'?'💴 現金':o.payment==='paypay'?'🔴 PayPay':'💳 R Pay'}</span>
         <span class="hist-total">${fmt(o.total)}</span>
@@ -1048,7 +1024,7 @@ function openOrderEdit(no) {
   oeditIsLocal = order.isLocal || false;
   // itemsをディープコピー
   oeditItems = (order.items || []).map(i => ({...i}));
-  document.getElementById('oedit-title').textContent = `#${fmtOrderNo(no)} を編集`;
+  document.getElementById('oedit-title').textContent = `#${no} を編集`;
   document.getElementById('oedit-manual-total').value = '';
   oeditRenderPayBtns();
   oeditRenderLocalBtns();
@@ -1266,11 +1242,72 @@ async function completeCheckout(){
   todayData.orders.push(order);todayData.nextNo++;saveTodayData();
   document.getElementById('checkout-modal').style.display='none';
   cart=[];setLocal(false);renderAll();updateOrderNo();
-  showToast(`#${fmtOrderNo(order.no)} 会計完了 ${fmt(order.total)}`);
+  showToast(`#${order.no} 会計完了 ${fmt(order.total)}`);
   if(GAS_URL)sendToGAS(order);
 }
+// ── 未送信キュー（GAS送信失敗時の再送信） ──
+const GAS_QUEUE_KEY='wasabi_gas_queue';
+function loadGasQueue(){try{const r=localStorage.getItem(GAS_QUEUE_KEY);return r?JSON.parse(r):[];}catch(e){return[];}}
+function saveGasQueue(q){localStorage.setItem(GAS_QUEUE_KEY,JSON.stringify(q));}
+function addToGasQueue(order){
+  const q=loadGasQueue();
+  // 同じ注文番号+日付が既にキューにあれば上書き
+  const idx=q.findIndex(o=>o.no===order.no&&o.date===order.date);
+  if(idx>=0)q[idx]=order; else q.push(order);
+  saveGasQueue(q);
+  updateQueueBadge();
+}
+function removeFromGasQueue(no,date){
+  const q=loadGasQueue().filter(o=>!(o.no===no&&o.date===date));
+  saveGasQueue(q);
+  updateQueueBadge();
+}
+function updateQueueBadge(){
+  const q=loadGasQueue();
+  const badge=document.getElementById('queue-badge');
+  if(badge){badge.textContent=q.length>0?`⚠️ 未送信 ${q.length}件`:'';badge.style.display=q.length>0?'inline':'none';}
+}
+async function retryGasQueue(){
+  const q=loadGasQueue();
+  if(!q.length)return;
+  let successCount=0;
+  for(const order of q){
+    const ok=await _sendOrderToGAS(order);
+    if(ok){removeFromGasQueue(order.no,order.date);successCount++;}
+  }
+  if(successCount>0){
+    showToast(`📶 未送信 ${successCount}件 をGASに再送信しました`);
+    renderDailySummary();renderTabHist();
+    if(spView==='hist')renderSpHist();
+  }
+}
+async function _sendOrderToGAS(order){
+  // mode:'no-cors'では成否が判定できないためcorsで試みる（失敗時はキューへ）
+  try{
+    const p=new URLSearchParams({
+      action:'addRegisterOrder',
+      date:order.date,time:order.time,
+      orderNo:fmtOrderNo(order.no),
+      device:getDeviceName(),
+      payment:order.payment,isLocal:order.isLocal,
+      subtotal:order.subtotal,discount:order.discount,total:order.total,
+      items:JSON.stringify(order.items)
+    });
+    const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'cors',signal:AbortSignal.timeout(8000)});
+    // no-corsと違いcorsはレスポンス取得できる
+    if(res.ok||res.type==='opaque')return true;
+    return false;
+  }catch(e){
+    console.warn('GAS送信エラー(再試行対象):', e);
+    return false;
+  }
+}
 async function sendToGAS(order){
-  try{const p=new URLSearchParams({action:'addRegisterOrder',date:order.date,time:order.time,orderNo:fmtOrderNo(order.no),device:getDeviceName(),payment:order.payment,isLocal:order.isLocal,subtotal:order.subtotal,discount:order.discount,total:order.total,items:JSON.stringify(order.items)});await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors'});}catch(e){console.warn('GAS送信エラー:',e);}
+  const ok=await _sendOrderToGAS(order);
+  if(!ok){
+    addToGasQueue(order);
+    console.warn(`#${fmtOrderNo(order.no)} をキューに追加（次回ポーリング時に再送信）`);
+  }
 }
 
 // ── 送信モーダル ──
@@ -1299,12 +1336,10 @@ function _openSendModal(targetData){
   _renderSendSummary(orders);_renderSendProdPreview(orders);
   const deviceName=getDeviceName();const locSel=document.getElementById('send-loc');
   if(deviceName&&locSel){const exists=Array.from(locSel.options).some(o=>o.value===deviceName);if(!exists){const opt=document.createElement('option');opt.value=deviceName;opt.textContent=`🏔 ${deviceName}`;locSel.insertBefore(opt,locSel.options[locSel.options.length-1]);}locSel.value=deviceName;}
-  // イベント名欄の表示切り替え（モーダルを開いた時点で即時評価する）
-  function updateEventField(){const v=document.getElementById('send-loc').value;document.getElementById('send-event-field').style.display=v==='イベント'?'block':'none';}
-  document.getElementById('send-loc').onchange=updateEventField;
+  document.getElementById('send-loc').onchange=function(){document.getElementById('send-event-field').style.display=this.value==='イベント'?'block':'none';};
   sendWeather='';document.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('send-memo').value='';document.getElementById('send-event').value='';
-  updateEventField(); // すでに「イベント」が選択されている場合も欄を表示する
+  document.getElementById('send-event-field').style.display='none';
   document.getElementById('sent-banner').classList.remove('show');
   document.getElementById('send-ok-btn').disabled=false;
   document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';
@@ -1406,13 +1441,10 @@ function renderMasterList(){
 
 // ── 設定パネル ──
 function renderSettingsPanel(el){
-  const curName=getDeviceName();
-  const btnHtml=DEVICE_OPTIONS.map(opt=>{
-    const on=curName===opt.name;
-    return`<button onclick="saveDeviceOption('${opt.name}','${opt.abbr}');renderMasterList()" style="flex:1;padding:12px 8px;border:2px solid ${on?'var(--amber)':'var(--border)'};border-radius:var(--radius);background:${on?'var(--amber)':'var(--white)'};color:${on?'#fff':'var(--text2)'};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s">${opt.name}<br><span style="font-size:10px;opacity:.8">#${opt.abbr}-</span></button>`;
-  }).join('');
-  el.innerHTML=`<div class="settings-section"><div class="settings-title">📱 端末設定</div><div class="settings-field"><label class="settings-label">この端末の出店場所を選択してください</label><div style="display:flex;gap:8px;margin-top:4px">${btnHtml}</div><div class="settings-hint" style="margin-top:8px">選択した場所が注文番号の略称（例：OT-1）と売上送信時の出店場所に自動入力されます。</div></div></div><div class="settings-section"><div class="settings-title">☁️ 商品マスタ同期</div><div class="settings-field"><div class="settings-hint">GASのスプレッドシートに保存された商品マスタを手動で同期します。起動時に自動同期されます。</div></div><button class="settings-save-btn" style="background:var(--blue)" onclick="syncProductMasterFromGAS().then(()=>renderMasterList())">🔄 今すぐ商品マスタを同期</button></div>`;
+  const name=getDeviceName();
+  el.innerHTML=`<div class="settings-section"><div class="settings-title">📱 端末設定</div><div class="settings-field"><label class="settings-label">端末名（出店場所として使用されます）</label><input class="settings-input" id="settings-device-name" type="text" placeholder="例：奥多摩①、奥多摩②" value="${name}"><div class="settings-hint">2台同時出店の場合、それぞれ「奥多摩①」「奥多摩②」などと設定してください。<br>「売上管理に送る」時の出店場所に自動入力されます。</div></div><button class="settings-save-btn" onclick="saveDeviceNameFromInput()">💾 保存する</button></div><div class="settings-section"><div class="settings-title">☁️ 商品マスタ同期</div><div class="settings-field"><div class="settings-hint">GASのスプレッドシートに保存された商品マスタを手動で同期します。起動時に自動同期されます。</div></div><button class="settings-save-btn" style="background:var(--blue)" onclick="syncProductMasterFromGAS().then(()=>renderMasterList())">🔄 今すぐ商品マスタを同期</button></div>`;
 }
+function saveDeviceNameFromInput(){const i=document.getElementById('settings-device-name');if(!i)return;const n=i.value.trim();saveDeviceName(n);showToast(n?`端末名を「${n}」に設定しました`:'端末名をリセットしました');renderMasterList();}
 
 // ── プリセット編集 ──
 function renderPresetEditor(el){
@@ -1471,6 +1503,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 function init(){
   applyCustomProds();presets=loadPresets();activeCat='preset-0';applyPresetLabels();
   updateDeviceBanner();
+  updateQueueBadge(); // ★ 未送信キューバッジ初期化
   checkUnsentPreviousData(); // ★NEW 前日未送信チェック
   renderAll();
   if(window.innerWidth<768){document.getElementById('right-col').style.display='none';spSwitch('menu');}
