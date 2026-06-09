@@ -1300,7 +1300,11 @@ async function _sendOrderToGAS(order){
       subtotal:order.subtotal,discount:order.discount,total:order.total,
       items:JSON.stringify(order.items)
     });
-    const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors',signal:AbortSignal.timeout(8000)});
+    // AbortSignal.timeoutは古いSafariで未対応のためAbortControllerで代替
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),10000);
+    const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors',signal:ctrl.signal});
+    clearTimeout(tid);
     // no-corsはopaque responseのため常にtrue（GASはリダイレクトを含むためcorsで失敗する）
     if(res.ok||res.type==='opaque')return true;
     return false;
