@@ -1329,7 +1329,7 @@ async function _sendOrderToGAS(order){
     const p=new URLSearchParams({
       action:'addRegisterOrder',
       date:order.date,time:order.time,
-      orderNo:fmtOrderNo(order.no),
+      orderNo:String(order.no||''),
       device:getDeviceName(),
       payment:order.payment,isLocal:order.isLocal,
       subtotal:order.subtotal,discount:order.discount,total:order.total,
@@ -1352,7 +1352,7 @@ async function sendToGAS(order){
   const ok=await _sendOrderToGAS(order);
   if(!ok){
     addToGasQueue(order);
-    console.warn(`#${fmtOrderNo(order.no)} をキューに追加（次回ポーリング時に再送信）`);
+    console.warn(`#${order.no} をキューに追加（次回ポーリング時に再送信）`);
   }
 }
 
