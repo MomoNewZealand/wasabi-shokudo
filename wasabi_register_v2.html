@@ -1270,9 +1270,29 @@ function updateQueueBadge(){
 async function manualRetryQueue(){
   const q=loadGasQueue();
   if(!q.length){showToast('未送信データはありません');return;}
-  showToast(`⏳ ${q.length}件を再送信中...`);
-  await retryGasQueue();
+  showToastLong(`⏳ ${q.length}件を再送信中...`);
+  let ok=0,fail=0;
+  for(const order of q){
+    try{
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),10000);
+      const p=new URLSearchParams({
+        action:'addRegisterOrder',
+        date:order.date||'',time:order.time||'',
+        orderNo:String(order.no||''),
+        device:getDeviceName(),
+        payment:order.payment||'',isLocal:order.isLocal||false,
+        subtotal:order.subtotal||0,discount:order.discount||0,total:order.total||0,
+        items:JSON.stringify(order.items||[])
+      });
+      const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors',signal:ctrl.signal});
+      clearTimeout(tid);
+      if(res.ok||res.type==='opaque'){removeFromGasQueue(order.no,order.date);ok++;}
+      else fail++;
+    }catch(e){fail++;console.warn('手動再送信エラー:',e);}
+  }
   updateQueueBadge();
+  showToastLong(`✅ 送信完了: ${ok}件成功 ${fail>0?fail+'件失敗':''}`);
 }
 function clearGasQueue(){
   const q=loadGasQueue();
