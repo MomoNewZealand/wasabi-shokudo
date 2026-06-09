@@ -1271,6 +1271,20 @@ async function manualRetryQueue(){
   const q=loadGasQueue();
   if(!q.length){showToast('未送信データはありません');return;}
   showToast(`⏳ ${q.length}件を再送信中...`);
+  // デバッグ: 1件だけ試して結果をトーストで表示
+  if(q.length>0){
+    try{
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),10000);
+      const p=new URLSearchParams({action:'addRegisterOrder',date:q[0].date,time:q[0].time||'',orderNo:String(q[0].no),device:getDeviceName(),payment:q[0].payment,isLocal:q[0].isLocal,subtotal:q[0].subtotal,discount:q[0].discount,total:q[0].total,items:JSON.stringify(q[0].items)});
+      const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors',signal:ctrl.signal});
+      clearTimeout(tid);
+      showToast(`📡 テスト結果: type=${res.type} ok=${res.ok} status=${res.status}`);
+    }catch(e){
+      showToast(`❌ エラー: ${e.name}: ${e.message}`);
+    }
+    return;
+  }
   await retryGasQueue();
   updateQueueBadge();
 }
