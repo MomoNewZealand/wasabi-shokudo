@@ -3,10 +3,10 @@
   "short_name": "売上管理",
   "description": "わさび食堂の売上管理システム",
   "start_url": "/wasabi-shokudo/wasabi_shokudo_app.html",
-  "scope": "/wasabi-shokudo/",
+  "scope": "/wasabi-shokudo/wasabi_shokudo_app.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1D4ED8",
+  "background_color": "#BFDBFE",
   "theme_color": "#1D4ED8",
   "icons": [
     {
