@@ -683,6 +683,8 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oeji
 const DEVICE_NAME_KEY='wasabi_device_name';
 function getDeviceName(){return localStorage.getItem(DEVICE_NAME_KEY)||'';}
 function saveDeviceName(name){localStorage.setItem(DEVICE_NAME_KEY,name.trim());updateDeviceBanner();}
+const DEVICE_PREFIX={'奥多摩駅前':'OT','イベント':'EV','その他':'ZZ'};
+function fmtOrderNo(no){const prefix=DEVICE_PREFIX[getDeviceName()]||'OT';return`${prefix}-${no}`;}
 function updateDeviceBanner(){
   const name=getDeviceName(),b=document.getElementById('device-banner'),t=document.getElementById('device-banner-txt');
   if(b&&t){
@@ -1329,7 +1331,7 @@ async function _sendOrderToGAS(order){
     const p=new URLSearchParams({
       action:'addRegisterOrder',
       date:order.date,time:order.time,
-      orderNo:String(order.no||''),
+      orderNo:fmtOrderNo(order.no),
       device:getDeviceName(),
       payment:order.payment,isLocal:order.isLocal,
       subtotal:order.subtotal,discount:order.discount,total:order.total,
