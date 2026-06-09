@@ -1442,7 +1442,7 @@ function renderMasterList(){
 // ── 設定パネル ──
 function renderSettingsPanel(el){
   const name=getDeviceName();
-  el.innerHTML=`<div class="settings-section"><div class="settings-title">📱 端末設定</div><div class="settings-field"><label class="settings-label">端末名（出店場所として使用されます）</label><select class="settings-input" id="settings-device-name"><option value="">-- 選択してください --</option><option value="奥多摩駅前">🏔 奥多摩駅前</option><option value="イベント">🎪 イベント</option></select><div class="settings-hint">「売上管理に送る」時の出店場所に自動入力されます。</div></div><button class="settings-save-btn" onclick="saveDeviceNameFromInput()">💾 保存する</button></div>`;
+  el.innerHTML=`<div class="settings-section"><div class="settings-title">📱 端末設定</div><div class="settings-field"><label class="settings-label">端末名（出店場所として使用されます）</label><select class="settings-input" id="settings-device-name"><option value="">-- 選択してください --</option><option value="奥多摩駅前">🏔 奥多摩駅前</option><option value="イベント">🎪 イベント</option><option value="その他">📍 その他</option></select><div class="settings-hint">「売上管理に送る」時の出店場所に自動入力されます。</div></div><button class="settings-save-btn" onclick="saveDeviceNameFromInput()">💾 保存する</button></div>`;
   const sel=document.getElementById('settings-device-name');if(sel&&name)sel.value=name;
   el.innerHTML+=`<div class="settings-section"><div class="settings-title">☁️ 商品マスタ同期</div><div class="settings-field"><div class="settings-hint">GASのスプレッドシートに保存された商品マスタを手動で同期します。起動時に自動同期されます。</div></div><button class="settings-save-btn" style="background:var(--blue)" onclick="syncProductMasterFromGAS().then(()=>renderMasterList())">🔄 今すぐ商品マスタを同期</button></div>`;
 }
