@@ -1279,9 +1279,9 @@ async function manualRetryQueue(){
       const p=new URLSearchParams({action:'addRegisterOrder',date:q[0].date,time:q[0].time||'',orderNo:String(q[0].no),device:getDeviceName(),payment:q[0].payment,isLocal:q[0].isLocal,subtotal:q[0].subtotal,discount:q[0].discount,total:q[0].total,items:JSON.stringify(q[0].items)});
       const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors',signal:ctrl.signal});
       clearTimeout(tid);
-      showToast(`📡 テスト結果: type=${res.type} ok=${res.ok} status=${res.status}`);
+      showToastLong(`📡 テスト結果: type=${res.type} ok=${res.ok} status=${res.status}`);
     }catch(e){
-      showToast(`❌ エラー: ${e.name}: ${e.message}`);
+      showToastLong(`❌ エラー: ${e.name}: ${e.message}`);
     }
     return;
   }
@@ -1524,7 +1524,8 @@ function deleteMasterItem(id,cat){
 
 // ── トースト ──
 let toastTimer;
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2500);}
+function showToast(msg,ms){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),ms||2500);}
+function showToastLong(msg){showToast(msg,8000);}
 
 // ── 初期化 ──
 function init(){
