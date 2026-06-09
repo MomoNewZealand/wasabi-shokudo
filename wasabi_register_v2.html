@@ -463,8 +463,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
         </div>
         <!-- ★ タブレット用設定ボタン -->
         <button onclick="spSwitch('master')" style="background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:11px;font-weight:700;padding:6px 10px;border-radius:var(--radius);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">⚙️ 設定</button>
-        <!-- ★ 未送信キューバッジ -->
-        <span id="queue-badge" style="display:none;font-size:10px;font-weight:700;color:#fff;background:var(--red);padding:3px 8px;border-radius:20px;white-space:nowrap"></span>
+        <!-- ★ 未送信キューバッジ（タップで再送信） -->
+        <span id="queue-badge" onclick="manualRetryQueue()" style="display:none;font-size:10px;font-weight:700;color:#fff;background:var(--red);padding:3px 8px;border-radius:20px;white-space:nowrap;cursor:pointer"></span>
       </div>
     </div>
     <div class="cart-hdr">
@@ -1267,6 +1267,13 @@ function updateQueueBadge(){
   const badge=document.getElementById('queue-badge');
   if(badge){badge.textContent=q.length>0?`⚠️ 未送信 ${q.length}件`:'';badge.style.display=q.length>0?'inline':'none';}
 }
+async function manualRetryQueue(){
+  const q=loadGasQueue();
+  if(!q.length){showToast('未送信データはありません');return;}
+  showToast(`⏳ ${q.length}件を再送信中...`);
+  await retryGasQueue();
+  updateQueueBadge();
+}
 async function retryGasQueue(){
   const q=loadGasQueue();
   if(!q.length)return;
@@ -1293,8 +1300,8 @@ async function _sendOrderToGAS(order){
       subtotal:order.subtotal,discount:order.discount,total:order.total,
       items:JSON.stringify(order.items)
     });
-    const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'cors',signal:AbortSignal.timeout(8000)});
-    // no-corsと違いcorsはレスポンス取得できる
+    const res=await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors',signal:AbortSignal.timeout(8000)});
+    // no-corsはopaque responseのため常にtrue（GASはリダイレクトを含むためcorsで失敗する）
     if(res.ok||res.type==='opaque')return true;
     return false;
   }catch(e){
