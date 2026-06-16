@@ -331,6 +331,34 @@ const FOOD_IDS  = new Set(PRODS.フード.map(p => p.id));
 const DRINK_IDS = new Set(PRODS.ドリンク.map(p => p.id));
 
 // ══════════════════════════════════════════
+//  🌿 わさび使用量マスタ（フードトラック出荷量の自動計算用）
+//  すりおろしわさびを使うメニューと、1個あたりのグラム数。
+//  ★新メニューを足すときは、ここに「商品id: グラム数,」を1行追加するだけ。
+//    商品id は上の商品マスタ(PRODS)の id を使う。
+//    例) わさびビーフ丼を作ったら、PRODSに追加した上で beef_don: 3, をここに足す。
+// ══════════════════════════════════════════
+const WASABI_GRAM = {
+  wasabi_don:    3,  // わさび丼
+  mini_don:      2,  // ミニわさび丼
+  pork_don:      3,  // わさびポーク丼
+  wasabi_coffee: 2,  // わさびコーヒー
+  peach_soda:    2,  // わさびピーチソーダ
+  // beef_don:   3,  // わさびビーフ丼（メニュー追加時にコメントを外す）
+};
+
+// 1日分の記録(items)から、すりおろしわさびの使用量(g)を計算する
+function calcWasabiGram(items){
+  let g = 0;
+  Object.entries(items || {}).forEach(([id, val]) => {
+    const qty = typeof val === 'object' ? (val.qty || 0) : (val || 0);
+    if(qty && WASABI_GRAM[id]) g += qty * WASABI_GRAM[id];
+  });
+  return g;
+}
+// グラム表示の整形（1000g以上はkg表示）
+function fmtGram(g){ return g >= 1000 ? (g/1000).toFixed(2) + 'kg' : g + 'g'; }
+
+// ══════════════════════════════════════════
 //  過去データ（2021〜2025）
 // ══════════════════════════════════════════
 const HIST = [
@@ -1083,6 +1111,7 @@ function renderHistory(){
           const it=rec.items[p.id];
           return `<span class="chip">${p.name}×${typeof it==='object'?it.qty:it}</span>`;
         }).join('')}</div>` : ''}
+        ${(() => { const wg = calcWasabiGram(rec.items); return wg>0 ? `<div style="margin-top:6px;display:inline-block;background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700">🌿 わさび使用量 約${fmtGram(wg)}</div>` : ''; })()}
         ${rec.memo ? `<div style="font-size:11px;color:var(--text3);padding:4px 0">📝 ${rec.memo}</div>` : ''}
         <div class="act-row">
           <button class="act-btn" onclick="editRecord('${rec.id}')">✏️ 編集</button>
@@ -1099,10 +1128,10 @@ function setHY(y){ histYear = y; renderHistory(); }
 function toggleExp(id){ expandedId = expandedId===id ? null : id; renderHistory(); }
 
 function exportCSV(){
-  const h = ['日付','部門','イベント名','天気','合計','支払方法','フード','ドリンク','物販','メモ', ...ALL.map(p=>p.name)];
+  const h = ['日付','部門','イベント名','天気','合計','支払方法','フード','ドリンク','物販','わさび使用量(g)','メモ', ...ALL.map(p=>p.name)];
   const rows = records.filter(r=>r.total>0).map(r => [
     r.date, r.loc, r.event||'', r.weather||'', r.total, r.payment||'',
-    r.foodTotal||'', r.drinkTotal||'', r.merchTotal||'', r.memo||'',
+    r.foodTotal||'', r.drinkTotal||'', r.merchTotal||'', calcWasabiGram(r.items)||'', r.memo||'',
     ...ALL.map(p => { const it=r.items?.[p.id]; if(!it) return 0; return typeof it==='object'?it.qty:it; })
   ]);
   const csv = [h, ...rows].map(row => row.join(',')).join('\n');
@@ -1185,6 +1214,18 @@ function renderAnalytics(){
   const bbqRecs = byLoc['BBQ']||[];
   const bbqTotal = bbqRecs.reduce((s,r)=>s+r.total,0);
 
+  // 🌿 わさび使用量集計（フードトラック出荷量／月別）
+  const wByMonth = {};
+  let wGrand = 0;
+  active.forEach(r => {
+    const g = calcWasabiGram(r.items); if(!g) return;
+    wGrand += g;
+    const m = r.date.substring(0,7);
+    wByMonth[m] = (wByMonth[m]||0) + g;
+  });
+  const wMonths = Object.entries(wByMonth).sort(([a],[b]) => b.localeCompare(a)); // 新しい月を上に
+  const wMaxM = Math.max(...wMonths.map(([,g]) => g), 1);
+
   c.innerHTML = `<div class="an-wrap">
     <div class="an-ttl">累計売上</div>
     <div class="an-big">
@@ -1253,6 +1294,25 @@ function renderAnalytics(){
         <div class="rank-right"><div class="rank-qty">${p.qty}個</div><div class="rank-days">${p.days}日</div></div>
       </div>`).join('')}
     </div>` : ''}
+
+    ${wGrand>0 ? `<div class="an-ttl">🌿 わさび使用量（フードトラック出荷量）</div>
+    <div class="an-big" style="background:#F0FDF4;border:1px solid #BBF7D0">
+      <div class="an-big-lbl" style="color:#15803D">累計 わさび使用量（推定）</div>
+      <div class="an-big-val" style="color:#166534">${fmtGram(wGrand)}</div>
+      <div class="an-big-sub" style="color:#15803D">すりおろし使用メニューの販売数から自動換算</div>
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px;margin-top:10px">
+      ${wMonths.map(([m,g]) => `<div class="m-row">
+        <div class="m-label">${m.replace('-','/')}</div>
+        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(g/wMaxM*100)}%;background:#22C55E"></div></div>
+        <div class="m-val">${fmtGram(g)}</div>
+      </div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3);padding:8px 4px 2px;line-height:1.7">
+      ※ わさび丼3g／ミニわさび丼2g／わさびポーク丼3g／わさびコーヒー2g／わさびピーチソーダ2g で計算。<br>
+      この月ごとの数字を、<b>わさび田管理アプリの「フードトラック出荷」</b>に記録してください。
+    </div>` : ''}
+
     <div style="height:20px"></div>
   </div>`;
 }
