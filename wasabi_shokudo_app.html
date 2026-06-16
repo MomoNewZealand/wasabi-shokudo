@@ -584,7 +584,10 @@ async function syncToSheets(recs){
       const cashTotal    = rec.cashTotal    || 0;
       const rakutenTotal = rec.rakutenTotal || 0;
       const paypayTotal  = rec.paypayTotal  || 0;
-      if (cashTotal > 0) {
+      // キャッシュレス（PayPay/楽天/請求書）や混在の日も、財務シートに「印」を残すため送信する
+      // （現金がある時＝今まで通り金額／キャッシュレスの時＝財務シート側で文字の印に変換）
+      const isCashless = ['PayPay','Rakuten Pay','請求書','混在'].includes(rec.payment);
+      if (cashTotal > 0 || isCashless) {
         fetch(GAS_URL, {
           method: 'POST', mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
