@@ -461,7 +461,7 @@ const NOTION = [
 //  アプリ状態
 // ══════════════════════════════════════════
 let records = [];
-let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', mixedMethod:'PayPay'};
+let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, mixedMethod:'PayPay'};
 let activeCat = 'フード';
 let view = 'input';
 let editId = null;
@@ -469,6 +469,7 @@ let histFilter = '全て';
 let histYear = '全て';
 let expandedId = null;
 let cmpMode = '商品ランキング';
+let anMode = 'キッチンカー';
 
 // ══════════════════════════════════════════
 //  ユーティリティ
@@ -723,6 +724,10 @@ async function saveRecord(){
   if (mixedCashEl?.value) form.mixedCash = parseInt(mixedCashEl.value) || 0;
   const weatherEl = document.getElementById('weather-select');
   if (weatherEl) form.weather = weatherEl.value;
+  const jpCountEl = document.getElementById('jp-count-input');
+  if (jpCountEl) form.jpCount = parseInt(jpCountEl.value) || 0;
+  const enCountEl = document.getElementById('en-count-input');
+  if (enCountEl) form.enCount = parseInt(enCountEl.value) || 0;
   const simple = isSimple(form.loc);
   let tot;
   if(simple){
@@ -764,6 +769,8 @@ async function saveRecord(){
     rakutenTotal: payTotals.rakutenTotal,
     paypayTotal:  payTotals.paypayTotal,
     tourType: form.loc === 'わさび体験' ? form.tourType : '',
+    jpCount: form.loc === 'わさび体験' ? (form.jpCount||0) : 0,
+    enCount: form.loc === 'わさび体験' ? (form.enCount||0) : 0,
     mixedMethod: form.payment === '混在' ? (form.mixedMethod || 'PayPay') : '',  // 混在のキャッシュレス種類
     memo: form.memo,
     source: existingRec?.source || 'manual'  // レジ連携バッジを保持する
@@ -777,7 +784,7 @@ async function saveRecord(){
 
   const keepLoc = form.loc;
   const keepDate = form.date; // 連続入力時に日付を維持
-  form = {date:keepDate, loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, mixedCash:0, mixedMethod:'PayPay'};
+  form = {date:keepDate, loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, mixedCash:0, mixedMethod:'PayPay'};
   editId = null;
   if(!simple) activeCat = 'フード';
   renderInput(); updateTotalBar();
@@ -1013,6 +1020,18 @@ function renderInput(){
       <button class="loc-btn${form.tourType==='日本人'?' on':''}" onclick="setTourType('日本人')" style="flex:1;padding:8px">🇯🇵 日本人</button>
       <button class="loc-btn${form.tourType==='インバウンド'?' on':''}" onclick="setTourType('インバウンド')" style="flex:1;padding:8px">🌍 インバウンド</button>
       <button class="loc-btn${form.tourType===''?' on':''}" onclick="setTourType('')" style="flex:1;padding:8px">— 混合</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div class="field" style="margin:0">
+        <div class="field-lbl">🇯🇵 人数</div>
+        <input type="number" id="jp-count-input" inputmode="numeric" placeholder="0" value="${form.jpCount||''}"
+          oninput="form.jpCount=parseInt(this.value)||0">
+      </div>
+      <div class="field" style="margin:0">
+        <div class="field-lbl">🌍 人数</div>
+        <input type="number" id="en-count-input" inputmode="numeric" placeholder="0" value="${form.enCount||''}"
+          oninput="form.enCount=parseInt(this.value)||0">
+      </div>
     </div>` : ''}
     <input type="number" id="simple-amount" class="simple-amount-input"
       inputmode="numeric" placeholder="0"
@@ -1159,17 +1178,73 @@ function exportCSV(){
 // ══════════════════════════════════════════
 //  集計
 // ══════════════════════════════════════════
+function setAnMode(m){ anMode = m; renderAnalytics(); }
+
+// SVG円グラフ生成（2区分）
+function makePieChart(jpVal, enVal, jpPct, enPct){
+  const total = jpVal + enVal;
+  if(total === 0) return '<div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">データなし</div>';
+  const jp = jpVal/total, en = enVal/total;
+  const r=60, cx=80, cy=70;
+  function arc(start, end, color, label, pct){
+    if(pct===0) return '';
+    if(pct===100){
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"/>
+      <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="700">${label} ${pct}%</text>`;
+    }
+    const s = start*Math.PI*2 - Math.PI/2;
+    const e = end*Math.PI*2 - Math.PI/2;
+    const x1=cx+r*Math.cos(s), y1=cy+r*Math.sin(s);
+    const x2=cx+r*Math.cos(e), y2=cy+r*Math.sin(e);
+    const large = (end-start)>0.5?1:0;
+    const mx=cx+r*0.65*Math.cos((s+e)/2), my=cy+r*0.65*Math.sin((s+e)/2);
+    return `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${color}"/>
+    <text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="700">${pct}%</text>`;
+  }
+  return `<svg viewBox="0 0 160 140" style="width:160px;height:140px">
+    ${arc(0, jp, '#1D4ED8', '🇯🇵', jpPct)}
+    ${arc(jp, 1, '#F59E0B', '🌍', enPct)}
+  </svg>`;
+}
+
+// 月別の棒グラフ（件数・グラムなど、円単位以外も可）
+function renderMonthlyBars(entries, maxV, formatter, barColor){
+  return `<div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
+    ${entries.map(([m,v]) => `<div class="m-row">
+      <div class="m-label">${m.replace('-','/')}</div>
+      <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(v/maxV*100)}%${barColor?`;background:${barColor}`:''}"></div></div>
+      <div class="m-val">${formatter(v)}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
 function renderAnalytics(){
   const c = document.getElementById('content'); if(!c||view!=='analytics') return;
   const active = records.filter(r => r.total > 0);
   if(!active.length){ c.innerHTML=`<div class="empty"><div class="empty-ico">📊</div><div>データがありません</div></div>`; return; }
 
-  const grand = active.reduce((s,r) => s+r.total, 0);
   const byLoc = {};
   Object.keys(LOC_CONFIG).forEach(l => { byLoc[l] = active.filter(r=>r.loc===l); });
 
+  const anModes = ['キッチンカー','その他'];
+  c.innerHTML = `<div class="an-wrap">
+    <div class="cmp-tabs">
+      ${anModes.map(m => `<button class="cmp-tab${anMode===m?' on':''}" onclick="setAnMode('${m}')">${m}</button>`).join('')}
+    </div>
+    ${anMode==='キッチンカー' ? renderAnKitchen(byLoc) : renderAnOther(byLoc)}
+    <div style="height:20px"></div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  集計 - キッチンカー（食堂・イベント）
+// ══════════════════════════════════════════
+function renderAnKitchen(byLoc){
+  const kRecs = [...(byLoc['奥多摩駅前']||[]), ...(byLoc['イベント']||[])];
+  if(!kRecs.length) return `<div class="empty"><div class="empty-ico">🚚</div><div>データがありません</div></div>`;
+
   const byMonth = {};
-  active.forEach(r => {
+  kRecs.forEach(r => {
     const m = r.date.substring(0,7);
     if(!byMonth[m]) byMonth[m] = {total:0, count:0};
     byMonth[m].total += r.total; byMonth[m].count++;
@@ -1178,7 +1253,7 @@ function renderAnalytics(){
   const maxM = Math.max(...months.map(([,d]) => d.total), 1);
 
   const ptot = {};
-  active.forEach(r => {
+  kRecs.forEach(r => {
     Object.entries(r.items||{}).forEach(([id, val]) => {
       const qty = typeof val==='object' ? val.qty : val; if(!qty) return;
       const p = ALL.find(x => x.id===id); if(!p) return;
@@ -1188,51 +1263,27 @@ function renderAnalytics(){
   });
   const tops = Object.values(ptot).sort((a,b) => b.qty-a.qty).slice(0,10);
   const maxQ = tops.length > 0 ? tops[0].qty : 1;
-  const yr = [...new Set(active.map(r => r.date.substring(0,4)))].sort();
 
-  // 体験ツアー 日本人/インバウンド集計
-  const tourRecs = byLoc['わさび体験']||[];
-  const tourJP  = tourRecs.filter(r=>r.tourType!=='インバウンド').reduce((s,r)=>s+r.total,0);
-  const tourEN  = tourRecs.filter(r=>r.tourType==='インバウンド').reduce((s,r)=>s+r.total,0);
-  const tourTotal = tourJP + tourEN;
-  const jpPct  = tourTotal>0 ? Math.round(tourJP/tourTotal*100) : 0;
-  const enPct  = 100 - jpPct;
+  // フード/ドリンク/物販 比率
+  const foodTotal = kRecs.reduce((s,r)=>s+(r.foodTotal||0),0);
+  const drinkTotal = kRecs.reduce((s,r)=>s+(r.drinkTotal||0),0);
+  const merchTotal = kRecs.reduce((s,r)=>s+(r.merchTotal||0),0);
+  const catTotal = foodTotal+drinkTotal+merchTotal;
 
-  // SVG円グラフ生成
-  function makePieChart(jpVal, enVal){
-    const total = jpVal + enVal;
-    if(total === 0) return '<div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">データなし</div>';
-    const jp = jpVal/total, en = enVal/total;
-    const r=60, cx=80, cy=70;
-    function arc(start, end, color, label, pct){
-      if(pct===0) return '';
-      if(pct===100){
-        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"/>
-        <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="13" font-weight="700">${label} ${pct}%</text>`;
-      }
-      const s = start*Math.PI*2 - Math.PI/2;
-      const e = end*Math.PI*2 - Math.PI/2;
-      const x1=cx+r*Math.cos(s), y1=cy+r*Math.sin(s);
-      const x2=cx+r*Math.cos(e), y2=cy+r*Math.sin(e);
-      const large = (end-start)>0.5?1:0;
-      const mx=cx+r*0.65*Math.cos((s+e)/2), my=cy+r*0.65*Math.sin((s+e)/2);
-      return `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${color}"/>
-      <text x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="11" font-weight="700">${pct}%</text>`;
-    }
-    return `<svg viewBox="0 0 160 140" style="width:160px;height:140px">
-      ${arc(0, jp, '#1D4ED8', '🇯🇵', jpPct)}
-      ${arc(jp, 1, '#F59E0B', '🌍', enPct)}
-    </svg>`;
-  }
-
-  // BBQ集計
-  const bbqRecs = byLoc['BBQ']||[];
-  const bbqTotal = bbqRecs.reduce((s,r)=>s+r.total,0);
+  // イベント別実績
+  const evGrouped = {};
+  (byLoc['イベント']||[]).filter(r=>r.event).forEach(r => {
+    if(!evGrouped[r.event]) evGrouped[r.event] = [];
+    evGrouped[r.event].push(r);
+  });
+  const evList = Object.entries(evGrouped).map(([name,recs]) => ({
+    name, count:recs.length, total:recs.reduce((s,r)=>s+r.total,0)
+  })).sort((a,b)=>b.total-a.total);
 
   // 🌿 わさび使用量集計（フードトラック出荷量／月別）
   const wByMonth = {};
   let wGrand = 0;
-  active.forEach(r => {
+  kRecs.forEach(r => {
     const g = calcWasabiGram(r.items); if(!g) return;
     wGrand += g;
     const m = r.date.substring(0,7);
@@ -1241,62 +1292,24 @@ function renderAnalytics(){
   const wMonths = Object.entries(wByMonth).sort(([a],[b]) => b.localeCompare(a)); // 新しい月を上に
   const wMaxM = Math.max(...wMonths.map(([,g]) => g), 1);
 
-  c.innerHTML = `<div class="an-wrap">
-    <div class="an-ttl">累計売上</div>
-    <div class="an-big">
-      <div class="an-big-lbl">TOTAL SALES</div>
-      <div class="an-big-val">${fmt(grand)}</div>
-      <div class="an-big-sub">${yr[0]}〜${yr[yr.length-1]}年 · 全${active.length}日間</div>
-    </div>
-
-    <div class="an-ttl">部門別売上</div>
+  return `
+    ${catTotal>0 ? `<div class="an-ttl">🍱 フード / ☕ ドリンク / 🛍 物販 比率</div>
     <div class="stat-grid">
-      ${Object.entries(LOC_CONFIG).map(([l,cfg]) => {
-        const recs=byLoc[l]||[], tot=recs.reduce((s,r)=>s+r.total,0);
-        if(tot===0) return '';
-        return `<div class="stat-card"><div class="stat-lbl">${cfg.icon} ${cfg.label}</div><div class="stat-val">${fmt(tot)}</div><div class="stat-sub">${recs.length}件 · 平均${fmt(Math.round(tot/(recs.length||1)))}</div></div>`;
-      }).join('')}
-    </div>
-
-    ${tourTotal>0 ? `
-    <div class="an-ttl">🌿 わさび体験 ツアー区分</div>
-    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div style="flex-shrink:0">${makePieChart(tourJP, tourEN)}</div>
-      <div style="flex:1;min-width:120px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <div style="width:12px;height:12px;border-radius:3px;background:#1D4ED8;flex-shrink:0"></div>
-          <div>
-            <div style="font-size:12px;font-weight:700">🇯🇵 日本人</div>
-            <div style="font-size:13px;font-weight:800;color:var(--g1)">${fmt(tourJP)}</div>
-            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType!=='インバウンド').length}件</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:12px;height:12px;border-radius:3px;background:#F59E0B;flex-shrink:0"></div>
-          <div>
-            <div style="font-size:12px;font-weight:700">🌍 インバウンド</div>
-            <div style="font-size:13px;font-weight:800;color:#D97706">${fmt(tourEN)}</div>
-            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType==='インバウンド').length}件</div>
-          </div>
-        </div>
-      </div>
+      <div class="stat-card"><div class="stat-lbl">🍱 フード</div><div class="stat-val">${fmt(foodTotal)}</div><div class="stat-sub">${Math.round(foodTotal/catTotal*100)}%</div></div>
+      <div class="stat-card"><div class="stat-lbl">☕ ドリンク</div><div class="stat-val">${fmt(drinkTotal)}</div><div class="stat-sub">${Math.round(drinkTotal/catTotal*100)}%</div></div>
+      <div class="stat-card"><div class="stat-lbl">🛍 物販</div><div class="stat-val">${fmt(merchTotal)}</div><div class="stat-sub">${Math.round(merchTotal/catTotal*100)}%</div></div>
     </div>` : ''}
 
-    ${bbqTotal>0 ? `
-    <div class="an-ttl">🔥 BBQ 実績</div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-lbl">累計売上</div><div class="stat-val">${fmt(bbqTotal)}</div><div class="stat-sub">${bbqRecs.length}件</div></div>
-      <div class="stat-card"><div class="stat-lbl">1件平均</div><div class="stat-val">${fmt(Math.round(bbqTotal/(bbqRecs.length||1)))}</div><div class="stat-sub">最高 ${fmt(Math.max(...bbqRecs.map(r=>r.total)))}</div></div>
+    ${evList.length>0 ? `<div class="an-ttl">🎪 イベント別実績</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
+      ${evList.map(e => `<div class="m-row">
+        <div class="m-label" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</div>
+        <div class="m-val">${fmt(e.total)}<span style="color:var(--text3);font-weight:400;font-size:11px"> ・${e.count}件</span></div>
+      </div>`).join('')}
     </div>` : ''}
 
     <div class="an-ttl">月別売上</div>
-    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
-      ${months.map(([m,d]) => `<div class="m-row">
-        <div class="m-label">${m.replace('-','/')}</div>
-        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(d.total/maxM*100)}%"></div></div>
-        <div class="m-val">${fmt(d.total)}</div>
-      </div>`).join('')}
-    </div>
+    ${renderMonthlyBars(months.map(([m,d])=>[m,d.total]), maxM, fmt)}
 
     ${tops.length>0 ? `<div class="an-ttl">商品別 販売数ランキング</div>
     <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
@@ -1316,20 +1329,110 @@ function renderAnalytics(){
       <div class="an-big-val" style="color:#166534">${fmtGram(wGrand)}</div>
       <div class="an-big-sub" style="color:#15803D">すりおろし使用メニューの販売数から自動換算</div>
     </div>
-    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px;margin-top:10px">
-      ${wMonths.map(([m,g]) => `<div class="m-row">
-        <div class="m-label">${m.replace('-','/')}</div>
-        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(g/wMaxM*100)}%;background:#22C55E"></div></div>
-        <div class="m-val">${fmtGram(g)}</div>
-      </div>`).join('')}
-    </div>
+    <div style="margin-top:10px">${renderMonthlyBars(wMonths, wMaxM, fmtGram, '#22C55E')}</div>
     <div style="font-size:11px;color:var(--text3);padding:8px 4px 2px;line-height:1.7">
       ※ わさび丼3g／ミニわさび丼2g／わさびポーク丼3g／わさびコーヒー2g／わさびピーチソーダ2g で計算。<br>
       この月ごとの数字を、<b>わさび田管理アプリの「フードトラック出荷」</b>に記録してください。
     </div>` : ''}
+  `;
+}
 
-    <div style="height:20px"></div>
-  </div>`;
+// ══════════════════════════════════════════
+//  集計 - その他（体験・BBQ・撮影等）
+// ══════════════════════════════════════════
+function renderAnOther(byLoc){
+  const oRecs = [...(byLoc['わさび体験']||[]), ...(byLoc['BBQ']||[]), ...(byLoc['撮影等']||[])];
+  if(!oRecs.length) return `<div class="empty"><div class="empty-ico">🎪</div><div>データがありません</div></div>`;
+
+  // 体験ツアー 日本人/インバウンド集計（金額）
+  const tourRecs = byLoc['わさび体験']||[];
+  const tourJP  = tourRecs.filter(r=>r.tourType!=='インバウンド').reduce((s,r)=>s+r.total,0);
+  const tourEN  = tourRecs.filter(r=>r.tourType==='インバウンド').reduce((s,r)=>s+r.total,0);
+  const tourTotal = tourJP + tourEN;
+  const jpPct  = tourTotal>0 ? Math.round(tourJP/tourTotal*100) : 0;
+  const enPct  = 100 - jpPct;
+
+  // 体験ツアー 人数集計（金額と別に、料金が違う日本人/インバウンドの客単価を出す）
+  const jpCountSum = tourRecs.reduce((s,r)=>s+(r.jpCount||0),0);
+  const enCountSum = tourRecs.reduce((s,r)=>s+(r.enCount||0),0);
+
+  // BBQ集計
+  const bbqRecs = byLoc['BBQ']||[];
+  const bbqTotal = bbqRecs.reduce((s,r)=>s+r.total,0);
+  const bbqByMonth = {};
+  bbqRecs.forEach(r => { const m=r.date.substring(0,7); bbqByMonth[m]=(bbqByMonth[m]||0)+1; });
+  const bbqMonths = Object.entries(bbqByMonth).sort(([a],[b])=>a.localeCompare(b));
+  const bbqMaxM = Math.max(...bbqMonths.map(([,n])=>n), 1);
+
+  // 撮影等集計
+  const shotRecs = byLoc['撮影等']||[];
+  const shotTotal = shotRecs.reduce((s,r)=>s+r.total,0);
+  const shotByMonth = {};
+  shotRecs.forEach(r => { const m=r.date.substring(0,7); shotByMonth[m]=(shotByMonth[m]||0)+1; });
+  const shotMonths = Object.entries(shotByMonth).sort(([a],[b])=>a.localeCompare(b));
+  const shotMaxM = Math.max(...shotMonths.map(([,n])=>n), 1);
+
+  // 支払方法別 内訳
+  const payTot = {};
+  oRecs.forEach(r => { const p = r.payment||'現金'; payTot[p]=(payTot[p]||0)+r.total; });
+  const payEntries = Object.entries(payTot).sort((a,b)=>b[1]-a[1]);
+  const payGrand = oRecs.reduce((s,r)=>s+r.total,0);
+
+  return `
+    ${tourTotal>0 ? `
+    <div class="an-ttl">🌿 わさび体験 ツアー区分</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="flex-shrink:0">${makePieChart(tourJP, tourEN, jpPct, enPct)}</div>
+      <div style="flex:1;min-width:120px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:12px;height:12px;border-radius:3px;background:#1D4ED8;flex-shrink:0"></div>
+          <div>
+            <div style="font-size:12px;font-weight:700">🇯🇵 日本人</div>
+            <div style="font-size:13px;font-weight:800;color:var(--g1)">${fmt(tourJP)}</div>
+            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType!=='インバウンド').length}件${jpCountSum>0?` ・${jpCountSum}人`:''}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:12px;height:12px;border-radius:3px;background:#F59E0B;flex-shrink:0"></div>
+          <div>
+            <div style="font-size:12px;font-weight:700">🌍 インバウンド</div>
+            <div style="font-size:13px;font-weight:800;color:#D97706">${fmt(tourEN)}</div>
+            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType==='インバウンド').length}件${enCountSum>0?` ・${enCountSum}人`:''}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${(jpCountSum+enCountSum)>0 ? `<div class="stat-grid" style="margin-top:10px">
+      <div class="stat-card"><div class="stat-lbl">🇯🇵 客単価</div><div class="stat-val">${jpCountSum>0?fmt(Math.round(tourJP/jpCountSum)):'—'}</div><div class="stat-sub">${jpCountSum}人</div></div>
+      <div class="stat-card"><div class="stat-lbl">🌍 客単価</div><div class="stat-val">${enCountSum>0?fmt(Math.round(tourEN/enCountSum)):'—'}</div><div class="stat-sub">${enCountSum}人</div></div>
+    </div>` : `<div style="font-size:11px;color:var(--text3);padding:8px 4px 2px">※ 人数は入力フォームの「人数」欄から記録できます（未入力分は客単価集計に含まれません）</div>`}
+    ` : ''}
+
+    ${bbqTotal>0 ? `
+    <div class="an-ttl">🔥 BBQ 実績</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-lbl">累計売上</div><div class="stat-val">${fmt(bbqTotal)}</div><div class="stat-sub">${bbqRecs.length}件</div></div>
+      <div class="stat-card"><div class="stat-lbl">1件平均</div><div class="stat-val">${fmt(Math.round(bbqTotal/(bbqRecs.length||1)))}</div><div class="stat-sub">最高 ${fmt(Math.max(...bbqRecs.map(r=>r.total)))}</div></div>
+    </div>
+    <div style="margin-top:8px">${renderMonthlyBars(bbqMonths, bbqMaxM, n=>`${n}件`)}</div>` : ''}
+
+    ${shotTotal>0 ? `
+    <div class="an-ttl">📷 撮影等 実績</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-lbl">累計売上</div><div class="stat-val">${fmt(shotTotal)}</div><div class="stat-sub">${shotRecs.length}件</div></div>
+      <div class="stat-card"><div class="stat-lbl">1件平均</div><div class="stat-val">${fmt(Math.round(shotTotal/(shotRecs.length||1)))}</div><div class="stat-sub">最高 ${fmt(Math.max(...shotRecs.map(r=>r.total)))}</div></div>
+    </div>
+    <div style="margin-top:8px">${renderMonthlyBars(shotMonths, shotMaxM, n=>`${n}件`)}</div>` : ''}
+
+    ${payEntries.length>0 ? `<div class="an-ttl">💳 支払方法別 内訳</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
+      ${payEntries.map(([p,v]) => `<div class="m-row">
+        <div class="m-label">${getPaymentLabel(p)}</div>
+        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(v/payGrand*100)}%"></div></div>
+        <div class="m-val">${fmt(v)}</div>
+      </div>`).join('')}
+    </div>` : ''}
+  `;
 }
 
 // ══════════════════════════════════════════
