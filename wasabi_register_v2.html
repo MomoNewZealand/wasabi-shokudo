@@ -1090,11 +1090,28 @@ function oeditAddItem() {
 
 function deleteOrder() {
   if (!confirm(`#${oeditOrderNo} を削除しますか？`)) return;
-  todayData.orders = todayData.orders.filter(o => o.no !== oeditOrderNo);
+  const no = oeditOrderNo;  // closeOrderEditでnullになる前に控えておく
+  const delTarget = todayData.orders.find(o => o.no === no);  // シート削除用
+  todayData.orders = todayData.orders.filter(o => o.no !== no);
   saveTodayData();
   closeOrderEdit();
   renderAll();
-  showToast(`#${oeditOrderNo} を削除しました`);
+  showToast(`#${no} を削除しました`);
+  // ★ スプレッドシート側からも削除（残ると合計が合わなくなるため）
+  if (GAS_URL && delTarget) sendDeleteToGAS(delTarget);
+}
+
+// シートの該当行を削除するようGASへ依頼する
+async function sendDeleteToGAS(order) {
+  try {
+    const p = new URLSearchParams({
+      action: 'deleteRegisterOrder',
+      date: order.date,
+      device: getDeviceName(),
+      orderNo: fmtOrderNo(order.no)
+    });
+    await fetch(`${GAS_URL}?${p}`, { method: 'GET', mode: 'no-cors' });
+  } catch(e) { console.warn('GAS削除送信エラー:', e); }
 }
 
 function saveOrderEdit() {
@@ -1281,7 +1298,7 @@ async function manualRetryQueue(){
       const p=new URLSearchParams({
         action:'addRegisterOrder',
         date:order.date||'',time:order.time||'',
-        orderNo:String(order.no||''),
+        orderNo:fmtOrderNo(order.no),  // ★ 通常送信と同じ「OT-12」形式に統一（重複判定のため）
         device:getDeviceName(),
         payment:order.payment||'',isLocal:order.isLocal||false,
         subtotal:order.subtotal||0,discount:order.discount||0,total:order.total||0,
