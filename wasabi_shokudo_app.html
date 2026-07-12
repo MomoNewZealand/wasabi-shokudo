@@ -742,14 +742,28 @@ async function saveRecord(){
 
   // 編集中の既存レコードを取得（source・支払い内訳の引き継ぎ判定に使用）
   const existingRec = editId ? records.find(r => r.id === editId) : null;
-  // レジ連携データの編集時は既存の支払い内訳を保持（再計算すると全額現金になるため）
+  // レジ連携データの編集時は入力欄の支払い内訳を使う（欄が無い場合は既存値を保持）
+  if (existingRec?.source === 'register') {
+    const regCashEl    = document.getElementById('reg-cash-input');
+    if (regCashEl)    form.regCash    = parseInt(regCashEl.value)    || 0;
+    const regRakutenEl = document.getElementById('reg-rakuten-input');
+    if (regRakutenEl) form.regRakuten = parseInt(regRakutenEl.value) || 0;
+    const regPaypayEl  = document.getElementById('reg-paypay-input');
+    if (regPaypayEl)  form.regPaypay  = parseInt(regPaypayEl.value)  || 0;
+  }
   const payTotals = (existingRec?.source === 'register')
     ? {
-        cashTotal:    existingRec.cashTotal    || 0,
-        rakutenTotal: existingRec.rakutenTotal || existingRec.qrTotal || 0,
-        paypayTotal:  existingRec.paypayTotal  || 0
+        cashTotal:    (form.regCash    ?? existingRec.cashTotal)    || 0,
+        rakutenTotal: (form.regRakuten ?? (existingRec.rakutenTotal || existingRec.qrTotal)) || 0,
+        paypayTotal:  (form.regPaypay  ?? existingRec.paypayTotal)  || 0
       }
     : calcPaymentTotals(tot.total, form.payment);
+  // レジ連携データ：内訳の合計と商品合計のズレを保存前にチェック
+  if (existingRec?.source === 'register') {
+    const breakdownSum = payTotals.cashTotal + payTotals.rakutenTotal + payTotals.paypayTotal;
+    if (breakdownSum !== tot.total &&
+        !confirm(`⚠️ 支払い内訳の合計（¥${breakdownSum.toLocaleString()}）と商品合計（¥${tot.total.toLocaleString()}）が一致しません。\nこのまま保存しますか？`)) return;
+  }
   // 混在の場合は入力された現金額をcashTotalにセット
   if (form.payment === '混在' && form.mixedCash > 0) payTotals.cashTotal = form.mixedCash;
   // イベント名はフォーカスを外す前に保存ボタンを押しても確実に取得する
@@ -859,7 +873,11 @@ function editRecord(id){
     amount: rec.total || 0,
     tourType: rec.tourType || '日本人',
     mixedMethod: rec.mixedMethod || 'PayPay',
-    mixedCash: rec.cashTotal || 0
+    mixedCash: rec.cashTotal || 0,
+    // レジ連携レコード用：支払い内訳（現金/R Pay/PayPay）を編集できるように読み込む
+    regCash: rec.cashTotal || 0,
+    regRakuten: rec.rakutenTotal || rec.qrTotal || 0,
+    regPaypay: rec.paypayTotal || 0
   };
   editId = id;
   if(!isSimple(rec.loc)) activeCat = 'フード';
@@ -943,8 +961,18 @@ function renderInput(){
   if (existingWeather !== undefined) form.weather = existingWeather;
   const existingAmount = document.getElementById('simple-amount')?.value;
   if (existingAmount) form.amount = parseInt(existingAmount) || 0;
+  // レジ連携の支払い内訳入力欄（再描画で値が消えないように読み戻す）
+  const existingRegCash = document.getElementById('reg-cash-input')?.value;
+  if (existingRegCash) form.regCash = parseInt(existingRegCash) || 0;
+  const existingRegRakuten = document.getElementById('reg-rakuten-input')?.value;
+  if (existingRegRakuten) form.regRakuten = parseInt(existingRegRakuten) || 0;
+  const existingRegPaypay = document.getElementById('reg-paypay-input')?.value;
+  if (existingRegPaypay) form.regPaypay = parseInt(existingRegPaypay) || 0;
   const simple = isSimple(form.loc);
   const tot = simple ? {total: form.amount||0} : calcTotals();
+
+  // レジ連携レコードの編集中かどうか（支払い内訳を直接編集できるようにする）
+  const editingRegister = !!(editId && records.find(r => r.id === editId)?.source === 'register');
 
   // 支払方法ボタン
   const payBtns = ['現金','Rakuten Pay','PayPay','請求書','混在'].map(p =>
@@ -978,6 +1006,29 @@ function renderInput(){
       <div class="field-lbl">イベント名</div>
       <input type="text" id="input-event-name" value="${form.event}" placeholder="例: VERTERE BEER FEST" oninput="form.event=this.value">
     </div>` : ''}
+    ${editingRegister ? `
+    <!-- レジ連携レコード：支払い内訳を直接編集できる欄 -->
+    <div class="field">
+      <div class="field-lbl">💳 支払い内訳（レジ連携データ）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div>
+          <div class="field-lbl" style="font-size:10px">💴 現金</div>
+          <input type="number" id="reg-cash-input" inputmode="numeric" placeholder="0" value="${form.regCash||''}"
+            oninput="form.regCash=parseInt(this.value)||0" style="text-align:right;font-weight:600">
+        </div>
+        <div>
+          <div class="field-lbl" style="font-size:10px">💳 R Pay</div>
+          <input type="number" id="reg-rakuten-input" inputmode="numeric" placeholder="0" value="${form.regRakuten||''}"
+            oninput="form.regRakuten=parseInt(this.value)||0" style="text-align:right;font-weight:600">
+        </div>
+        <div>
+          <div class="field-lbl" style="font-size:10px">🔴 PayPay</div>
+          <input type="number" id="reg-paypay-input" inputmode="numeric" placeholder="0" value="${form.regPaypay||''}"
+            oninput="form.regPaypay=parseInt(this.value)||0" style="text-align:right;font-weight:600">
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">3つの合計が商品合計と一致するように入力してください</div>
+    </div>` : `
     <div class="field">
       <div class="field-lbl">支払方法</div>
       <div class="loc-wrap">${payBtns}</div>
@@ -994,7 +1045,7 @@ function renderInput(){
         <button class="loc-btn${(form.mixedMethod||'PayPay')==='PayPay'?' on':''}" onclick="setMixedMethod('PayPay')" style="flex:none;padding:7px 10px;font-size:11px">🔴 PayPay</button>
         <button class="loc-btn${form.mixedMethod==='Rakuten Pay'?' on':''}" onclick="setMixedMethod('Rakuten Pay')" style="flex:none;padding:7px 10px;font-size:11px">💳 R.Pay</button>
       </div>
-    </div>` : ''}
+    </div>` : ''}`}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="field" style="margin:0">
         <div class="field-lbl">天気</div>
