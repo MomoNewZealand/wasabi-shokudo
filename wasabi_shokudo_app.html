@@ -142,6 +142,7 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
 .tag-ex{background:#DCFCE7;color:#166534}
 .tag-bbq{background:#FEE2E2;color:#991B1B}
 .tag-shot{background:#F3E8FF;color:#6B21A8}
+.tag-ws{background:#E0F2FE;color:#075985}
 .tag-reg{background:#EFF6FF;color:#1D4ED8}
 .rec-total{margin-left:auto;font-size:15px;font-weight:700;color:var(--g1)}
 .rec-body{padding:0 14px 13px;border-top:1px solid var(--border)}
@@ -280,7 +281,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oe
 const STORAGE_KEY = 'wasabi_v3';
 
 // 簡易入力モードの部門（商品明細なし・金額直接入力）
-const SIMPLE_LOCS = ['わさび体験','BBQ','撮影等'];
+const SIMPLE_LOCS = ['わさび体験','BBQ','撮影等','研修・ワークショップ'];
 
 // 部門定義
 const LOC_CONFIG = {
@@ -289,6 +290,7 @@ const LOC_CONFIG = {
   'わさび体験': {icon:'🌿', label:'体験',     tag:'tag-ex',   financeCol: 5},
   'BBQ':        {icon:'🔥', label:'BBQ',      tag:'tag-bbq',  financeCol: 7},
   '撮影等':     {icon:'📷', label:'撮影等',   tag:'tag-shot', financeCol: 8},
+  '研修・ワークショップ': {icon:'🎓', label:'研修', tag:'tag-ws', financeCol: 9},
 };
 
 // ══════════════════════════════════════════
@@ -502,6 +504,13 @@ function getPaymentLabel(payment){
   const map = {'現金':'💴 現金','Rakuten Pay':'💳 R.Pay','PayPay':'🔴 PayPay','請求書':'📄 請求書','混在':'🔀 混在'};
   return map[payment] || payment;
 }
+// 金額を後から入れる支払方法（PayPayは月まとめ・手数料引き後に確定するため）
+const AMOUNT_LATER = ['Rakuten Pay','PayPay','請求書'];
+// 財務管理シートに入る「印」の文字（GAS側の FINANCE_MARKS と必ず揃えること）
+const FINANCE_MARK = {'Rakuten Pay':'R Pay','PayPay':'PayPay','請求書':'請求書'};
+function isAmountLater(payment){ return AMOUNT_LATER.includes(payment); }
+// 金額未入力のまま「この日に売上があった印」として持っているレコードか
+function isMarkOnly(rec){ return (rec?.total||0) <= 0 && isAmountLater(rec?.payment); }
 
 // ══════════════════════════════════════════
 //  ストレージ
@@ -569,7 +578,8 @@ async function syncToSheets(recs){
   const icon = document.getElementById('sync-icon');
   const status = document.getElementById('sync-status');
   btn.disabled = true; btn.classList.add('syncing');
-  const valid = recs.filter(r => r.total > 0);
+  // 金額0でもキャッシュレスの「印」レコードは送信する（財務シートにR Pay/PayPayを残すため）
+  const valid = recs.filter(r => r.total > 0 || isMarkOnly(r));
   icon.textContent = '⏳'; status.textContent = `0 / ${valid.length}件 送信中...`;
   try {
     // 1件ずつ addSalesRecord として送信（Notionにも確実に書き込まれる）
@@ -619,13 +629,13 @@ async function syncToSheets(recs){
 }
 async function syncAll(){
   const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
-  const recent = records.filter(r => r.date >= threeMonthsAgo && r.total > 0);
+  const recent = records.filter(r => r.date >= threeMonthsAgo && (r.total > 0 || isMarkOnly(r)));
   await syncToSheets(recent);
 }
 async function syncAllFull(){ await syncToSheets(records); }
 async function syncAllConfirm(){
   const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
-  const recent = records.filter(r => r.date >= threeMonthsAgo && r.total > 0);
+  const recent = records.filter(r => r.date >= threeMonthsAgo && (r.total > 0 || isMarkOnly(r)));
   if(!confirm('直近3ヶ月のデータ ' + recent.length + '件 をスプレッドシートに送信します。\n（既存データは上書きされます）\n\nよろしいですか？')) return;
   await syncToSheets(recent);
 }
@@ -732,7 +742,8 @@ async function saveRecord(){
   let tot;
   if(simple){
     const amount = parseInt(document.getElementById('simple-amount')?.value) || form.amount || 0;
-    if(amount <= 0){ showToast('金額を入力してください'); return; }
+    // PayPay・R Pay・請求書は金額が後日確定するため、0円のまま「印」として保存できる
+    if(amount <= 0 && !isAmountLater(form.payment)){ showToast('金額を入力してください'); return; }
     form.amount = amount;
     tot = {food:0, drink:0, merch:0, total: amount};
   } else {
@@ -933,18 +944,23 @@ async function sendToFinance(id) {
   const rec = records.find(r => r.id === id);
   if (!rec) return;
   const cashTotal = rec.cashTotal || 0;
-  if (cashTotal <= 0) { showToast('⚠️ 現金売上がありません'); return; }
+  // 現金がなくても、キャッシュレスなら財務シートに「印」を残すため送信する
+  const isCashless = isAmountLater(rec.payment) || rec.payment === '混在';
+  if (cashTotal <= 0 && !isCashless) { showToast('⚠️ 現金売上がありません'); return; }
   showToast('📊 財務シートに送信中…');
   fetch(GAS_URL, {
     method: 'POST', mode: 'no-cors',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      action:    'writeToFinance',
-      date:      rec.date,
-      loc:       rec.loc,
-      payment:   '現金',
-      eventName: rec.event || '',
+      action:       'writeToFinance',
+      date:         rec.date,
+      loc:          rec.loc,
+      payment:      rec.payment || '現金',
+      mixedMethod:  rec.mixedMethod || '',
+      eventName:    rec.event || '',
       cashTotal,
+      rakutenTotal: rec.rakutenTotal || 0,
+      paypayTotal:  rec.paypayTotal  || 0,
     })
   }).then(() => showToast('✅ 財務シートに送信しました'))
     .catch(() => showToast('⚠️ 送信に失敗しました', 'err'));
@@ -1063,7 +1079,7 @@ function renderInput(){
   </div>
 
   ${simple ? `
-  <!-- 簡易入力モード（体験・BBQ・撮影等） -->
+  <!-- 簡易入力モード（体験・BBQ・撮影等・研修） -->
   <div class="simple-input-card">
     <div class="simple-input-lbl">${LOC_CONFIG[form.loc]?.icon||''} ${form.loc} 売上金額</div>
     ${form.loc==='わさび体験' ? `
@@ -1089,6 +1105,10 @@ function renderInput(){
       value="${form.amount||''}"
       oninput="form.amount=parseInt(this.value)||0;updateTotalBar()">
     <div style="font-size:11px;color:var(--text3);margin-top:8px">支払方法：${getPaymentLabel(form.payment)}</div>
+    ${isAmountLater(form.payment) ? `<div style="margin-top:8px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:10px;padding:8px 10px;font-size:11px;color:#854D0E;line-height:1.7">
+      💡 金額は<b>空欄のままでも保存できます</b>。<br>
+      財務管理シートには「${FINANCE_MARK[form.payment]}」の印だけが入ります。入金額が確定したら、履歴から編集して金額を入れてください。
+    </div>` : ''}
   </div>
   ` : `
   <!-- 商品明細モード（食堂・イベント） -->
@@ -1143,12 +1163,19 @@ function renderHistory(){
   const years = ['全て', ...getYears()];
   const allLocs = ['全て', ...Object.keys(LOC_CONFIG)];
   const filtered = records
-    .filter(r => (r.total||0) > 0
+    .filter(r => ((r.total||0) > 0 || isMarkOnly(r))
       && (histFilter==='全て' || r.loc===histFilter)
       && (histYear==='全て' || r.date.startsWith(histYear)))
     .sort((a,b) => b.date.localeCompare(a.date));
+  // 金額未入力（あとで入れる）レコードの入れ忘れ防止リマインド
+  const pending = records.filter(isMarkOnly).sort((a,b) => b.date.localeCompare(a.date));
 
   c.innerHTML = `
+  ${pending.length>0 ? `<div style="margin:0 12px 8px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:var(--radius-lg);padding:10px 12px">
+    <div style="font-size:12px;font-weight:700;color:#854D0E">⏳ 金額未入力が ${pending.length}件 あります</div>
+    <div style="font-size:11px;color:#A16207;margin-top:3px;line-height:1.6">${pending.slice(0,5).map(r=>`${fmtD(r.date)}（${LOC_CONFIG[r.loc]?.label||r.loc}・${getPaymentLabel(r.payment)}）`).join('<br>')}${pending.length>5?`<br>ほか${pending.length-5}件`:''}</div>
+    <div style="font-size:11px;color:#A16207;margin-top:5px">入金額が確定したら、下のカードを開いて「✏️ 編集」で金額を入れてください。</div>
+  </div>` : ''}
   <div class="filter-bar">
     ${allLocs.map(f =>
       `<button class="f-btn${histFilter===f?' on':''}" onclick="setHF('${f}')">${f==='全て'?'全て':(LOC_CONFIG[f]?.icon+' '+LOC_CONFIG[f]?.label||f)}</button>`
@@ -1179,7 +1206,7 @@ function renderHistory(){
             ${rec.tourType ? `<span class="tag" style="background:#FEF9C3;color:#713F12">${rec.tourType==='インバウンド'?'🌍 英語':'🇯🇵 日本語'}</span>` : ''}
           </div>
         </div>
-        <div class="rec-total">${fmt(rec.total)}</div>
+        <div class="rec-total"${isMarkOnly(rec)?' style="font-size:11px;color:#A16207;background:#FEF9C3;border:1px solid #FDE68A;border-radius:10px;padding:3px 8px"':''}>${isMarkOnly(rec) ? '⏳ 金額未入力' : fmt(rec.total)}</div>
       </div>
       ${exp ? `<div class="rec-body">
         ${(rec.foodTotal||rec.drinkTotal||rec.merchTotal) ? `<div class="det-grid">
@@ -1201,7 +1228,7 @@ function renderHistory(){
         <div class="act-row">
           <button class="act-btn" onclick="editRecord('${rec.id}')">✏️ 編集</button>
           <button class="act-btn del" onclick="if(confirm('削除しますか？'))delRecord('${rec.id}')">🗑 削除</button>
-          ${(rec.cashTotal||0) > 0 ? `<button class="act-btn" onclick="sendToFinance('${rec.id}')">📊 財務送信</button>` : ''}
+          ${((rec.cashTotal||0) > 0 || isAmountLater(rec.payment) || rec.payment==='混在') ? `<button class="act-btn" onclick="sendToFinance('${rec.id}')">📊 財務送信</button>` : ''}
         </div>
       </div>` : ''}
     </div>`;
@@ -1389,10 +1416,10 @@ function renderAnKitchen(byLoc){
 }
 
 // ══════════════════════════════════════════
-//  集計 - その他（体験・BBQ・撮影等）
+//  集計 - その他（体験・BBQ・撮影等・研修）
 // ══════════════════════════════════════════
 function renderAnOther(byLoc){
-  const oRecs = [...(byLoc['わさび体験']||[]), ...(byLoc['BBQ']||[]), ...(byLoc['撮影等']||[])];
+  const oRecs = [...(byLoc['わさび体験']||[]), ...(byLoc['BBQ']||[]), ...(byLoc['撮影等']||[]), ...(byLoc['研修・ワークショップ']||[])];
   if(!oRecs.length) return `<div class="empty"><div class="empty-ico">🎪</div><div>データがありません</div></div>`;
 
   // 体験ツアー 日本人/インバウンド集計（金額）
@@ -1422,6 +1449,14 @@ function renderAnOther(byLoc){
   shotRecs.forEach(r => { const m=r.date.substring(0,7); shotByMonth[m]=(shotByMonth[m]||0)+1; });
   const shotMonths = Object.entries(shotByMonth).sort(([a],[b])=>a.localeCompare(b));
   const shotMaxM = Math.max(...shotMonths.map(([,n])=>n), 1);
+
+  // 研修・ワークショップ集計
+  const wsRecs = byLoc['研修・ワークショップ']||[];
+  const wsTotal = wsRecs.reduce((s,r)=>s+r.total,0);
+  const wsByMonth = {};
+  wsRecs.forEach(r => { const m=r.date.substring(0,7); wsByMonth[m]=(wsByMonth[m]||0)+1; });
+  const wsMonths = Object.entries(wsByMonth).sort(([a],[b])=>a.localeCompare(b));
+  const wsMaxM = Math.max(...wsMonths.map(([,n])=>n), 1);
 
   // 支払方法別 内訳
   const payTot = {};
@@ -1474,6 +1509,14 @@ function renderAnOther(byLoc){
       <div class="stat-card"><div class="stat-lbl">1件平均</div><div class="stat-val">${fmt(Math.round(shotTotal/(shotRecs.length||1)))}</div><div class="stat-sub">最高 ${fmt(Math.max(...shotRecs.map(r=>r.total)))}</div></div>
     </div>
     <div style="margin-top:8px">${renderMonthlyBars(shotMonths, shotMaxM, n=>`${n}件`)}</div>` : ''}
+
+    ${wsTotal>0 ? `
+    <div class="an-ttl">🎓 研修・ワークショップ 実績</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-lbl">累計売上</div><div class="stat-val">${fmt(wsTotal)}</div><div class="stat-sub">${wsRecs.length}件</div></div>
+      <div class="stat-card"><div class="stat-lbl">1件平均</div><div class="stat-val">${fmt(Math.round(wsTotal/(wsRecs.length||1)))}</div><div class="stat-sub">最高 ${fmt(Math.max(...wsRecs.map(r=>r.total)))}</div></div>
+    </div>
+    <div style="margin-top:8px">${renderMonthlyBars(wsMonths, wsMaxM, n=>`${n}件`)}</div>` : ''}
 
     ${payEntries.length>0 ? `<div class="an-ttl">💳 支払方法別 内訳</div>
     <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
