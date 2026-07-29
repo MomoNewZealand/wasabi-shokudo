@@ -822,10 +822,38 @@ async function saveRecord(){
     source: existingRec?.source || 'manual'  // レジ連携バッジを保持する
   };
 
+  // 編集で「日付・部門・イベント名」を変えると、シート側は別の記録扱いになり
+  // 新しい行が増えたうえ古い行が残る（＝二重計上）。古い行を消して防ぐ
+  const keyChanged = !!existingRec && (
+    existingRec.date !== rec.date ||
+    existingRec.loc  !== rec.loc  ||
+    (existingRec.event||'') !== (rec.event||'')
+  );
+  if(keyChanged){
+    const changes = [];
+    if(existingRec.date !== rec.date) changes.push(`日付：${fmtD(existingRec.date)} → ${fmtD(rec.date)}`);
+    if(existingRec.loc  !== rec.loc)  changes.push(`部門：${existingRec.loc} → ${rec.loc}`);
+    if((existingRec.event||'') !== (rec.event||'')) changes.push(`イベント名：${existingRec.event||'（なし）'} → ${rec.event||'（なし）'}`);
+    if(!confirm([
+      '記録の内容を変更します。',
+      '',
+      ...changes,
+      '',
+      '売上記録シートの古い行は自動で削除します。',
+      '',
+      `※ 財務管理シートの「${existingRec.loc}」の欄に金額や印が残っていたら、手で消してください。`
+    ].join('\n'))) return;
+  }
+
   if(editId) records = records.map(r => r.id===editId ? rec : r);
   else records = [...records, rec];
   saveToStorage();
   showToast('✅ 保存しました');
+  // 先に古い行を消してから新しい行を書く
+  if(keyChanged){
+    const r = await deleteSheetRow(existingRec);
+    if(!r.ok) showToast(`⚠️ シートの古い行（${fmtD(existingRec.date)} ${existingRec.loc}）は手で消してください`, 'err');
+  }
   syncToSheets([rec]);
 
   const keepLoc = form.loc;
@@ -917,18 +945,25 @@ async function delRecord(id){
   records = records.filter(r => r.id !== id);
   saveToStorage(); renderHistory();
   // スプレッドシートの行も消す（消し忘れると「全件読込」で復活してしまうため）
+  const r = await deleteSheetRow(rec);
+  if(r.ok && r.deleted > 0) showToast(`🗑 削除しました（シートも${r.deleted}行削除）`);
+  else if(r.ok)             showToast('🗑 アプリから削除しました（シートに該当行なし）');
+  // 失敗時はどの行を手で消せばよいか分かるように日付と部門を出す
+  else showToast(`⚠️ シートが消せません。${fmtD(rec.date)} の${rec.loc}の行を手で消してください`, 'err');
+}
+
+// 売上記録シートから「日付＋部門＋イベント名」が一致する行を消す
+async function deleteSheetRow(rec){
   try{
     const url = `${GAS_URL}?action=deleteSalesRecord`
       + `&date=${encodeURIComponent(rec.date)}`
       + `&loc=${encodeURIComponent(rec.loc||'')}`
       + `&event=${encodeURIComponent(rec.event||'')}`;
     const json = await (await fetch(url)).json();
-    if(json.success && json.deleted > 0)  showToast(`🗑 削除しました（シートも${json.deleted}行削除）`);
-    else if(json.success)                 showToast('🗑 アプリから削除しました（シートに該当行なし）');
-    else throw new Error(json.error || '削除失敗');
+    if(!json.success) throw new Error(json.error || '削除失敗');
+    return {ok:true, deleted: json.deleted || 0};
   }catch(e){
-    // アプリからは消えているので、どの行を手で消せばよいか分かるように日付と部門を出す
-    showToast(`⚠️ シートが消せません。${fmtD(rec.date)} の${rec.loc}の行を手で消してください`, 'err');
+    return {ok:false, deleted:0};
   }
 }
 
