@@ -1422,17 +1422,28 @@ function renderAnOther(byLoc){
   const oRecs = [...(byLoc['わさび体験']||[]), ...(byLoc['BBQ']||[]), ...(byLoc['撮影等']||[]), ...(byLoc['研修・ワークショップ']||[])];
   if(!oRecs.length) return `<div class="empty"><div class="empty-ico">🎪</div><div>データがありません</div></div>`;
 
-  // 体験ツアー 日本人/インバウンド集計（金額）
+  // 体験ツアー 日本人/インバウンド集計（人数ベース）
+  // ※ 円グラフは人数で描く。tourTypeでの金額振り分けは「混合」の日を日本人側に寄せてしまうため使わない
   const tourRecs = byLoc['わさび体験']||[];
-  const tourJP  = tourRecs.filter(r=>r.tourType!=='インバウンド').reduce((s,r)=>s+r.total,0);
-  const tourEN  = tourRecs.filter(r=>r.tourType==='インバウンド').reduce((s,r)=>s+r.total,0);
-  const tourTotal = tourJP + tourEN;
-  const jpPct  = tourTotal>0 ? Math.round(tourJP/tourTotal*100) : 0;
-  const enPct  = 100 - jpPct;
-
-  // 体験ツアー 人数集計（金額と別に、料金が違う日本人/インバウンドの客単価を出す）
   const jpCountSum = tourRecs.reduce((s,r)=>s+(r.jpCount||0),0);
   const enCountSum = tourRecs.reduce((s,r)=>s+(r.enCount||0),0);
+  const countTotal = jpCountSum + enCountSum;
+  const jpPct  = countTotal>0 ? Math.round(jpCountSum/countTotal*100) : 0;
+  const enPct  = 100 - jpPct;
+
+  // 客単価は「日本人だけの日」「インバウンドだけの日」から出す
+  // （混合の日は売上をどちらに何円ずつ振るか決められないため、客単価の計算からは外す）
+  // 人数が入っている日だけを対象にする（人数未入力の日の売上だけが混ざると単価が跳ね上がるため）
+  const jpOnlyRecs  = tourRecs.filter(r=>r.tourType==='日本人'       && (r.jpCount||0)>0);
+  const enOnlyRecs  = tourRecs.filter(r=>r.tourType==='インバウンド' && (r.enCount||0)>0);
+  const jpOnlyTotal = jpOnlyRecs.reduce((s,r)=>s+r.total,0);
+  const enOnlyTotal = enOnlyRecs.reduce((s,r)=>s+r.total,0);
+  const jpOnlyCount = jpOnlyRecs.reduce((s,r)=>s+(r.jpCount||0),0);
+  const enOnlyCount = enOnlyRecs.reduce((s,r)=>s+(r.enCount||0),0);
+  const mixedCount  = tourRecs.filter(r=>!r.tourType && r.total>0).length;
+
+  // 人数が未入力のまま売上だけ入っている日（円グラフに含まれない＝入れ忘れ注意）
+  const noCountRecs = tourRecs.filter(r => r.total>0 && !(r.jpCount||0) && !(r.enCount||0));
 
   // BBQ集計
   const bbqRecs = byLoc['BBQ']||[];
@@ -1465,33 +1476,43 @@ function renderAnOther(byLoc){
   const payGrand = oRecs.reduce((s,r)=>s+r.total,0);
 
   return `
-    ${tourTotal>0 ? `
-    <div class="an-ttl">🌿 わさび体験 ツアー区分</div>
+    ${tourRecs.length>0 ? `
+    <div class="an-ttl">🌿 わさび体験 ツアー区分（人数ベース）</div>
+    ${countTotal>0 ? `
     <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div style="flex-shrink:0">${makePieChart(tourJP, tourEN, jpPct, enPct)}</div>
+      <div style="flex-shrink:0">${makePieChart(jpCountSum, enCountSum, jpPct, enPct)}</div>
       <div style="flex:1;min-width:120px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <div style="width:12px;height:12px;border-radius:3px;background:#1D4ED8;flex-shrink:0"></div>
           <div>
             <div style="font-size:12px;font-weight:700">🇯🇵 日本人</div>
-            <div style="font-size:13px;font-weight:800;color:var(--g1)">${fmt(tourJP)}</div>
-            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType!=='インバウンド').length}件${jpCountSum>0?` ・${jpCountSum}人`:''}</div>
+            <div style="font-size:15px;font-weight:800;color:var(--g1)">${jpCountSum}人</div>
+            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>(r.jpCount||0)>0).length}日</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <div style="width:12px;height:12px;border-radius:3px;background:#F59E0B;flex-shrink:0"></div>
           <div>
             <div style="font-size:12px;font-weight:700">🌍 インバウンド</div>
-            <div style="font-size:13px;font-weight:800;color:#D97706">${fmt(tourEN)}</div>
-            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>r.tourType==='インバウンド').length}件${enCountSum>0?` ・${enCountSum}人`:''}</div>
+            <div style="font-size:15px;font-weight:800;color:#D97706">${enCountSum}人</div>
+            <div style="font-size:10px;color:var(--text3)">${tourRecs.filter(r=>(r.enCount||0)>0).length}日</div>
           </div>
         </div>
       </div>
     </div>
-    ${(jpCountSum+enCountSum)>0 ? `<div class="stat-grid" style="margin-top:10px">
-      <div class="stat-card"><div class="stat-lbl">🇯🇵 客単価</div><div class="stat-val">${jpCountSum>0?fmt(Math.round(tourJP/jpCountSum)):'—'}</div><div class="stat-sub">${jpCountSum}人</div></div>
-      <div class="stat-card"><div class="stat-lbl">🌍 客単価</div><div class="stat-val">${enCountSum>0?fmt(Math.round(tourEN/enCountSum)):'—'}</div><div class="stat-sub">${enCountSum}人</div></div>
-    </div>` : `<div style="font-size:11px;color:var(--text3);padding:8px 4px 2px">※ 人数は入力フォームの「人数」欄から記録できます（未入力分は客単価集計に含まれません）</div>`}
+    <div class="stat-grid" style="margin-top:10px">
+      <div class="stat-card"><div class="stat-lbl">🇯🇵 客単価</div><div class="stat-val">${jpOnlyCount>0?fmt(Math.round(jpOnlyTotal/jpOnlyCount)):'—'}</div><div class="stat-sub">${jpOnlyCount>0?`${jpOnlyCount}人・${jpOnlyRecs.length}日`:'データなし'}</div></div>
+      <div class="stat-card"><div class="stat-lbl">🌍 客単価</div><div class="stat-val">${enOnlyCount>0?fmt(Math.round(enOnlyTotal/enOnlyCount)):'—'}</div><div class="stat-sub">${enOnlyCount>0?`${enOnlyCount}人・${enOnlyRecs.length}日`:'データなし'}</div></div>
+    </div>
+    ${mixedCount>0 ? `<div style="font-size:11px;color:var(--text3);padding:6px 4px 0;line-height:1.7">
+      ※ 客単価は「日本人のみ」「インバウンドのみ」の日から計算しています。<b>「混合」の${mixedCount}日</b>は売上をどちらに振り分けるか決められないため、客単価からは除いています（人数の円グラフには入っています）。
+    </div>` : ''}` : ''}
+    ${noCountRecs.length>0 ? `<div style="margin-top:10px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:var(--radius-lg);padding:10px 12px">
+      <div style="font-size:12px;font-weight:700;color:#854D0E">⚠️ 人数未入力が ${noCountRecs.length}日 あります</div>
+      <div style="font-size:11px;color:#A16207;margin-top:3px;line-height:1.6">${noCountRecs.slice(0,5).map(r=>`${fmtD(r.date)}（${fmt(r.total)}）`).join('<br>')}${noCountRecs.length>5?`<br>ほか${noCountRecs.length-5}日`:''}</div>
+      <div style="font-size:11px;color:#A16207;margin-top:5px">この${noCountRecs.length}日は上の円グラフに入っていません。履歴から編集して人数を入れると反映されます。</div>
+    </div>` : ''}
+    ${countTotal===0 ? `<div style="font-size:11px;color:var(--text3);padding:8px 4px 2px">※ 人数は入力フォームの「🇯🇵 人数」「🌍 人数」欄から記録できます。</div>` : ''}
     ` : ''}
 
     ${bbqTotal>0 ? `
