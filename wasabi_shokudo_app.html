@@ -891,9 +891,45 @@ async function restoreFromRegister(date, recId){
   }
 }
 
+// 削除は取り消しできないので、消す中身を見せてから確認する
+function confirmDelete(id){
+  const rec = records.find(r => r.id === id);
+  if(!rec) return;
+  const cfg = LOC_CONFIG[rec.loc];
+  const msg = [
+    '⚠️ この記録を削除します。元に戻せません。',
+    '',
+    `日付：${fmtD(rec.date)}`,
+    `部門：${cfg ? cfg.icon+' '+rec.loc : rec.loc}${rec.event ? '（'+rec.event+'）' : ''}`,
+    `金額：${isMarkOnly(rec) ? '未入力（'+getPaymentLabel(rec.payment)+'）' : fmt(rec.total)}`,
+    '',
+    'アプリと売上記録スプレッドシートの両方から削除されます。',
+    '',
+    '※ 財務管理シートは自動では消えません。数字や印が入っていたら手で消してください。'
+  ].join('\n');
+  if(!confirm(msg)) return;
+  delRecord(id);
+}
+
 async function delRecord(id){
+  const rec = records.find(r => r.id === id);
+  if(!rec) return;
   records = records.filter(r => r.id !== id);
   saveToStorage(); renderHistory();
+  // スプレッドシートの行も消す（消し忘れると「全件読込」で復活してしまうため）
+  try{
+    const url = `${GAS_URL}?action=deleteSalesRecord`
+      + `&date=${encodeURIComponent(rec.date)}`
+      + `&loc=${encodeURIComponent(rec.loc||'')}`
+      + `&event=${encodeURIComponent(rec.event||'')}`;
+    const json = await (await fetch(url)).json();
+    if(json.success && json.deleted > 0)  showToast(`🗑 削除しました（シートも${json.deleted}行削除）`);
+    else if(json.success)                 showToast('🗑 アプリから削除しました（シートに該当行なし）');
+    else throw new Error(json.error || '削除失敗');
+  }catch(e){
+    // アプリからは消えているので、どの行を手で消せばよいか分かるように日付と部門を出す
+    showToast(`⚠️ シートが消せません。${fmtD(rec.date)} の${rec.loc}の行を手で消してください`, 'err');
+  }
 }
 
 function editRecord(id){
@@ -1260,7 +1296,7 @@ function renderHistory(){
         ${rec.memo ? `<div style="font-size:11px;color:var(--text3);padding:4px 0">📝 ${rec.memo}</div>` : ''}
         <div class="act-row">
           <button class="act-btn" onclick="editRecord('${rec.id}')">✏️ 編集</button>
-          <button class="act-btn del" onclick="if(confirm('削除しますか？'))delRecord('${rec.id}')">🗑 削除</button>
+          <button class="act-btn del" onclick="confirmDelete('${rec.id}')">🗑 削除</button>
           ${((rec.cashTotal||0) > 0 || isAmountLater(rec.payment) || rec.payment==='混在') ? `<button class="act-btn" onclick="sendToFinance('${rec.id}')">📊 財務送信</button>` : ''}
         </div>
       </div>` : ''}
