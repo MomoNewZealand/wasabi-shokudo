@@ -279,6 +279,8 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
 // ══════════════════════════════════════════
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oejikCkHTNVG2nDSdO11ZQRZQMaxXP-YYwS2GbJW-Yxjgy7w/exec';
 const STORAGE_KEY = 'wasabi_v3';
+// レジで追加した品目（カスタム商品）をこの端末に覚えておくための保存先
+const CUSTOM_PRODS_KEY = 'wasabi_custom_prods_v1';
 
 // 簡易入力モードの部門（商品明細なし・金額直接入力）
 const SIMPLE_LOCS = ['わさび体験','BBQ','撮影等','研修・ワークショップ'];
@@ -331,6 +333,15 @@ const PRODS = {
 const ALL = Object.values(PRODS).flat();
 const FOOD_IDS  = new Set(PRODS.フード.map(p => p.id));
 const DRINK_IDS = new Set(PRODS.ドリンク.map(p => p.id));
+// 最初から入っている商品のID（レジで追加したカスタム商品と区別するため、起動時に1回だけ控える）
+const BASE_IDS  = new Set(ALL.map(p => p.id));
+
+// 商品IDから名前を出す。マスタに無いID（＝レジで追加したばかりで未同期の品目など）は
+// 黙って消さずに「未登録の品目」として見せる。消えると気づけないため。
+function prodName(id){
+  const p = ALL.find(x => x.id === id);
+  return p ? p.name : `⚠️ 未登録の品目(${id})`;
+}
 
 // ══════════════════════════════════════════
 //  🌿 わさび使用量マスタ（フードトラック出荷量の自動計算用）
@@ -345,7 +356,12 @@ const WASABI_GRAM = {
   pork_don:      3,  // わさびポーク丼
   wasabi_coffee: 2,  // わさびコーヒー
   peach_soda:    2,  // わさびピーチソーダ
-  // beef_don:   3,  // わさびビーフ丼（メニュー追加時にコメントを外す）
+  // ★ レジで追加した品目（カスタム商品）は id が custom_〇〇 になる。
+  //   id はレジアプリの「設定・商品マスタ」で追加したときに自動で決まる番号。
+  custom_1786074303748: 3,  // ローストビーフ（わさび丼と同量）
+  custom_1781312702673: 2,  // ミニわさび丼(100縁商店街)（ミニわさび丼と同量）
+  custom_1784448892738: 3,  // わさび丼(800円)※ご飯少なめ（ご飯は少なめだがわさびは同量）
+  // ご飯大盛り(custom_1780800030283) はわさびを足さないので入れない
 };
 
 // 1日分の記録(items)から、すりおろしわさびの使用量(g)を計算する
@@ -555,8 +571,48 @@ function init(){
     records = [...HIST, ...NOTION].filter(r => { if(ids.has(r.id)) return false; ids.add(r.id); return true; });
     saveToStorage();
   }
+  // 通信の前に、前回覚えたカスタム商品を先に反映する（電波が悪くても品目が消えないように）
+  applyCustomProds(loadCachedCustomProds());
   render();
   syncCustomProdsFromGAS();
+}
+
+// 前回スプレッドシートから取ったカスタム商品（この端末に保存したもの）
+function loadCachedCustomProds(){
+  try{ const s = localStorage.getItem(CUSTOM_PRODS_KEY); if(s) return JSON.parse(s); }catch(e){}
+  return null;
+}
+
+// レジで追加したカスタム商品を、この画面の商品マスタ(PRODS)に取り込む。
+// 変わった件数を返す（0なら描き直し不要）
+function applyCustomProds(gasProds){
+  if (!gasProds || typeof gasProds !== 'object') return 0;
+  let changed = 0;
+  Object.keys(gasProds).forEach(cat => {
+    if (!Array.isArray(gasProds[cat])) return;
+    if (!PRODS[cat]) PRODS[cat] = [];
+    gasProds[cat].forEach(gp => {
+      if (!gp || !gp.id) return;
+      if (BASE_IDS.has(gp.id)) return;   // 元からある商品はレジ側の設定で上書きしない
+      const prod = { id: gp.id, name: gp.name, price: gp.price };
+      const idx  = PRODS[cat].findIndex(p => p.id === gp.id);
+      if (idx >= 0) {
+        // 名前や金額が変わっていたら差し替える
+        if (PRODS[cat][idx].name !== prod.name || PRODS[cat][idx].price !== prod.price) {
+          PRODS[cat][idx] = prod; changed++;
+        }
+      } else {
+        PRODS[cat].push(prod); changed++;
+      }
+    });
+  });
+  if (changed > 0) {
+    ALL.length = 0;
+    Object.values(PRODS).flat().forEach(p => ALL.push(p));
+    FOOD_IDS.clear();  PRODS.フード.forEach(p => FOOD_IDS.add(p.id));
+    DRINK_IDS.clear(); PRODS.ドリンク.forEach(p => DRINK_IDS.add(p.id));
+  }
+  return changed;
 }
 
 async function syncCustomProdsFromGAS() {
@@ -564,30 +620,13 @@ async function syncCustomProdsFromGAS() {
     const res  = await fetch(`${GAS_URL}?action=getProductMaster`);
     const json = await res.json();
     if (!json.success || !json.products) return;
-    const gasProds = json.products;
-    const baseIds  = new Set(ALL.map(p => p.id));
-    let addedCount = 0;
-    Object.keys(gasProds).forEach(cat => {
-      if (!Array.isArray(gasProds[cat])) return;
-      if (!PRODS[cat]) PRODS[cat] = [];
-      gasProds[cat].forEach(gp => {
-        if (baseIds.has(gp.id)) return;
-        const idx = PRODS[cat].findIndex(p => p.id === gp.id);
-        const prod = { id: gp.id, name: gp.name, price: gp.price };
-        if (idx >= 0) { PRODS[cat][idx] = prod; }
-        else { PRODS[cat].push(prod); addedCount++; }
-      });
-    });
-    if (addedCount > 0) {
-      ALL.length = 0;
-      Object.values(PRODS).flat().forEach(p => ALL.push(p));
-      FOOD_IDS.clear();  PRODS.フード.forEach(p => FOOD_IDS.add(p.id));
-      DRINK_IDS.clear(); PRODS.ドリンク.forEach(p => DRINK_IDS.add(p.id));
-      if (view === 'input') render();
-    }
+    // この端末にも覚えさせる（次回は通信を待たずに表示できる）
+    try{ localStorage.setItem(CUSTOM_PRODS_KEY, JSON.stringify(json.products)); }catch(e){}
+    // どの画面を見ていても描き直す（前は入力画面だけだったので、履歴・集計に反映されなかった）
+    if (applyCustomProds(json.products) > 0) render();
   } catch(e) { console.warn('カスタム商品取得エラー:', e); }
 }
-  
+
 // ══════════════════════════════════════════
 //  スプレッドシート同期
 // ══════════════════════════════════════════
@@ -877,8 +916,8 @@ async function restoreFromRegister(date, recId){
     // 集計
     let total=0, cashTotal=0, paypayTotal=0, qrTotal=0, foodTotal=0, drinkTotal=0, merchTotal=0;
     const items = {};
-    const FOOD_IDS  = new Set(['wasabi_don','mini_don','pork_don','inari','onigiri','sausage_dog','sausage','roast']);
-    const DRINK_IDS = new Set(['wasabi_coffee','orig_blend','decaf','passage','peach_soda','yuzu','drip1','drip3']);
+    // フード／ドリンクの判定は上の商品マスタ（FOOD_IDS / DRINK_IDS）を使う。
+    // ここで一覧をベタ書きしていると、レジで追加した品目が全部「物販」に入ってしまうため。
     orders.forEach(o => {
       total    += o.total;
       if(o.payment==='cash')   cashTotal   += o.total;
@@ -1295,7 +1334,17 @@ function renderHistory(){
     const exp = expandedId === rec.id;
     const period = rec.loc==='奥多摩駅前' ? getPeriod(rec.date) : '';
     const locTag = getLocTag(rec.loc, rec.event);
-    const sold = ALL.filter(p => { const it=rec.items?.[p.id]; return it&&(typeof it==='object'?it.qty:it)>0; });
+    // 売れた品目。商品マスタに無いIDも落とさずに拾う（レジで追加した品目が消えないように）
+    const sold = (() => {
+      const order = ALL.map(p => p.id);
+      return Object.entries(rec.items||{})
+        .map(([id, it]) => ({ id, qty: typeof it==='object' ? (it.qty||0) : (it||0) }))
+        .filter(x => x.qty > 0)
+        .sort((a,b) => { // メニューの並び順に。マスタに無いものは最後
+          const ia = order.indexOf(a.id), ib = order.indexOf(b.id);
+          return (ia<0?9999:ia) - (ib<0?9999:ib);
+        });
+    })();
     return `<div class="rec-card">
       <div class="rec-hdr" onclick="toggleExp('${rec.id}')">
         <div>
@@ -1323,10 +1372,9 @@ function renderHistory(){
           <div class="pay-cell"><div class="pay-lbl">🔴 PayPay</div><div class="pay-val paypay">${fmt(rec.paypayTotal||0)}</div></div>
           <div class="pay-cell"><div class="pay-lbl">💳 R.Pay</div><div class="pay-val qr">${fmt(rec.rakutenTotal||rec.qrTotal||0)}</div></div>
         </div>` : ''}
-        ${sold.length>0 ? `<div class="chips">${sold.map(p => {
-          const it=rec.items[p.id];
-          return `<span class="chip">${p.name}×${typeof it==='object'?it.qty:it}</span>`;
-        }).join('')}</div>` : ''}
+        ${sold.length>0 ? `<div class="chips">${sold.map(x =>
+          `<span class="chip">${prodName(x.id)}×${x.qty}</span>`
+        ).join('')}</div>` : ''}
         ${(() => { const wg = calcWasabiGram(rec.items); return wg>0 ? `<div style="margin-top:6px;display:inline-block;background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700">🌿 わさび使用量 約${fmtGram(wg)}</div>` : ''; })()}
         ${rec.memo ? `<div style="font-size:11px;color:var(--text3);padding:4px 0">📝 ${rec.memo}</div>` : ''}
         <div class="act-row">
@@ -1438,8 +1486,8 @@ function renderAnKitchen(byLoc){
   kRecs.forEach(r => {
     Object.entries(r.items||{}).forEach(([id, val]) => {
       const qty = typeof val==='object' ? val.qty : val; if(!qty) return;
-      const p = ALL.find(x => x.id===id); if(!p) return;
-      if(!ptot[id]) ptot[id] = {name:p.name, qty:0, days:0};
+      // 商品マスタに無いIDもランキングに出す（黙って消えると売れた事実に気づけないため）
+      if(!ptot[id]) ptot[id] = {name:prodName(id), qty:0, days:0};
       ptot[id].qty += qty; ptot[id].days++;
     });
   });
