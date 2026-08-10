@@ -1204,31 +1204,10 @@ function setMixedMethod(m){ form.mixedMethod = m; renderInput(); }
 function setTourType(t){ form.tourType = t; renderInput(); }
 function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:'',payment:'現金',amount:0,tourType:'日本人',jpCount:0,enCount:0,guestCount:0,mixedCash:0,mixedMethod:'PayPay'}; editId=null; renderInput(); }
 
-async function sendToFinance(id) {
-  const rec = records.find(r => r.id === id);
-  if (!rec) return;
-  const cashTotal = rec.cashTotal || 0;
-  // 現金がなくても、キャッシュレスなら財務シートに「印」を残すため送信する
-  const isCashless = isAmountLater(rec.payment) || rec.payment === '混在';
-  if (cashTotal <= 0 && !isCashless) { showToast('⚠️ 現金売上がありません'); return; }
-  showToast('📊 財務シートに送信中…');
-  fetch(GAS_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action:       'writeToFinance',
-      date:         rec.date,
-      loc:          rec.loc,
-      payment:      rec.payment || '現金',
-      mixedMethod:  rec.mixedMethod || '',
-      eventName:    rec.event || '',
-      cashTotal,
-      rakutenTotal: rec.rakutenTotal || 0,
-      paypayTotal:  rec.paypayTotal  || 0,
-    })
-  }).then(() => showToast('✅ 財務シートに送信しました'))
-    .catch(() => showToast('⚠️ 送信に失敗しました', 'err'));
-}
+// ※「📊 財務送信」ボタンは廃止（2026-08-10）。
+//   保存・編集・☁️同期のいずれでも財務シートには自動で送られるため重複していた。
+//   なお財務シートは「すでに数字が入っているマスは書き換えない」作りなので、
+//   金額を直したときは財務シート側を手で直す必要がある（これは以前から同じ）。
 
 function renderInput(){
   const c = document.getElementById('content'); if(!c||view!=='input') return;
@@ -1538,7 +1517,6 @@ function renderHistory(){
           <button class="act-btn" onclick="openReport('${rec.id}')">📄 売上明細</button>
           <button class="act-btn" onclick="editRecord('${rec.id}')">✏️ 編集</button>
           <button class="act-btn del" onclick="confirmDelete('${rec.id}')">🗑 削除</button>
-          ${((rec.cashTotal||0) > 0 || isAmountLater(rec.payment) || rec.payment==='混在') ? `<button class="act-btn" onclick="sendToFinance('${rec.id}')">📊 財務送信</button>` : ''}
         </div>
       </div>` : ''}
     </div>`;
