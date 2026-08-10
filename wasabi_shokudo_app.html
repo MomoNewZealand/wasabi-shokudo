@@ -1061,11 +1061,21 @@ async function restoreFromRegister(date, recId){
       });
     });
     // 既存レコードのloc/event/weather/memoを引き継ぐ（イベント日の再取得でlocが上書きされるのを防ぐ）
-    const existingRec = records.find(r => r.date === date);
+    // ★ 引き継ぎ元は「今まさに再取得しようとしているレジ連携レコード」に限定する。
+    //   日付だけで探すと、同じ日のBBQや体験ツアーの記録を先に拾ってしまい、
+    //   部門もメモもそちらに化ける（2026-07-19が「BBQ」になった不具合）。
+    const sameDay = records.filter(r => r.date === date);
+    let existingRec = (recId && sameDay.find(r => r.id === recId))
+                   || sameDay.find(r => r.source === 'register')
+                   || null;
+    // BBQ・わさび体験などの簡易入力部門はレジ売上ではないので引き継がない
+    if(existingRec && isSimple(existingRec.loc)) existingRec = null;
+    // 引き継ぎ元が無いときは、レジ端末名（＝出店場所）から部門を判断する
+    const devLoc = (orders.find(o => o.device && LOC_CONFIG[o.device]) || {}).device;
     const rec = {
       id: recId || `reg_${date}_restored_${Date.now()}`,
       date,
-      loc:     existingRec?.loc     || '奥多摩駅前',
+      loc:     existingRec?.loc     || devLoc || '奥多摩駅前',
       event:   existingRec?.event   || '',
       weather: existingRec?.weather || '',
       memo:    existingRec?.memo    || '',
