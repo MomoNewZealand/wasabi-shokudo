@@ -652,6 +652,28 @@ function saveToStorage(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }catch(e){}
 }
 
+// 記録のIDがぶつかっていたら付け直す。
+// スプレッドシートから読むときGASが作るIDは日本語の部門名が消える作りのため、
+// 同じ日にBBQと食堂があると両方 sheet_20260719_ という同じIDになり、
+// カードを開くと2件同時に開く・編集すると別の記録が開く、という状態になっていた。
+function ensureUniqueIds(list){
+  const seen = new Set();
+  let changed = false;
+  const out = list.map(r => {
+    let id = r.id;
+    if(!id || seen.has(id)){
+      const base = `rec_${r.date}_${r.loc||''}_${r.event||''}`;
+      id = base;
+      let i = 2;
+      while(seen.has(id)) id = `${base}_${i++}`;
+      changed = true;
+    }
+    seen.add(id);
+    return id === r.id ? r : {...r, id};
+  });
+  return {list: out, changed};
+}
+
 function init(){
   const saved = loadFromStorage();
   if(saved && saved.length > 0){
@@ -666,6 +688,9 @@ function init(){
     records = [...HIST, ...NOTION].filter(r => { if(ids.has(r.id)) return false; ids.add(r.id); return true; });
     saveToStorage();
   }
+  // 端末に残っているデータにIDのぶつかりがあれば、ここで直しておく
+  const fixed = ensureUniqueIds(records);
+  if(fixed.changed){ records = fixed.list; saveToStorage(); }
   // 通信の前に、前回覚えたカスタム商品を先に反映する（電波が悪くても品目が消えないように）
   applyCustomProds(loadCachedCustomProds());
   render();
@@ -810,6 +835,8 @@ async function syncFromSheets(fullLoad = false){
       records = [...older, ...json.records].sort((a,b) => a.date.localeCompare(b.date));
       showToast(`✅ 直近3ヶ月 ${json.records.length}件を読み込みました`);
     }
+    // 同じ日に複数部門があるとシート由来のIDがぶつかるので、ここで付け直す
+    records = ensureUniqueIds(records).list;
     saveToStorage(); render();
   } catch(e) {
     showToast('⚠️ 読込に失敗しました: ' + e.message);
