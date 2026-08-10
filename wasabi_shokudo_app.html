@@ -125,6 +125,30 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
 .save-btn:disabled{opacity:.4;cursor:default;box-shadow:none}
 /* トースト */
 .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--g2);color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeup .3s ease}
+/* 売上報告書モーダル */
+.rep-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:flex-end;justify-content:center;overflow-y:auto}
+.rep-ov.on{display:flex}
+@media(min-width:480px){.rep-ov{align-items:center}}
+.rep-modal{background:var(--white);width:100%;max-width:430px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;margin-top:40px}
+@media(min-width:480px){.rep-modal{border-radius:var(--radius-lg);margin-top:0}}
+.rep-head{background:var(--g1);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.rep-head-ttl{font-size:15px;font-weight:700}
+.rep-close{background:none;border:none;color:#fff;font-size:18px;cursor:pointer;font-family:inherit;padding:0 4px}
+.rep-body{padding:14px 16px;max-height:62vh;overflow-y:auto}
+.rep-sec{font-size:11px;font-weight:700;color:var(--text3);margin:12px 0 6px}
+.rep-sec:first-child{margin-top:0}
+.rep-scope{display:flex;gap:6px}
+.rep-scope-btn{flex:1;padding:9px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit}
+.rep-scope-btn.on{background:var(--g5);border-color:var(--g3);color:var(--g1)}
+.rep-chk{display:flex;align-items:flex-start;gap:9px;padding:9px 2px;border-bottom:1px solid var(--border);cursor:pointer}
+.rep-chk input{width:19px;height:19px;margin-top:1px;flex-shrink:0;accent-color:var(--g2)}
+.rep-chk-ttl{font-size:13px;font-weight:600}
+.rep-chk-sub{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.5}
+.rep-foot{padding:12px 16px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
+.rep-btn{flex:1;padding:13px 8px;border:none;border-radius:var(--radius-lg);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.rep-btn-png{background:var(--g2);color:#fff}
+.rep-btn-pdf{background:var(--white);color:var(--g1);border:1.5px solid var(--g3)}
+.rep-note{font-size:11px;color:var(--text3);line-height:1.6;padding:8px 2px 0}
 .toast.err{background:#DC2626}
 @keyframes fadeup{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 /* 履歴 */
@@ -270,6 +294,59 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
     <button class="nav-btn" id="nav-import" onclick="sv('import')">
       <span class="nav-icon">📥</span><span class="nav-lbl">取込</span>
     </button>
+  </div>
+</div>
+
+<!-- 売上報告書（イベント主催者への提出用）を画像・PDFで出す -->
+<div class="rep-ov" id="rep-modal" onclick="if(event.target===this)closeReport()">
+  <div class="rep-modal" onclick="event.stopPropagation()">
+    <div class="rep-head">
+      <div>
+        <div class="rep-head-ttl">📄 売上報告書をつくる</div>
+        <div style="font-size:11px;opacity:.85;margin-top:2px" id="rep-subject"></div>
+      </div>
+      <button class="rep-close" onclick="closeReport()">✕</button>
+    </div>
+    <div class="rep-body">
+      <div id="rep-scope-wrap" style="display:none">
+        <div class="rep-sec">対象</div>
+        <div class="rep-scope">
+          <button class="rep-scope-btn on" id="rep-scope-day" onclick="setRepScope('day')">この日だけ</button>
+          <button class="rep-scope-btn" id="rep-scope-event" onclick="setRepScope('event')">イベント全日程</button>
+        </div>
+      </div>
+      <div class="rep-sec">載せる内容</div>
+      <label class="rep-chk">
+        <input type="checkbox" id="rep-opt-pay" checked onchange="repOptChanged()">
+        <div><div class="rep-chk-ttl">支払い方法別の内訳</div>
+          <div class="rep-chk-sub">現金 / PayPay / R Pay ごとの金額</div></div>
+      </label>
+      <label class="rep-chk">
+        <input type="checkbox" id="rep-opt-items" checked onchange="repOptChanged()">
+        <div><div class="rep-chk-ttl">品目別の明細</div>
+          <div class="rep-chk-sub">商品ごとの個数・単価・金額</div></div>
+      </label>
+      <label class="rep-chk">
+        <input type="checkbox" id="rep-opt-orders" onchange="repOptChanged()">
+        <div><div class="rep-chk-ttl">注文1件ごとの明細（レシート相当）</div>
+          <div class="rep-chk-sub" id="rep-orders-note">時刻・注文番号・品目・金額を全件。枚数が増えます</div></div>
+      </label>
+      <label class="rep-chk">
+        <input type="checkbox" id="rep-opt-diff" checked onchange="repOptChanged()">
+        <div><div class="rep-chk-ttl">現金過不足の行</div>
+          <div class="rep-chk-sub">レジに打てなかった分。外すと明細の合計が売上合計より少なくなります</div></div>
+      </label>
+      <label class="rep-chk" style="border-bottom:none">
+        <input type="checkbox" id="rep-opt-weather" onchange="repOptChanged()">
+        <div><div class="rep-chk-ttl">天気</div>
+          <div class="rep-chk-sub">当日の天候を記載します</div></div>
+      </label>
+      <div class="rep-note" id="rep-preview-note"></div>
+    </div>
+    <div class="rep-foot">
+      <button class="rep-btn rep-btn-pdf" onclick="outputReport('print')">🖨 印刷・PDF</button>
+      <button class="rep-btn rep-btn-png" onclick="outputReport('png')">🖼 画像で保存</button>
+    </div>
   </div>
 </div>
 
@@ -1458,6 +1535,7 @@ function renderHistory(){
         ${(() => { const wg = calcWasabiGram(rec.items); return wg>0 ? `<div style="margin-top:6px;display:inline-block;background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700">🌿 わさび使用量 約${fmtGram(wg)}</div>` : ''; })()}
         ${rec.memo ? `<div style="font-size:11px;color:var(--text3);padding:4px 0">📝 ${rec.memo}</div>` : ''}
         <div class="act-row">
+          <button class="act-btn" onclick="openReport('${rec.id}')">📄 報告書</button>
           <button class="act-btn" onclick="editRecord('${rec.id}')">✏️ 編集</button>
           <button class="act-btn del" onclick="confirmDelete('${rec.id}')">🗑 削除</button>
           ${((rec.cashTotal||0) > 0 || isAmountLater(rec.payment) || rec.payment==='混在') ? `<button class="act-btn" onclick="sendToFinance('${rec.id}')">📊 財務送信</button>` : ''}
@@ -2185,6 +2263,322 @@ function renderImport(){
     </div>
   </div>`:''}
   <div style="height:16px"></div>`;
+}
+
+// ══════════════════════════════════════════
+//  売上報告書（イベント主催者への提出用）
+//  A4縦の紙面を1枚ずつ描いて、画像(PNG)保存 or 印刷(PDF)で出す。
+//  外部のサービスやライブラリは使わない（データを外に出さないため）。
+// ══════════════════════════════════════════
+const REP = {
+  W:1240, H:1754, M:72,   // A4縦・150dpi相当
+  FONT:'"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif',
+  BLUE:'#1D4ED8', INK:'#111827', GRAY:'#6B7280', LINE:'#E5E7EB'
+};
+let repState = {recId:null, scope:'day', orders:null, ordersKey:''};
+
+function repOpts(){
+  const v = id => !!document.getElementById(id)?.checked;
+  return {pay:v('rep-opt-pay'), items:v('rep-opt-items'), orders:v('rep-opt-orders'),
+          diff:v('rep-opt-diff'), weather:v('rep-opt-weather')};
+}
+function openReport(id){
+  const rec = records.find(r => r.id === id); if(!rec) return;
+  repState = {recId:id, scope:'day', orders:null, ordersKey:''};
+  // 同じイベント名の日が複数あるときだけ「全日程」を選べるようにする
+  const multi = rec.event && records.filter(r => r.loc===rec.loc && r.event===rec.event).length > 1;
+  document.getElementById('rep-scope-wrap').style.display = multi ? 'block' : 'none';
+  setRepScope('day');
+  document.getElementById('rep-modal').classList.add('on');
+}
+function closeReport(){ document.getElementById('rep-modal').classList.remove('on'); }
+function setRepScope(s){
+  repState.scope = s;
+  document.getElementById('rep-scope-day').classList.toggle('on', s==='day');
+  document.getElementById('rep-scope-event').classList.toggle('on', s==='event');
+  repOptChanged();
+}
+function repTargets(){
+  const rec = records.find(r => r.id === repState.recId); if(!rec) return [];
+  if(repState.scope === 'event' && rec.event)
+    return records.filter(r => r.loc===rec.loc && r.event===rec.event).sort((a,b)=>a.date.localeCompare(b.date));
+  return [rec];
+}
+function repOptChanged(){
+  const t = repTargets(); if(!t.length) return;
+  const period = t.length>1 ? `${fmtD(t[0].date)}〜${fmtD(t[t.length-1].date)}（${t.length}日間）` : fmtD(t[0].date);
+  document.getElementById('rep-subject').textContent = `${t[0].event || t[0].loc}　${period}`;
+  const a = repAgg(t), o = repOpts();
+  document.getElementById('rep-preview-note').innerHTML =
+    `売上合計 <b>${fmt(a.total)}</b>` + (o.orders ? '　／　注文明細つき（読み込みに少し時間がかかります）' : '');
+}
+function repAgg(recs){
+  const a = {total:0, cash:0, rakuten:0, paypay:0, cashDiff:0, items:{}, days:recs.length};
+  recs.forEach(r => {
+    a.total    += r.total||0;
+    a.cash     += r.cashTotal||0;
+    a.rakuten  += (r.rakutenTotal ?? r.qrTotal ?? 0);
+    a.paypay   += r.paypayTotal||0;
+    a.cashDiff += r.cashDiff||0;
+    Object.entries(r.items||{}).forEach(([id,v]) => {
+      const q = typeof v==='object' ? (v.qty||0) : (v||0);
+      if(q>0) a.items[id] = (a.items[id]||0) + q;
+    });
+  });
+  return a;
+}
+// レジ注文シートから1件ごとの明細を取ってくる（「注文明細」にチェックしたときだけ）
+async function repFetchOrders(dates){
+  const key = dates.join(',');
+  if(repState.ordersKey === key && repState.orders) return repState.orders;
+  const all = [];
+  for(const d of dates){
+    const res  = await fetch(`${GAS_URL}?action=getRegisterOrders&date=${d}`);
+    const json = await res.json();
+    if(json.success && json.orders) json.orders.forEach(o => all.push({...o, _date:d}));
+  }
+  all.sort((x,y) => (x._date+repTime(x.time)).localeCompare(y._date+repTime(y.time)));
+  repState.orders = all; repState.ordersKey = key;
+  return all;
+}
+// 時刻は "1899-12-30T11:41:00.000Z" の形（世界標準時）で届くので、日本時間に直して時分だけ出す
+function repTime(t){
+  if(!t) return '';
+  const d = new Date(t);
+  if(!isNaN(d)) return d.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit', timeZone:'Asia/Tokyo'});
+  const m = String(t).match(/(\d{2}:\d{2})/);
+  return m ? m[1] : '';
+}
+
+// ── 紙面を描くための道具 ──
+function repDoc(){
+  const d = {pages:[], p:null, page:0};
+  d.newPage = () => {
+    const c = document.createElement('canvas');
+    c.width = REP.W*2; c.height = REP.H*2;          // 2倍で描いて印刷でも粗くならないように
+    const x = c.getContext('2d'); x.scale(2,2);
+    x.fillStyle = '#FFFFFF'; x.fillRect(0,0,REP.W,REP.H);
+    d.p = {canvas:c, ctx:x, y:REP.M};
+    d.pages.push(d.p); d.page++;
+    return d.p;
+  };
+  d.need = h => { if(d.p.y + h > REP.H - REP.M - 30) d.newPage(); };  // 入らなければ改ページ
+  d.newPage();
+  return d;
+}
+function repTxt(p, txt, x, y, o={}){
+  p.ctx.font = `${o.weight||'400'} ${o.size||21}px ${REP.FONT}`;
+  p.ctx.fillStyle = o.color || REP.INK;
+  p.ctx.textAlign = o.align || 'left';
+  p.ctx.textBaseline = 'alphabetic';
+  p.ctx.fillText(txt, x, y);
+}
+function repRule(p, y, color){
+  p.ctx.strokeStyle = color || REP.LINE; p.ctx.lineWidth = 1;
+  p.ctx.beginPath(); p.ctx.moveTo(REP.M, y+.5); p.ctx.lineTo(REP.W-REP.M, y+.5); p.ctx.stroke();
+}
+function repHead2(d, txt){
+  d.need(120);
+  d.p.y += 46;
+  d.p.ctx.fillStyle = REP.BLUE; d.p.ctx.fillRect(REP.M, d.p.y-14, 5, 22);
+  repTxt(d.p, txt, REP.M+15, d.p.y+4, {size:22, weight:'700'});
+  d.p.y += 18;
+  repRule(d.p, d.p.y);
+  d.p.y += 12;
+}
+// 「項目 …… 金額」の1行
+function repKV(d, label, value, o={}){
+  d.need(44);
+  d.p.y += 30;
+  repTxt(d.p, label, REP.M+4, d.p.y, {size:o.size||21, weight:o.weight||'400', color:o.color||REP.INK});
+  repTxt(d.p, value, REP.W-REP.M-4, d.p.y, {size:o.size||21, weight:o.weight||'700', color:o.color||REP.INK, align:'right'});
+  if(o.rule !== false){ d.p.y += 10; repRule(d.p, d.p.y); }
+}
+
+async function buildReportPages(){
+  const recs = repTargets(); if(!recs.length) return [];
+  const o = repOpts(), a = repAgg(recs);
+  const orders = o.orders ? await repFetchOrders(recs.map(r => r.date)) : [];
+  const d = repDoc();
+
+  // ── 表紙ヘッダー ──
+  d.p.ctx.fillStyle = REP.BLUE; d.p.ctx.fillRect(0, 0, REP.W, 10);
+  repTxt(d.p, 'TOKYO WASABI / わさび食堂', REP.M, d.p.y+18, {size:20, weight:'700', color:REP.BLUE});
+  repTxt(d.p, `発行日 ${fmtD(new Date().toISOString().split('T')[0])}`, REP.W-REP.M, d.p.y+18, {size:17, color:REP.GRAY, align:'right'});
+  d.p.y += 66;
+  repTxt(d.p, '売上報告書', REP.M, d.p.y, {size:40, weight:'700'});
+  d.p.y += 26; repRule(d.p, d.p.y, REP.BLUE); d.p.y += 4;
+
+  const period = recs.length>1
+    ? `${fmtD(recs[0].date)} 〜 ${fmtD(recs[recs.length-1].date)}（${recs.length}日間）`
+    : fmtD(recs[0].date);
+  repKV(d, '期間', period);
+  if(recs[0].event) repKV(d, 'イベント名', recs[0].event);
+  repKV(d, '出店区分', recs[0].loc);
+  if(o.weather){
+    const w = [...new Set(recs.map(r => r.weather).filter(x => x))].join(' / ');
+    repKV(d, '天気', w || '—');
+  }
+
+  // ── 売上合計 ──
+  d.need(150);
+  d.p.y += 34;
+  d.p.ctx.fillStyle = '#EFF6FF'; d.p.ctx.fillRect(REP.M, d.p.y, REP.W-REP.M*2, 96);
+  repTxt(d.p, '売上合計（税込）', REP.M+22, d.p.y+38, {size:20, color:REP.BLUE, weight:'700'});
+  repTxt(d.p, fmt(a.total), REP.W-REP.M-22, d.p.y+70, {size:44, weight:'700', color:REP.BLUE, align:'right'});
+  d.p.y += 110;
+
+  // ── 支払い方法別 ──
+  if(o.pay){
+    repHead2(d, '支払い方法別の内訳');
+    repKV(d, '💴 現金',      fmt(a.cash));
+    repKV(d, '🔴 PayPay',   fmt(a.paypay));
+    repKV(d, '💳 Rakuten Pay', fmt(a.rakuten));
+    repKV(d, '合計', fmt(a.cash + a.paypay + a.rakuten), {weight:'700', color:REP.BLUE, rule:false});
+  }
+
+  // ── 品目別 ──
+  const rows = Object.entries(a.items).map(([id, qty]) => {
+    const p = ALL.find(x => x.id === id);
+    const price = p && p.price != null ? p.price : null;
+    return {name: prodName(id), qty, price, amount: price != null ? price*qty : null};
+  }).sort((x,y) => (y.amount||0) - (x.amount||0));
+  const itemsSum = rows.reduce((s,r) => s + (r.amount||0), 0);
+  const regBase  = a.total - a.cashDiff;      // レジが計上した商品売上
+  const adjust   = regBase - itemsSum;        // 割引・その場で金額を入れる商品（生わさび等）
+
+  if(o.items && rows.length){
+    repHead2(d, '品目別の明細');
+    d.need(40); d.p.y += 26;
+    repTxt(d.p, '品目',   REP.M+4,     d.p.y, {size:17, color:REP.GRAY});
+    repTxt(d.p, '数量',   REP.M+660,   d.p.y, {size:17, color:REP.GRAY, align:'right'});
+    repTxt(d.p, '単価',   REP.M+830,   d.p.y, {size:17, color:REP.GRAY, align:'right'});
+    repTxt(d.p, '金額',   REP.W-REP.M-4, d.p.y, {size:17, color:REP.GRAY, align:'right'});
+    d.p.y += 10; repRule(d.p, d.p.y);
+    rows.forEach(r => {
+      d.need(44); d.p.y += 30;
+      repTxt(d.p, r.name, REP.M+4, d.p.y, {size:20});
+      repTxt(d.p, `${r.qty}`, REP.M+660, d.p.y, {size:20, align:'right'});
+      repTxt(d.p, r.price != null ? fmt(r.price) : '—', REP.M+830, d.p.y, {size:20, align:'right', color:REP.GRAY});
+      repTxt(d.p, r.amount != null ? fmt(r.amount) : '—', REP.W-REP.M-4, d.p.y, {size:20, align:'right'});
+      d.p.y += 10; repRule(d.p, d.p.y);
+    });
+    repKV(d, '小計', fmt(itemsSum));
+    if(adjust !== 0) repKV(d, '調整（割引・量り売りなど）', (adjust>0?'+':'−') + fmt(Math.abs(adjust)), {color:REP.GRAY});
+    if(o.diff && a.cashDiff !== 0){
+      repKV(d, 'レジ未計上分（現金過不足）', (a.cashDiff>0?'+':'−') + fmt(Math.abs(a.cashDiff)), {color:REP.GRAY});
+    }
+    repKV(d, '合計', fmt(o.diff ? a.total : regBase), {weight:'700', color:REP.BLUE, rule:false});
+  }
+
+  // ── 注文1件ごと ──
+  if(o.orders && orders.length){
+    repHead2(d, `注文明細（全${orders.length}件）`);
+    const PAY = {cash:'現金', paypay:'PayPay', qr:'R Pay'};
+    d.need(40); d.p.y += 24;
+    repTxt(d.p, '日付 / 時刻',  REP.M+4,       d.p.y, {size:16, color:REP.GRAY});
+    repTxt(d.p, 'No.',        REP.M+250,     d.p.y, {size:16, color:REP.GRAY});
+    repTxt(d.p, '内容',        REP.M+360,     d.p.y, {size:16, color:REP.GRAY});
+    repTxt(d.p, '支払',        REP.W-REP.M-190, d.p.y, {size:16, color:REP.GRAY, align:'right'});
+    repTxt(d.p, '金額',        REP.W-REP.M-4, d.p.y, {size:16, color:REP.GRAY, align:'right'});
+    d.p.y += 8; repRule(d.p, d.p.y);
+    orders.forEach((od, i) => {
+      d.need(36); d.p.y += 25;
+      if(i % 2 === 1){ d.p.ctx.fillStyle = '#F9FAFB'; d.p.ctx.fillRect(REP.M, d.p.y-19, REP.W-REP.M*2, 26); }
+      const items = (od.items||[]).map(it => `${it.name}×${it.qty}`).join('、');
+      repTxt(d.p, `${od._date.substring(5).replace('-','/')} ${repTime(od.time)}`, REP.M+4, d.p.y, {size:16, color:REP.GRAY});
+      repTxt(d.p, String(od.orderNo||''), REP.M+250, d.p.y, {size:16, color:REP.GRAY});
+      repTxt(d.p, repClip(d.p, items, 480), REP.M+360, d.p.y, {size:16});
+      repTxt(d.p, PAY[od.payment]||od.payment||'', REP.W-REP.M-190, d.p.y, {size:16, color:REP.GRAY, align:'right'});
+      repTxt(d.p, fmt(od.total||0), REP.W-REP.M-4, d.p.y, {size:16, align:'right'});
+    });
+    d.p.y += 12; repRule(d.p, d.p.y);
+    repKV(d, `注文明細 合計（${orders.length}件）`, fmt(orders.reduce((s,x)=>s+(x.total||0),0)), {weight:'700', rule:false});
+  }
+
+  // ── フッター（全ページ）──
+  d.pages.forEach((p, i) => {
+    repRule(p, REP.H - REP.M + 10);
+    repTxt(p, 'TOKYO WASABI / わさび食堂', REP.M, REP.H - REP.M + 38, {size:15, color:REP.GRAY});
+    repTxt(p, `${i+1} / ${d.pages.length}`, REP.W-REP.M, REP.H - REP.M + 38, {size:15, color:REP.GRAY, align:'right'});
+  });
+  return d.pages.map(p => p.canvas);
+}
+// 長すぎる文字は「…」で切る
+function repClip(p, txt, maxW){
+  p.ctx.font = `400 16px ${REP.FONT}`;
+  if(p.ctx.measureText(txt).width <= maxW) return txt;
+  let s = txt;
+  while(s.length > 1 && p.ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+  return s + '…';
+}
+
+async function outputReport(mode){
+  const btns = document.querySelectorAll('.rep-btn');
+  btns.forEach(b => b.disabled = true);
+  showToast('報告書をつくっています…');
+  try{
+    const canvases = await buildReportPages();
+    if(!canvases.length){ showToast('⚠️ データがありません'); return; }
+    const recs = repTargets();
+    const base = `売上報告書_${(recs[0].event||recs[0].loc).replace(/[\\/:*?"<>|]/g,'')}_${recs[0].date}`;
+    if(mode === 'png') repSavePNG(canvases, base);
+    else               repPrint(canvases);
+    closeReport();
+  }catch(e){
+    console.error(e);
+    showToast('⚠️ つくれませんでした: ' + e.message, 'err');
+  }finally{
+    btns.forEach(b => b.disabled = false);
+  }
+}
+function repSavePNG(canvases, base){
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+  canvases.forEach((c, i) => {
+    const name = canvases.length>1 ? `${base}_${i+1}.png` : `${base}.png`;
+    c.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      if(isIOS){
+        // iPhone/iPadは自動ダウンロードができないので、画像を開いて長押し保存してもらう
+        window.open(url, '_blank');
+      }else{
+        const a = document.createElement('a');
+        a.href = url; a.download = name; a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }, 'image/png');
+  });
+  showToast(/iP(hone|ad|od)/.test(navigator.userAgent)
+    ? '画像を開きました。長押しして保存してください'
+    : `✅ ${canvases.length}枚を保存しました`);
+}
+function repPrint(canvases){
+  // 画面に出さない枠の中で印刷用のページを組み立てる（ポップアップ制限を受けないため）
+  const old = document.getElementById('rep-print-frame'); if(old) old.remove();
+  const f = document.createElement('iframe');
+  f.id = 'rep-print-frame';
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(f);
+  const imgs = canvases.map(c => `<img src="${c.toDataURL('image/png')}">`).join('');
+  const doc = f.contentWindow.document;
+  doc.open();
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>売上報告書</title><style>
+    @page{size:A4 portrait;margin:0}
+    html,body{margin:0;padding:0}
+    img{display:block;width:100%;page-break-after:always;break-after:page}
+    img:last-child{page-break-after:auto;break-after:auto}
+  </style></head><body>${imgs}</body></html>`);
+  doc.close();
+  // 画像が表示されてから印刷を呼ぶ
+  const wait = setInterval(() => {
+    const list = [...doc.images];
+    if(list.length && list.every(im => im.complete)){
+      clearInterval(wait);
+      f.contentWindow.focus(); f.contentWindow.print();
+    }
+  }, 120);
+  setTimeout(() => clearInterval(wait), 15000);
+  showToast('印刷画面から「PDFとして保存」を選べます');
 }
 </script>
 </body>
