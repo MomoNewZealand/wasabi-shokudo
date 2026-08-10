@@ -336,6 +336,24 @@ const DRINK_IDS = new Set(PRODS.ドリンク.map(p => p.id));
 // 最初から入っている商品のID（レジで追加したカスタム商品と区別するため、起動時に1回だけ控える）
 const BASE_IDS  = new Set(ALL.map(p => p.id));
 
+// 品目の中身を比べるための文字列にする（並び順や {qty:3} / 3 の書き方の違いを吸収）
+function itemsKey(items){
+  return Object.entries(items||{})
+    .map(([id,v]) => [id, typeof v==='object' ? (v.qty||0) : (v||0)])
+    .filter(([,q]) => q > 0)
+    .sort((a,b) => a[0].localeCompare(b[0]))
+    .map(([id,q]) => id+':'+q)
+    .join(',');
+}
+
+// そのレコードで「レジが記録した現金」がいくらだったか。
+// 現金過不足を入れる前の古いレコードでも計算できるようにしている。
+function getRegisterCash(rec){
+  if(!rec) return 0;
+  if(rec.registerCash != null) return rec.registerCash;
+  return (rec.cashTotal || 0) - (rec.cashDiff || 0);
+}
+
 // 商品IDから名前を出す。マスタに無いID（＝レジで追加したばかりで未同期の品目など）は
 // 黙って消さずに「未登録の品目」として見せる。消えると気づけないため。
 function prodName(id){
@@ -812,8 +830,21 @@ async function saveRecord(){
 
   // 編集中の既存レコードを取得（source・支払い内訳の引き継ぎ判定に使用）
   const existingRec = editId ? records.find(r => r.id === editId) : null;
+  const isRegisterRec = existingRec?.source === 'register';
+  // レジ連携レコードは「レジが計算した金額」を正とする。
+  // 品目を触っていないのに商品×マスタ価格で計算し直すと、町民割引や
+  // 生わさび（その場で金額を入れる商品）の売上が消えてしまうため。
+  let regBase = null;
+  if (isRegisterRec && itemsKey(existingRec.items) === itemsKey(form.items)) {
+    regBase = {
+      total: (existingRec.total || 0) - (existingRec.cashDiff || 0),  // レジの品目ベース金額
+      food:  existingRec.foodTotal  || 0,
+      drink: existingRec.drinkTotal || 0,
+      merch: existingRec.merchTotal || 0
+    };
+  }
   // レジ連携データの編集時は入力欄の支払い内訳を使う（欄が無い場合は既存値を保持）
-  if (existingRec?.source === 'register') {
+  if (isRegisterRec) {
     const regCashEl    = document.getElementById('reg-cash-input');
     if (regCashEl)    form.regCash    = parseInt(regCashEl.value)    || 0;
     const regRakutenEl = document.getElementById('reg-rakuten-input');
@@ -821,18 +852,33 @@ async function saveRecord(){
     const regPaypayEl  = document.getElementById('reg-paypay-input');
     if (regPaypayEl)  form.regPaypay  = parseInt(regPaypayEl.value)  || 0;
   }
-  const payTotals = (existingRec?.source === 'register')
+  const payTotals = isRegisterRec
     ? {
         cashTotal:    (form.regCash    ?? existingRec.cashTotal)    || 0,
         rakutenTotal: (form.regRakuten ?? (existingRec.rakutenTotal || existingRec.qrTotal)) || 0,
         paypayTotal:  (form.regPaypay  ?? existingRec.paypayTotal)  || 0
       }
     : calcPaymentTotals(tot.total, form.payment);
-  // レジ連携データ：内訳の合計と商品合計のズレを保存前にチェック
-  if (existingRec?.source === 'register') {
-    const breakdownSum = payTotals.cashTotal + payTotals.rakutenTotal + payTotals.paypayTotal;
-    if (breakdownSum !== tot.total &&
-        !confirm(`⚠️ 支払い内訳の合計（¥${breakdownSum.toLocaleString()}）と商品合計（¥${tot.total.toLocaleString()}）が一致しません。\nこのまま保存しますか？`)) return;
+
+  // レジ連携データ：実際に数えたお金（支払い内訳）を売上とする。
+  // レジの記録との差＝現金過不足として、あとから原因を追えるように残す。
+  let cashDiff = 0, registerCash = 0;
+  if (isRegisterRec) {
+    registerCash = getRegisterCash(existingRec);
+    cashDiff     = payTotals.cashTotal - registerCash;
+    const base   = regBase || {total: tot.total, food: tot.food, drink: tot.drink, merch: tot.merch};
+    const newTot = payTotals.cashTotal + payTotals.rakutenTotal + payTotals.paypayTotal;
+    const gap    = newTot - base.total;   // レジ記録と実際のお金の差
+    if (gap !== 0) {
+      const sign = gap > 0 ? '+' : '−';
+      if (!confirm(
+        `レジの記録：¥${base.total.toLocaleString()}\n`
+        + `実際のお金：¥${newTot.toLocaleString()}\n\n`
+        + `差額 ${sign}¥${Math.abs(gap).toLocaleString()} を売上に含めて保存します。\n`
+        + `（うち現金の過不足 ${cashDiff>=0?'+':'−'}¥${Math.abs(cashDiff).toLocaleString()}）\n\n`
+        + `よろしいですか？`)) return;
+    }
+    tot = {total: newTot, food: base.food, drink: base.drink, merch: base.merch};
   }
   // 混在の場合は入力された現金額をcashTotalにセット
   if (form.payment === '混在' && form.mixedCash > 0) payTotals.cashTotal = form.mixedCash;
@@ -852,6 +898,8 @@ async function saveRecord(){
     cashTotal:    payTotals.cashTotal,
     rakutenTotal: payTotals.rakutenTotal,
     paypayTotal:  payTotals.paypayTotal,
+    // レジ連携：レジが記録した現金と、実際に数えた現金の差（現金過不足）
+    ...(isRegisterRec ? {registerCash, actualCash: payTotals.cashTotal, cashDiff} : {}),
     tourType: form.loc === 'わさび体験' ? form.tourType : '',
     jpCount: form.loc === 'わさび体験' ? (form.jpCount||0) : 0,
     enCount: form.loc === 'わさび体験' ? (form.enCount||0) : 0,
@@ -904,7 +952,8 @@ async function saveRecord(){
 }
 
 async function restoreFromRegister(date, recId){
-  if(!confirm(`${date} のレジデータをスプレッドシートから再取得して上書きしますか？`)) return;
+  if(!confirm(`${date} のレジデータをスプレッドシートから再取得して上書きしますか？\n\n`
+    + `※ 手で入力した「実際に数えた現金」は、レジの記録に戻ります（入れ直してください）`)) return;
   showToast('取得中…');
   try{
     const res = await fetch(`${GAS_URL}?action=getRegisterOrders&date=${date}`);
@@ -945,6 +994,8 @@ async function restoreFromRegister(date, recId){
       memo:    existingRec?.memo    || '',
       items, foodTotal, drinkTotal, merchTotal,
       total, cashTotal, paypayTotal, qrTotal, rakutenTotal: qrTotal,
+      // レジの記録どおりに戻すので、現金過不足はいったん0に戻る
+      registerCash: cashTotal, actualCash: cashTotal, cashDiff: 0,
       source:'register'
     };
     // 既存のレジ連携レコード（同日）をすべて削除して差し替え
@@ -1159,27 +1210,27 @@ function renderInput(){
       <input type="text" id="input-event-name" value="${form.event}" placeholder="例: VERTERE BEER FEST" oninput="form.event=this.value">
     </div>` : ''}
     ${editingRegister ? `
-    <!-- レジ連携レコード：支払い内訳を直接編集できる欄 -->
+    <!-- レジ連携レコード：実際に数えたお金を入れる欄。レジ記録との差は現金過不足になる -->
     <div class="field">
-      <div class="field-lbl">💳 支払い内訳（レジ連携データ）</div>
+      <div class="field-lbl">💳 実際のお金（数えた金額）</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
         <div>
           <div class="field-lbl" style="font-size:10px">💴 現金</div>
           <input type="number" id="reg-cash-input" inputmode="numeric" placeholder="0" value="${form.regCash||''}"
-            oninput="form.regCash=parseInt(this.value)||0" style="text-align:right;font-weight:600">
+            oninput="form.regCash=parseInt(this.value)||0;updateRegDiff()" style="text-align:right;font-weight:600">
         </div>
         <div>
           <div class="field-lbl" style="font-size:10px">💳 R Pay</div>
           <input type="number" id="reg-rakuten-input" inputmode="numeric" placeholder="0" value="${form.regRakuten||''}"
-            oninput="form.regRakuten=parseInt(this.value)||0" style="text-align:right;font-weight:600">
+            oninput="form.regRakuten=parseInt(this.value)||0;updateRegDiff()" style="text-align:right;font-weight:600">
         </div>
         <div>
           <div class="field-lbl" style="font-size:10px">🔴 PayPay</div>
           <input type="number" id="reg-paypay-input" inputmode="numeric" placeholder="0" value="${form.regPaypay||''}"
-            oninput="form.regPaypay=parseInt(this.value)||0" style="text-align:right;font-weight:600">
+            oninput="form.regPaypay=parseInt(this.value)||0;updateRegDiff()" style="text-align:right;font-weight:600">
         </div>
       </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:4px">3つの合計が商品合計と一致するように入力してください</div>
+      <div id="reg-diff-info" style="font-size:11px;margin-top:6px;line-height:1.6"></div>
     </div>` : `
     <div class="field">
       <div class="field-lbl">支払方法</div>
@@ -1293,6 +1344,34 @@ function renderInput(){
 
   if(!simple) renderCatTabs();
   updateTotalBar();
+  if(editingRegister) updateRegDiff();
+}
+
+// レジ連携レコードの編集中、「レジの記録」と「実際のお金」の差をその場で見せる。
+// 保存してから気づくのではなく、入力しながら差額が分かるようにするため。
+function updateRegDiff(){
+  const box = document.getElementById('reg-diff-info'); if(!box) return;
+  const rec = editId ? records.find(r => r.id === editId) : null; if(!rec) return;
+
+  const regCash  = getRegisterCash(rec);
+  const regTotal = (rec.total || 0) - (rec.cashDiff || 0);          // レジの品目ベース金額
+  const cash     = form.regCash    ?? (rec.cashTotal || 0);
+  const rakuten  = form.regRakuten ?? (rec.rakutenTotal || rec.qrTotal || 0);
+  const paypay   = form.regPaypay  ?? (rec.paypayTotal || 0);
+  const nowTotal = cash + rakuten + paypay;
+  const gap      = nowTotal - regTotal;
+  const cashGap  = cash - regCash;
+
+  const sign = n => (n > 0 ? '+' : '−') + fmt(Math.abs(n));
+  const col  = n => n === 0 ? 'var(--text3)' : (n > 0 ? '#166534' : '#DC2626');
+
+  box.innerHTML =
+    `<div style="color:var(--text3)">レジの記録：${fmt(regTotal)}（うち現金 ${fmt(regCash)}）</div>`
+    + `<div style="color:${col(gap)};font-weight:700">この内容で保存すると売上：${fmt(nowTotal)}`
+    + (gap !== 0 ? `（${sign(gap)}）` : '（差額なし）') + `</div>`
+    + (cashGap !== 0
+        ? `<div style="color:${col(cashGap)}">💴 現金過不足：${sign(cashGap)}</div>`
+        : '');
 }
 
 // ══════════════════════════════════════════
@@ -1372,6 +1451,7 @@ function renderHistory(){
           <div class="pay-cell"><div class="pay-lbl">🔴 PayPay</div><div class="pay-val paypay">${fmt(rec.paypayTotal||0)}</div></div>
           <div class="pay-cell"><div class="pay-lbl">💳 R.Pay</div><div class="pay-val qr">${fmt(rec.rakutenTotal||rec.qrTotal||0)}</div></div>
         </div>` : ''}
+        ${rec.cashDiff ? `<div style="margin-top:6px;display:inline-block;background:${rec.cashDiff>0?'#F0FDF4':'#FEF2F2'};color:${rec.cashDiff>0?'#166534':'#DC2626'};border:1px solid ${rec.cashDiff>0?'#BBF7D0':'#FECACA'};border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700">💴 現金過不足 ${rec.cashDiff>0?'+':'−'}${fmt(Math.abs(rec.cashDiff))}（レジ記録 ${fmt(getRegisterCash(rec))}）</div>` : ''}
         ${sold.length>0 ? `<div class="chips">${sold.map(x =>
           `<span class="chip">${prodName(x.id)}×${x.qty}</span>`
         ).join('')}</div>` : ''}
@@ -1392,10 +1472,10 @@ function setHY(y){ histYear = y; renderHistory(); }
 function toggleExp(id){ expandedId = expandedId===id ? null : id; renderHistory(); }
 
 function exportCSV(){
-  const h = ['日付','部門','イベント名','天気','合計','支払方法','フード','ドリンク','物販','わさび使用量(g)','メモ', ...ALL.map(p=>p.name)];
+  const h = ['日付','部門','イベント名','天気','合計','支払方法','フード','ドリンク','物販','現金過不足','わさび使用量(g)','メモ', ...ALL.map(p=>p.name)];
   const rows = records.filter(r=>r.total>0).map(r => [
     r.date, r.loc, r.event||'', r.weather||'', r.total, r.payment||'',
-    r.foodTotal||'', r.drinkTotal||'', r.merchTotal||'', calcWasabiGram(r.items)||'', r.memo||'',
+    r.foodTotal||'', r.drinkTotal||'', r.merchTotal||'', r.cashDiff||'', calcWasabiGram(r.items)||'', r.memo||'',
     ...ALL.map(p => { const it=r.items?.[p.id]; if(!it) return 0; return typeof it==='object'?it.qty:it; })
   ]);
   const csv = [h, ...rows].map(row => row.join(',')).join('\n');
@@ -1522,6 +1602,21 @@ function renderAnKitchen(byLoc){
   const wMonths = Object.entries(wByMonth).sort(([a],[b]) => b.localeCompare(a)); // 新しい月を上に
   const wMaxM = Math.max(...wMonths.map(([,g]) => g), 1);
 
+  // 💴 現金過不足（レジの記録と、実際に数えた現金の差）。月別と累計。
+  // 「いつも決まった額が足りない」といった傾向を見つけるための表示。
+  const dByMonth = {};
+  let dGrand = 0, dDays = 0;
+  kRecs.forEach(r => {
+    if(!r.cashDiff) return;
+    dGrand += r.cashDiff; dDays++;
+    const m = r.date.substring(0,7);
+    dByMonth[m] = (dByMonth[m]||0) + r.cashDiff;
+  });
+  const dMonths = Object.entries(dByMonth).sort(([a],[b]) => b.localeCompare(a));
+  const dMax = Math.max(...dMonths.map(([,v]) => Math.abs(v)), 1);
+  const diffCol = v => v > 0 ? '#166534' : v < 0 ? '#DC2626' : 'var(--text3)';
+  const diffTxt = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
+
   return `
     ${catTotal>0 ? `<div class="an-ttl">🍱 フード / ☕ ドリンク / 🛍 物販 比率</div>
     <div class="stat-grid">
@@ -1563,6 +1658,24 @@ function renderAnKitchen(byLoc){
     <div style="font-size:11px;color:var(--text3);padding:8px 4px 2px;line-height:1.7">
       ※ わさび丼3g／ミニわさび丼2g／わさびポーク丼3g／わさびコーヒー2g／わさびピーチソーダ2g で計算。<br>
       この月ごとの数字を、<b>わさび田管理アプリの「フードトラック出荷」</b>に記録してください。
+    </div>` : ''}
+
+    ${dDays>0 ? `<div class="an-ttl">💴 現金過不足（レジと実際の差）</div>
+    <div class="an-big" style="background:${dGrand>=0?'#F0FDF4':'#FEF2F2'};border:1px solid ${dGrand>=0?'#BBF7D0':'#FECACA'}">
+      <div class="an-big-lbl" style="color:${diffCol(dGrand)}">累計の過不足（${dDays}日ぶん）</div>
+      <div class="an-big-val" style="color:${diffCol(dGrand)}">${diffTxt(dGrand)}</div>
+      <div class="an-big-sub" style="color:${diffCol(dGrand)}">1日あたり平均 ${diffTxt(Math.round(dGrand/dDays))}</div>
+    </div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px;margin-top:10px">
+      ${dMonths.map(([m,v]) => `<div class="m-row">
+        <div class="m-label">${m.replace('-','/')}</div>
+        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(Math.abs(v)/dMax*100)}%;background:${diffCol(v)}"></div></div>
+        <div class="m-val" style="color:${diffCol(v)}">${diffTxt(v)}</div>
+      </div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3);padding:8px 4px 2px;line-height:1.7">
+      ※ プラス＝実際の現金が多い（打ち忘れの可能性）／マイナス＝実際の現金が少ない（お釣りの渡し過ぎなど）。<br>
+      毎回同じくらいの額がずれている場合は、原因が特定できることが多いです。
     </div>` : ''}
   `;
 }

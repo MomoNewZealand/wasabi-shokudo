@@ -566,6 +566,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
         <div class="send-summary-title">本日の売上サマリー</div>
         <div class="send-sum-grid" id="send-sum-grid"></div>
       </div>
+      <!-- 閉店時の現金カウント。レジの記録との差＝現金過不足として売上管理に送る -->
+      <div class="send-field">
+        <div class="send-field-lbl">💴 実際の現金（数えた金額）</div>
+        <input class="send-input" id="send-actual-cash" type="number" inputmode="numeric"
+          placeholder="レジどおりなら空欄でOK" style="text-align:right;font-weight:700;font-size:18px"
+          oninput="updateCashDiff()">
+        <div id="send-cash-diff" style="font-size:12px;margin-top:5px;line-height:1.6"></div>
+      </div>
       <div class="send-field">
         <div class="send-field-lbl">出店場所 <span class="req">必須</span></div>
         <select class="send-select" id="send-loc">
@@ -1402,6 +1410,8 @@ function _openSendModal(targetData){
   const deviceName=getDeviceName();const locSel=document.getElementById('send-loc');
   if(deviceName&&locSel){const exists=Array.from(locSel.options).some(o=>o.value===deviceName);if(!exists){const opt=document.createElement('option');opt.value=deviceName;opt.textContent=`🏔 ${deviceName}`;locSel.insertBefore(opt,locSel.options[locSel.options.length-1]);}locSel.value=deviceName;}
   document.getElementById('send-loc').onchange=function(){document.getElementById('send-event-field').style.display=this.value==='イベント'?'block':'none';};
+  const acEl=document.getElementById('send-actual-cash');if(acEl)acEl.value='';
+  updateCashDiff();
   sendWeather='';document.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('send-memo').value='';document.getElementById('send-event').value='';
   document.getElementById('send-event-field').style.display='none';
@@ -1419,6 +1429,20 @@ function _renderSendSummary(orders){
   const paypay=orders.filter(o=>o.payment==='paypay').reduce((s,o)=>s+o.total,0),qr=orders.filter(o=>o.payment==='qr').reduce((s,o)=>s+o.total,0);
   document.getElementById('send-sum-grid').innerHTML=`<div class="send-sum-item"><div class="send-sum-lbl">合計</div><div class="send-sum-val">${fmt(total)}</div></div><div class="send-sum-item"><div class="send-sum-lbl">💴 現金</div><div class="send-sum-val cash-col">${fmt(cash)}</div></div><div class="send-sum-item"><div class="send-sum-lbl">🔴 PayPay</div><div class="send-sum-val">${fmt(paypay)}</div></div><div class="send-sum-item"><div class="send-sum-lbl">💳 R Pay</div><div class="send-sum-val">${fmt(qr)}</div></div>`;
 }
+// 入力しながら「レジの記録」と「実際に数えた現金」の差を見せる
+function updateCashDiff(){
+  const box=document.getElementById('send-cash-diff');if(!box)return;
+  const orders=(_unsentTargetData||todayData).orders||[];
+  const regCash=orders.filter(o=>o.payment==='cash').reduce((s,o)=>s+o.total,0);
+  const raw=(document.getElementById('send-actual-cash')?.value||'').trim();
+  if(raw===''){box.innerHTML=`<span style="color:var(--text3)">レジの記録：${fmt(regCash)}（空欄のままなら差額なしで送ります）</span>`;return;}
+  const actual=parseInt(raw,10)||0,diff=actual-regCash;
+  const col=diff===0?'var(--text3)':(diff>0?'#166534':'#DC2626');
+  box.innerHTML=`<div style="color:var(--text3)">レジの記録：${fmt(regCash)}</div>`
+    +`<div style="color:${col};font-weight:700">現金過不足：${diff>0?'+':diff<0?'−':''}${fmt(Math.abs(diff))}`
+    +(diff>0?'（打ち忘れの可能性）':diff<0?'（お釣りの渡し過ぎなど）':'（ぴったり）')+`</div>`;
+}
+
 function _renderSendProdPreview(orders){
   const merged=_buildMergedItems(orders);
   const lines=Object.entries(merged.items).map(([id,data])=>{const p=findProd(id);return`${p?p.name:id} × ${data.qty}`;});
@@ -1453,13 +1477,25 @@ async function executeSend(){
   document.getElementById('send-ok-ico').textContent='⏳';document.getElementById('send-ok-txt').textContent='送信中…';
   try{
     const merged=_buildMergedItems(orders);
+    // 閉店時に数えた現金。空欄ならレジの記録どおり（差額なし）
+    const acRaw=(document.getElementById('send-actual-cash')?.value||'').trim();
+    const actualCash=acRaw===''?merged.cashTotal:(parseInt(acRaw,10)||0);
+    const cashDiff=actualCash-merged.cashTotal;
+    if(cashDiff!==0&&!confirm(`レジの記録：${fmt(merged.cashTotal)}\n実際の現金：${fmt(actualCash)}\n\n`
+      +`現金過不足 ${cashDiff>0?'+':'−'}${fmt(Math.abs(cashDiff))} として記録し、売上に含めます。\nよろしいですか？`)){
+      btn.disabled=false;btn.className='send-ok';
+      document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';
+      return;
+    }
     const record={
       id:`reg_${targetData.date}_${loc.replace(/[^a-zA-Z0-9]/g,'')}_${Date.now()}`,
       date:targetData.date,loc,event:loc==='イベント'?event:'',weather:sendWeather,memo,
       items:merged.items,shokudoTotal:merged.shokudoTotal,coffeeTotal:merged.coffeeTotal,buppanTotal:merged.buppanTotal,
       foodTotal:merged.shokudoTotal,drinkTotal:merged.coffeeTotal,merchTotal:merged.buppanTotal,
-      cashTotal:merged.cashTotal,paypayTotal:merged.paypayTotal,qrTotal:merged.qrTotal,rakutenTotal:merged.qrTotal,
-      total:merged.total,source:'register'
+      cashTotal:actualCash,paypayTotal:merged.paypayTotal,qrTotal:merged.qrTotal,rakutenTotal:merged.qrTotal,
+      // レジが記録した現金と、実際に数えた現金の差（現金過不足）
+      registerCash:merged.cashTotal,actualCash,cashDiff,
+      total:merged.total+cashDiff,source:'register'
     };
     const raw=localStorage.getItem(SALES_APP_KEY);
     let records=raw?JSON.parse(raw):[];if(!Array.isArray(records))records=[];
