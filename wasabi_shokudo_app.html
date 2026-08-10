@@ -125,7 +125,7 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
 .save-btn:disabled{opacity:.4;cursor:default;box-shadow:none}
 /* トースト */
 .toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--g2);color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:fadeup .3s ease}
-/* 売上報告書モーダル */
+/* 売上明細モーダル */
 .rep-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:flex-end;justify-content:center;overflow-y:auto}
 .rep-ov.on{display:flex}
 @media(min-width:480px){.rep-ov{align-items:center}}
@@ -297,12 +297,12 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
   </div>
 </div>
 
-<!-- 売上報告書（イベント主催者への提出用）を画像・PDFで出す -->
+<!-- 売上明細（イベント主催者への提出用）を画像・PDFで出す -->
 <div class="rep-ov" id="rep-modal" onclick="if(event.target===this)closeReport()">
   <div class="rep-modal" onclick="event.stopPropagation()">
     <div class="rep-head">
       <div>
-        <div class="rep-head-ttl">📄 売上報告書をつくる</div>
+        <div class="rep-head-ttl">📄 売上明細をつくる</div>
         <div style="font-size:11px;opacity:.85;margin-top:2px" id="rep-subject"></div>
       </div>
       <button class="rep-close" onclick="closeReport()">✕</button>
@@ -1535,7 +1535,7 @@ function renderHistory(){
         ${(() => { const wg = calcWasabiGram(rec.items); return wg>0 ? `<div style="margin-top:6px;display:inline-block;background:#F0FDF4;color:#166534;border:1px solid #BBF7D0;border-radius:10px;padding:4px 10px;font-size:12px;font-weight:700">🌿 わさび使用量 約${fmtGram(wg)}</div>` : ''; })()}
         ${rec.memo ? `<div style="font-size:11px;color:var(--text3);padding:4px 0">📝 ${rec.memo}</div>` : ''}
         <div class="act-row">
-          <button class="act-btn" onclick="openReport('${rec.id}')">📄 報告書</button>
+          <button class="act-btn" onclick="openReport('${rec.id}')">📄 売上明細</button>
           <button class="act-btn" onclick="editRecord('${rec.id}')">✏️ 編集</button>
           <button class="act-btn del" onclick="confirmDelete('${rec.id}')">🗑 削除</button>
           ${((rec.cashTotal||0) > 0 || isAmountLater(rec.payment) || rec.payment==='混在') ? `<button class="act-btn" onclick="sendToFinance('${rec.id}')">📊 財務送信</button>` : ''}
@@ -2266,7 +2266,7 @@ function renderImport(){
 }
 
 // ══════════════════════════════════════════
-//  売上報告書（イベント主催者への提出用）
+//  売上明細（イベント主催者への提出用）
 //  A4縦の紙面を1枚ずつ描いて、画像(PNG)保存 or 印刷(PDF)で出す。
 //  外部のサービスやライブラリは使わない（データを外に出さないため）。
 // ══════════════════════════════════════════
@@ -2406,7 +2406,7 @@ async function buildReportPages(){
   repTxt(d.p, 'TOKYO WASABI / わさび食堂', REP.M, d.p.y+18, {size:20, weight:'700', color:REP.BLUE});
   repTxt(d.p, `発行日 ${fmtD(new Date().toISOString().split('T')[0])}`, REP.W-REP.M, d.p.y+18, {size:17, color:REP.GRAY, align:'right'});
   d.p.y += 66;
-  repTxt(d.p, '売上報告書', REP.M, d.p.y, {size:40, weight:'700'});
+  repTxt(d.p, '売上明細', REP.M, d.p.y, {size:40, weight:'700'});
   d.p.y += 26; repRule(d.p, d.p.y, REP.BLUE); d.p.y += 4;
 
   const period = recs.length>1
@@ -2516,12 +2516,12 @@ function repClip(p, txt, maxW){
 async function outputReport(mode){
   const btns = document.querySelectorAll('.rep-btn');
   btns.forEach(b => b.disabled = true);
-  showToast('報告書をつくっています…');
+  showToast('売上明細をつくっています…');
   try{
     const canvases = await buildReportPages();
     if(!canvases.length){ showToast('⚠️ データがありません'); return; }
     const recs = repTargets();
-    const base = `売上報告書_${(recs[0].event||recs[0].loc).replace(/[\\/:*?"<>|]/g,'')}_${recs[0].date}`;
+    const base = `売上明細_${(recs[0].event||recs[0].loc).replace(/[\\/:*?"<>|]/g,'')}_${recs[0].date}`;
     if(mode === 'png') repSavePNG(canvases, base);
     else               repPrint(canvases);
     closeReport();
@@ -2562,7 +2562,7 @@ function repPrint(canvases){
   const imgs = canvases.map(c => `<img src="${c.toDataURL('image/png')}">`).join('');
   const doc = f.contentWindow.document;
   doc.open();
-  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>売上報告書</title><style>
+  doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>売上明細</title><style>
     @page{size:A4 portrait;margin:0}
     html,body{margin:0;padding:0}
     img{display:block;width:100%;page-break-after:always;break-after:page}
