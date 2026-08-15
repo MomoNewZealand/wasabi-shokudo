@@ -1400,10 +1400,17 @@ function renderInput(){
     <div class="field">
       <div class="field-lbl">日付</div>
       <input type="date" value="${form.date}" oninput="form.date=this.value" onchange="form.date=this.value">
-      ${!isFinanceYear(form.date) ? `<div style="margin-top:8px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:8px 10px;font-size:11px;color:#1E40AF;line-height:1.7">
+      ${!isFinanceYear(form.date) ? (Number(String(form.date).substring(0,4)) > FINANCE_YEAR ? `
+      <!-- 年が変わった：財務シートの切り替え設定がまだ済んでいない -->
+      <div style="margin-top:8px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:10px;padding:8px 10px;font-size:11px;color:#854D0E;line-height:1.7">
+        ⚠️ ${String(form.date).substring(0,4)}年の記録ですが、<b>財務管理シートはまだ${FINANCE_YEAR}年のまま</b>です。<br>
+        このままだと財務管理シートには書き込まれません。<b>${String(form.date).substring(0,4)}年への切り替え</b>が必要です。<br>
+        （売上記録シートとこのアプリには、いつも通り保存されます）
+      </div>` : `
+      <div style="margin-top:8px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:8px 10px;font-size:11px;color:#1E40AF;line-height:1.7">
         🔒 ${String(form.date).substring(0,4)}年の記録です。<b>財務管理シートには書き込みません</b>（${FINANCE_YEAR}年のシートのため）。<br>
         売上記録シートとこのアプリには、いつも通り保存されます。
-      </div>` : ''}</div>
+      </div>`) : ''}</div>
     <div class="field">
       <div class="field-lbl">部門</div>
       <div class="loc-wrap">${locBtns}</div>
