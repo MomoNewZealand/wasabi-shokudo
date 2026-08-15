@@ -362,6 +362,16 @@ const CUSTOM_PRODS_KEY = 'wasabi_custom_prods_v1';
 // 簡易入力モードの部門（商品明細なし・金額直接入力）
 const SIMPLE_LOCS = ['わさび体験','BBQ','撮影等','研修・ワークショップ'];
 
+// ★ 財務管理シートが対象にしている年。
+//   財務管理シートは1年に1ファイルだが、書き込み先のマスは「月」と「日」だけで決まる。
+//   そのため別の年の記録を送ると、今の年のシートの同じ月日に入ってしまう
+//   （2025年10月の記録 → 2026年シートの「10月」タブ）。
+//   確定申告の済んだ過去の年を触らないよう、年が違う記録は財務シートへ送らない。
+//   ※ 財務管理シートを新しい年のものに差し替えたら、この数字と
+//     GAS側の FINANCE_SS_ID の両方を変えること。
+const FINANCE_YEAR = 2026;
+function isFinanceYear(date){ return String(date||'').substring(0,4) === String(FINANCE_YEAR); }
+
 // 部門定義
 const LOC_CONFIG = {
   '奥多摩駅前': {icon:'🏔', label:'食堂',    tag:'tag-ok',   financeCol: 3},
@@ -787,7 +797,8 @@ async function syncToSheets(recs){
       // キャッシュレス（PayPay/楽天/請求書）や混在の日も、財務シートに「印」を残すため送信する
       // （現金がある時＝今まで通り金額／キャッシュレスの時＝財務シート側で文字の印に変換）
       const isCashless = ['PayPay','Rakuten Pay','請求書','混在'].includes(rec.payment);
-      if (cashTotal > 0 || isCashless) {
+      // ★ 別の年の記録は財務シートへ送らない（過去の確定申告済みの分を守るため）
+      if ((cashTotal > 0 || isCashless) && isFinanceYear(rec.date)) {
         fetch(GAS_URL, {
           method: 'POST', mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
@@ -1018,21 +1029,26 @@ async function saveRecord(){
     tot = {total: newTot, food: base.food, drink: base.drink, merch: base.merch};
   }
   // 混在：現金 / R Pay / PayPay に分けて入れた金額をそのまま内訳にする
-  if (form.payment === '混在') {
+  if (form.payment === '混在' && !isRegisterRec) {
     payTotals.cashTotal    = form.mixedCash    || 0;
     payTotals.rakutenTotal = form.mixedRakuten || 0;
     payTotals.paypayTotal  = form.mixedPaypay  || 0;
-    // 商品明細から金額を出している場合は、内訳の合計とズレていないか確かめる
-    // （金額だけ入力のときは内訳の合計＝売上なので、ズレようがない）
+    // 内訳が売上そのものになるので、空のまま保存させない
+    if (mixedSum() <= 0) { showToast('支払いの内訳を入力してください'); return; }
+    // ★ 混在は「記入した内訳の合計」をその日の売上とする。
+    //   ノートの実際のお金が正で、商品の数は書き漏れがありうるため。
     const gap = mixedSum() - tot.total;
-    if (!mixAuto && gap !== 0) {
+    if (!simple && gap !== 0) {
       if(!confirm(
         `商品の合計：${fmt(tot.total)}\n`
         + `内訳の合計：${fmt(mixedSum())}\n\n`
-        + `内訳のほうが ${fmt(Math.abs(gap))} ${gap > 0 ? '多い' : '少ない'}です。\n`
-        + `売上は商品の合計（${fmt(tot.total)}）で保存されます。\n\n`
-        + `このまま保存しますか？`)) return;
+        + `内訳のほうが ${fmt(Math.abs(gap))} ${gap > 0 ? '多い' : '少ない'}です。\n\n`
+        + `売上は記入した内訳の合計（${fmt(mixedSum())}）で登録します。\n`
+        + `フード/コーヒー/物販の内訳は、選んだ商品のままになります。\n\n`
+        + `よろしいですか？`)) return;
     }
+    // 商品明細モードでも、売上合計は記入した内訳の合計にそろえる
+    if (!simple) tot = {...tot, total: mixedSum()};
     // キャッシュレスが0円なら実質「現金だけの日」。財務シートに誤った印が入るのを防ぐ
     if (payTotals.rakutenTotal + payTotals.paypayTotal === 0 && payTotals.cashTotal > 0) form.payment = '現金';
   }
@@ -1289,11 +1305,14 @@ function updateTotalBar(){
     document.getElementById('total-disp').textContent = fmt(amount);
   } else {
     const t = calcTotals();
-    if(t.total === 0){ bar.style.display='none'; return; }
+    // 混在は記入した内訳の合計がその日の売上になる（商品の合計ではなく）
+    const editingReg = !!(editId && records.find(r => r.id === editId)?.source === 'register');
+    const shown = (form.payment === '混在' && !editingReg) ? mixedSum() : t.total;
+    if(shown === 0){ bar.style.display='none'; return; }
     bar.style.display='flex';
     document.getElementById('breakdown').innerHTML =
       `<span class="t-bit">🍱${fmt(t.food)}</span><span class="t-bit">☕${fmt(t.drink)}</span><span class="t-bit">🛍${fmt(t.merch)}</span>`;
-    document.getElementById('total-disp').textContent = fmt(t.total);
+    document.getElementById('total-disp').textContent = fmt(shown);
   }
 }
 
@@ -1350,7 +1369,10 @@ function renderInput(){
   const existingRegPaypay = document.getElementById('reg-paypay-input')?.value;
   if (existingRegPaypay) form.regPaypay = parseInt(existingRegPaypay) || 0;
   const simple = isAmountMode();
-  const tot = simple ? {total: amountModeTotal()} : calcTotals();
+  // 混在は記入した内訳の合計がその日の売上（商品の合計ではない）
+  const tot = (form.payment === '混在' && !(editId && records.find(r => r.id === editId)?.source === 'register'))
+    ? {total: mixedSum()}
+    : (simple ? {total: form.amount||0} : calcTotals());
 
   // レジ連携レコードの編集中かどうか（支払い内訳を直接編集できるようにする）
   const editingRegister = !!(editId && records.find(r => r.id === editId)?.source === 'register');
@@ -1378,7 +1400,10 @@ function renderInput(){
     <div class="field">
       <div class="field-lbl">日付</div>
       <input type="date" value="${form.date}" oninput="form.date=this.value" onchange="form.date=this.value">
-    </div>
+      ${!isFinanceYear(form.date) ? `<div style="margin-top:8px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:8px 10px;font-size:11px;color:#1E40AF;line-height:1.7">
+        🔒 ${String(form.date).substring(0,4)}年の記録です。<b>財務管理シートには書き込みません</b>（${FINANCE_YEAR}年のシートのため）。<br>
+        売上記録シートとこのアプリには、いつも通り保存されます。
+      </div>` : ''}</div>
     <div class="field">
       <div class="field-lbl">部門</div>
       <div class="loc-wrap">${locBtns}</div>
@@ -1577,10 +1602,10 @@ function updateMixDiff(){
   const t = calcTotals();
   const gap = sum - t.total;
   box.innerHTML =
-    `<div style="color:var(--text3)">商品の合計：${fmt(t.total)} ／ 内訳の合計：${fmt(sum)}</div>`
+    `<div style="color:var(--text3)">内訳の合計：<b style="color:var(--text)">${fmt(sum)}</b> ＝ この日の売上</div>`
     + (gap === 0
-        ? `<div style="color:#166534;font-weight:700">✓ ぴったり合っています</div>`
-        : `<div style="color:#DC2626;font-weight:700">⚠️ 内訳が ${fmt(Math.abs(gap))} ${gap > 0 ? '多い' : '少ない'}です</div>`);
+        ? `<div style="color:#166534;font-weight:700">✓ 選んだ商品の合計（${fmt(t.total)}）とも一致しています</div>`
+        : `<div style="color:#B45309;font-weight:700">選んだ商品の合計は ${fmt(t.total)}（${fmt(Math.abs(gap))} ${gap > 0 ? '少ない' : '多い'}）</div>`);
 }
 
 // レジ連携レコードの編集中、「レジの記録」と「実際のお金」の差をその場で見せる。
