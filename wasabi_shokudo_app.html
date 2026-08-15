@@ -574,7 +574,11 @@ const NOTION = [
 //  アプリ状態
 // ══════════════════════════════════════════
 let records = [];
-let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, mixedMethod:'PayPay'};
+let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, mixedMethod:'PayPay',
+  // 混在：現金 / R Pay / PayPay の3つに分けて入れる金額
+  mixedCash:0, mixedRakuten:0, mixedPaypay:0,
+  // 食堂・イベントを「商品を選ばず金額だけ」で入れるモード（過去分をノートから入れるとき用）
+  quickMode:false, quickDrink:0, quickMerch:0};
 let activeCat = 'フード';
 let view = 'input';
 let editId = null;
@@ -591,6 +595,14 @@ function today(){ return new Date().toISOString().split('T')[0]; }
 function fmt(n){ return '¥' + Math.round(n).toLocaleString(); }
 function fmtD(s){ return s.replace(/-/g,'/'); }
 function isSimple(loc){ return SIMPLE_LOCS.includes(loc); }
+// 食堂・イベントで「金額だけ入力」に切り替えられるか（体験・BBQ等はもともと金額だけ）
+function canQuickMode(){ return !isSimple(form.loc); }
+// いま「金額だけ入力」の画面かどうか
+function isAmountMode(){ return isSimple(form.loc) || !!form.quickMode; }
+// 混在で入れた 現金 + R Pay + PayPay の合計
+function mixedSum(){ return (form.mixedCash||0) + (form.mixedRakuten||0) + (form.mixedPaypay||0); }
+// 金額だけ入力のときの売上合計。混在なら内訳の合計がそのまま売上になる
+function amountModeTotal(){ return form.payment === '混在' ? mixedSum() : (form.amount||0); }
 function getPeriod(d){
   const m = new Date(d).getMonth()+1, day = new Date(d).getDate();
   if((m===4&&day>=29)||(m===5&&day<=5)) return 'GW';
@@ -909,8 +921,18 @@ async function saveRecord(){
   // 保存ボタン押下時にonchangeが未発火でも確実に日付を取得
   const dateEl = document.querySelector('input[type=date]');
   if (dateEl?.value) form.date = dateEl.value;
+  // 混在の内訳（現金 / R Pay / PayPay）。空欄は0として読む
   const mixedCashEl = document.getElementById('mixed-cash-input');
-  if (mixedCashEl?.value) form.mixedCash = parseInt(mixedCashEl.value) || 0;
+  if (mixedCashEl) form.mixedCash = parseInt(mixedCashEl.value) || 0;
+  const mixedRakutenEl = document.getElementById('mixed-rakuten-input');
+  if (mixedRakutenEl) form.mixedRakuten = parseInt(mixedRakutenEl.value) || 0;
+  const mixedPaypayEl = document.getElementById('mixed-paypay-input');
+  if (mixedPaypayEl) form.mixedPaypay = parseInt(mixedPaypayEl.value) || 0;
+  // 金額だけ入力（食堂・イベント）の「うちコーヒー」「うち物販」
+  const quickDrinkEl = document.getElementById('quick-drink');
+  if (quickDrinkEl) form.quickDrink = parseInt(quickDrinkEl.value) || 0;
+  const quickMerchEl = document.getElementById('quick-merch');
+  if (quickMerchEl) form.quickMerch = parseInt(quickMerchEl.value) || 0;
   const weatherEl = document.getElementById('weather-select');
   if (weatherEl) form.weather = weatherEl.value;
   const jpCountEl = document.getElementById('jp-count-input');
@@ -919,14 +941,25 @@ async function saveRecord(){
   if (enCountEl) form.enCount = parseInt(enCountEl.value) || 0;
   const guestCountEl = document.getElementById('guest-count-input');
   if (guestCountEl) form.guestCount = parseInt(guestCountEl.value) || 0;
-  const simple = isSimple(form.loc);
+  const simple = isAmountMode();
+  // 金額だけ入力 × 混在 のときは、現金/R Pay/PayPayの合計がそのまま売上になる
+  const mixAuto = simple && form.payment === '混在';
   let tot;
   if(simple){
-    const amount = parseInt(document.getElementById('simple-amount')?.value) || form.amount || 0;
+    const amount = mixAuto
+      ? mixedSum()
+      : (parseInt(document.getElementById('simple-amount')?.value) || form.amount || 0);
     // PayPay・R Pay・請求書は金額が後日確定するため、0円のまま「印」として保存できる
     if(amount <= 0 && !isAmountLater(form.payment)){ showToast('金額を入力してください'); return; }
     form.amount = amount;
-    tot = {food:0, drink:0, merch:0, total: amount};
+    if(canQuickMode()){
+      // 食堂・イベントは「うちコーヒー」「うち物販」だけ内訳として残し、残りをフードにする
+      const drink = Math.min(form.quickDrink||0, amount);
+      const merch = Math.min(form.quickMerch||0, Math.max(0, amount - drink));
+      tot = {food: amount - drink - merch, drink, merch, total: amount};
+    } else {
+      tot = {food:0, drink:0, merch:0, total: amount};
+    }
   } else {
     tot = calcTotals();
     if(tot.total === 0){ showToast('商品を入力してください'); return; }
@@ -984,8 +1017,30 @@ async function saveRecord(){
     }
     tot = {total: newTot, food: base.food, drink: base.drink, merch: base.merch};
   }
-  // 混在の場合は入力された現金額をcashTotalにセット
-  if (form.payment === '混在' && form.mixedCash > 0) payTotals.cashTotal = form.mixedCash;
+  // 混在：現金 / R Pay / PayPay に分けて入れた金額をそのまま内訳にする
+  if (form.payment === '混在') {
+    payTotals.cashTotal    = form.mixedCash    || 0;
+    payTotals.rakutenTotal = form.mixedRakuten || 0;
+    payTotals.paypayTotal  = form.mixedPaypay  || 0;
+    // 商品明細から金額を出している場合は、内訳の合計とズレていないか確かめる
+    // （金額だけ入力のときは内訳の合計＝売上なので、ズレようがない）
+    const gap = mixedSum() - tot.total;
+    if (!mixAuto && gap !== 0) {
+      if(!confirm(
+        `商品の合計：${fmt(tot.total)}\n`
+        + `内訳の合計：${fmt(mixedSum())}\n\n`
+        + `内訳のほうが ${fmt(Math.abs(gap))} ${gap > 0 ? '多い' : '少ない'}です。\n`
+        + `売上は商品の合計（${fmt(tot.total)}）で保存されます。\n\n`
+        + `このまま保存しますか？`)) return;
+    }
+    // キャッシュレスが0円なら実質「現金だけの日」。財務シートに誤った印が入るのを防ぐ
+    if (payTotals.rakutenTotal + payTotals.paypayTotal === 0 && payTotals.cashTotal > 0) form.payment = '現金';
+  }
+  // 財務シートに残す印（R Pay / PayPay）は、入力された金額から自動で決める。
+  // 両方ある日は種類を空にして、GAS側で「キャッシュレス」と表示させる
+  const autoMixedMethod = (payTotals.rakutenTotal > 0 && payTotals.paypayTotal > 0) ? ''
+    : payTotals.rakutenTotal > 0 ? 'Rakuten Pay'
+    : payTotals.paypayTotal  > 0 ? 'PayPay' : '';
   // イベント名はフォーカスを外す前に保存ボタンを押しても確実に取得する
   const eventVal = document.getElementById('input-event-name')?.value ?? form.event;
 
@@ -1008,7 +1063,7 @@ async function saveRecord(){
     jpCount: form.loc === 'わさび体験' ? (form.jpCount||0) : 0,
     enCount: form.loc === 'わさび体験' ? (form.enCount||0) : 0,
     guestCount: form.loc === 'BBQ' ? (form.guestCount||0) : 0,
-    mixedMethod: form.payment === '混在' ? (form.mixedMethod || 'PayPay') : '',  // 混在のキャッシュレス種類
+    mixedMethod: form.payment === '混在' ? autoMixedMethod : '',  // 混在のキャッシュレス種類（金額から自動判定）
     memo: form.memo,
     source: existingRec?.source || 'manual'  // レジ連携バッジを保持する
   };
@@ -1049,7 +1104,9 @@ async function saveRecord(){
 
   const keepLoc = form.loc;
   const keepDate = form.date; // 連続入力時に日付を維持
-  form = {date:keepDate, loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, guestCount:0, mixedCash:0, mixedMethod:'PayPay'};
+  const keepQuick = form.quickMode; // 過去分をまとめて入れるとき、金額だけ入力のまま続けられるように
+  form = {date:keepDate, loc:keepLoc, event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, guestCount:0,
+    mixedCash:0, mixedRakuten:0, mixedPaypay:0, mixedMethod:'PayPay', quickMode:keepQuick, quickDrink:0, quickMerch:0};
   editId = null;
   if(!simple) activeCat = 'フード';
   renderInput(); updateTotalBar();
@@ -1185,7 +1242,14 @@ function editRecord(id){
     enCount: rec.enCount || 0,
     guestCount: rec.guestCount || 0,
     mixedMethod: rec.mixedMethod || 'PayPay',
+    // 混在の内訳（現金 / R Pay / PayPay）
     mixedCash: rec.cashTotal || 0,
+    mixedRakuten: rec.rakutenTotal || rec.qrTotal || 0,
+    mixedPaypay: rec.paypayTotal || 0,
+    // 商品が1つも入っていない食堂・イベントの記録は「金額だけ入力」で作られたもの
+    quickMode: !isSimple(rec.loc) && Object.keys(rec.items||{}).length === 0 && (rec.total||0) > 0,
+    quickDrink: rec.drinkTotal || 0,
+    quickMerch: rec.merchTotal || 0,
     // レジ連携レコード用：支払い内訳（現金/R Pay/PayPay）を編集できるように読み込む
     regCash: rec.cashTotal || 0,
     regRakuten: rec.rakutenTotal || rec.qrTotal || 0,
@@ -1207,11 +1271,21 @@ function sv(v){
 function updateTotalBar(){
   const bar = document.getElementById('total-bar');
   if(view !== 'input'){ bar.style.display='none'; return; }
-  if(isSimple(form.loc)){
-    const amount = parseInt(document.getElementById('simple-amount')?.value) || form.amount || 0;
+  // 商品の数を変えたときも、混在の内訳とのズレ表示を追従させる
+  if(form.payment === '混在') updateMixDiff();
+  if(isAmountMode()){
+    // 混在は内訳の合計、それ以外は入力された金額がそのまま売上
+    const amount = form.payment === '混在'
+      ? mixedSum()
+      : (parseInt(document.getElementById('simple-amount')?.value) || form.amount || 0);
     if(amount <= 0){ bar.style.display='none'; return; }
     bar.style.display='flex';
-    document.getElementById('breakdown').innerHTML = `<span class="t-bit">${LOC_CONFIG[form.loc]?.icon||''} ${form.loc}</span>`;
+    // 食堂・イベントの金額だけ入力は、うちコーヒー・うち物販も一緒に見せる
+    const drink = canQuickMode() ? Math.min(form.quickDrink||0, amount) : 0;
+    const merch = canQuickMode() ? Math.min(form.quickMerch||0, Math.max(0, amount - drink)) : 0;
+    document.getElementById('breakdown').innerHTML = canQuickMode()
+      ? `<span class="t-bit">🍱${fmt(amount - drink - merch)}</span><span class="t-bit">☕${fmt(drink)}</span><span class="t-bit">🛍${fmt(merch)}</span>`
+      : `<span class="t-bit">${LOC_CONFIG[form.loc]?.icon||''} ${form.loc}</span>`;
     document.getElementById('total-disp').textContent = fmt(amount);
   } else {
     const t = calcTotals();
@@ -1239,7 +1313,10 @@ function setLoc(l){ form.loc = l; form.amount = 0; if(l!=='わさび体験') for
 function setPayment(p){ form.payment = p; renderInput(); }
 function setMixedMethod(m){ form.mixedMethod = m; renderInput(); }
 function setTourType(t){ form.tourType = t; renderInput(); }
-function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:'',payment:'現金',amount:0,tourType:'日本人',jpCount:0,enCount:0,guestCount:0,mixedCash:0,mixedMethod:'PayPay'}; editId=null; renderInput(); }
+function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:'',payment:'現金',amount:0,tourType:'日本人',jpCount:0,enCount:0,guestCount:0,
+  mixedCash:0,mixedRakuten:0,mixedPaypay:0,mixedMethod:'PayPay',quickMode:false,quickDrink:0,quickMerch:0}; editId=null; renderInput(); }
+// 食堂・イベントの入力方法（商品明細 ⇄ 金額だけ）を切り替える
+function setQuickMode(on){ form.quickMode = on; renderInput(); updateTotalBar(); }
 
 // ※「📊 財務送信」ボタンは廃止（2026-08-10）。
 //   保存・編集・☁️同期のいずれでも財務シートには自動で送られるため重複していた。
@@ -1253,6 +1330,14 @@ function renderInput(){
   if (existingDate) form.date = existingDate;
   const existingMixedCash = document.getElementById('mixed-cash-input')?.value;
   if (existingMixedCash) form.mixedCash = parseInt(existingMixedCash) || 0;
+  const existingMixedRakuten = document.getElementById('mixed-rakuten-input')?.value;
+  if (existingMixedRakuten) form.mixedRakuten = parseInt(existingMixedRakuten) || 0;
+  const existingMixedPaypay = document.getElementById('mixed-paypay-input')?.value;
+  if (existingMixedPaypay) form.mixedPaypay = parseInt(existingMixedPaypay) || 0;
+  const existingQuickDrink = document.getElementById('quick-drink')?.value;
+  if (existingQuickDrink) form.quickDrink = parseInt(existingQuickDrink) || 0;
+  const existingQuickMerch = document.getElementById('quick-merch')?.value;
+  if (existingQuickMerch) form.quickMerch = parseInt(existingQuickMerch) || 0;
   const existingWeather = document.getElementById('weather-select')?.value;
   if (existingWeather !== undefined) form.weather = existingWeather;
   const existingAmount = document.getElementById('simple-amount')?.value;
@@ -1264,8 +1349,8 @@ function renderInput(){
   if (existingRegRakuten) form.regRakuten = parseInt(existingRegRakuten) || 0;
   const existingRegPaypay = document.getElementById('reg-paypay-input')?.value;
   if (existingRegPaypay) form.regPaypay = parseInt(existingRegPaypay) || 0;
-  const simple = isSimple(form.loc);
-  const tot = simple ? {total: form.amount||0} : calcTotals();
+  const simple = isAmountMode();
+  const tot = simple ? {total: amountModeTotal()} : calcTotals();
 
   // レジ連携レコードの編集中かどうか（支払い内訳を直接編集できるようにする）
   const editingRegister = !!(editId && records.find(r => r.id === editId)?.source === 'register');
@@ -1330,17 +1415,27 @@ function renderInput(){
       <div class="loc-wrap">${payBtns}</div>
     </div>
     ${form.payment === '混在' ? `
+    <!-- 混在：現金 / R Pay / PayPay をそれぞれ入れる（ノートから過去分を入れるとき用） -->
     <div class="field">
-      <div class="field-lbl">💴 うち現金</div>
-      <input type="number" id="mixed-cash-input" inputmode="numeric" placeholder="0" value="${form.mixedCash||''}"
-        oninput="form.mixedCash=parseInt(this.value)||0" style="font-size:18px;font-weight:600;text-align:right">
-    </div>
-    <div class="field">
-      <div class="field-lbl">残りのキャッシュレス種類</div>
-      <div class="loc-wrap">
-        <button class="loc-btn${(form.mixedMethod||'PayPay')==='PayPay'?' on':''}" onclick="setMixedMethod('PayPay')" style="flex:none;padding:7px 10px;font-size:11px">🔴 PayPay</button>
-        <button class="loc-btn${form.mixedMethod==='Rakuten Pay'?' on':''}" onclick="setMixedMethod('Rakuten Pay')" style="flex:none;padding:7px 10px;font-size:11px">💳 R.Pay</button>
+      <div class="field-lbl">支払いの内訳</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div>
+          <div class="field-lbl" style="font-size:10px">💴 現金</div>
+          <input type="number" id="mixed-cash-input" inputmode="numeric" placeholder="0" value="${form.mixedCash||''}"
+            oninput="form.mixedCash=parseInt(this.value)||0;updateMixDiff();updateTotalBar()" style="text-align:right;font-weight:600">
+        </div>
+        <div>
+          <div class="field-lbl" style="font-size:10px">💳 R Pay</div>
+          <input type="number" id="mixed-rakuten-input" inputmode="numeric" placeholder="0" value="${form.mixedRakuten||''}"
+            oninput="form.mixedRakuten=parseInt(this.value)||0;updateMixDiff();updateTotalBar()" style="text-align:right;font-weight:600">
+        </div>
+        <div>
+          <div class="field-lbl" style="font-size:10px">🔴 PayPay</div>
+          <input type="number" id="mixed-paypay-input" inputmode="numeric" placeholder="0" value="${form.mixedPaypay||''}"
+            oninput="form.mixedPaypay=parseInt(this.value)||0;updateMixDiff();updateTotalBar()" style="text-align:right;font-weight:600">
+        </div>
       </div>
+      <div id="mix-diff-info" style="font-size:11px;margin-top:6px;line-height:1.6"></div>
     </div>` : ''}`}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <div class="field" style="margin:0">
@@ -1356,10 +1451,19 @@ function renderInput(){
         <input type="text" id="memo-input" value="${form.memo}" placeholder="客数など..." oninput="form.memo=this.value" onchange="form.memo=this.value">
       </div>
     </div>
+    ${canQuickMode() && !editingRegister ? `
+    <!-- 食堂・イベント：商品まで書いていない過去分は「金額だけ入力」に切り替えられる -->
+    <div class="field" style="margin:12px 0 0">
+      <div class="field-lbl">入力のしかた</div>
+      <div style="display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px">
+        <button class="loc-btn${!form.quickMode?' on':''}" onclick="setQuickMode(false)" style="flex:1;padding:8px;font-size:11px">🍱 商品を選ぶ</button>
+        <button class="loc-btn${form.quickMode?' on':''}" onclick="setQuickMode(true)" style="flex:1;padding:8px;font-size:11px">✏️ 金額だけ</button>
+      </div>
+    </div>` : ''}
   </div>
 
   ${simple ? `
-  <!-- 簡易入力モード（体験・BBQ・撮影等・研修） -->
+  <!-- 簡易入力モード（体験・BBQ・撮影等・研修／食堂・イベントの「金額だけ」） -->
   <div class="simple-input-card">
     <div class="simple-input-lbl">${LOC_CONFIG[form.loc]?.icon||''} ${form.loc} 売上金額</div>
     ${form.loc==='わさび体験' ? `
@@ -1386,10 +1490,29 @@ function renderInput(){
       <input type="number" id="guest-count-input" inputmode="numeric" placeholder="0" value="${form.guestCount||''}"
         oninput="form.guestCount=parseInt(this.value)||0">
     </div>` : ''}
+    ${form.payment === '混在' ? `
+    <!-- 混在は「現金 / R Pay / PayPay」の合計がそのまま売上になるので、金額は入力しない -->
+    <div class="simple-amount-input" style="background:var(--bg);border-style:dashed">${fmt(mixedSum())}</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">上の「支払いの内訳」の合計です</div>
+    ` : `
     <input type="number" id="simple-amount" class="simple-amount-input"
       inputmode="numeric" placeholder="0"
       value="${form.amount||''}"
-      oninput="form.amount=parseInt(this.value)||0;updateTotalBar()">
+      oninput="form.amount=parseInt(this.value)||0;updateTotalBar()">`}
+    ${canQuickMode() ? `
+    <!-- ノートに書いてあれば内訳も残す。空欄なら全部フード扱いになる -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <div class="field" style="margin:0">
+        <div class="field-lbl">☕ うちコーヒー（任意）</div>
+        <input type="number" id="quick-drink" inputmode="numeric" placeholder="0" value="${form.quickDrink||''}"
+          oninput="form.quickDrink=parseInt(this.value)||0;updateTotalBar()" style="text-align:right;font-weight:600">
+      </div>
+      <div class="field" style="margin:0">
+        <div class="field-lbl">🛍 うち物販（任意）</div>
+        <input type="number" id="quick-merch" inputmode="numeric" placeholder="0" value="${form.quickMerch||''}"
+          oninput="form.quickMerch=parseInt(this.value)||0;updateTotalBar()" style="text-align:right;font-weight:600">
+      </div>
+    </div>` : ''}
     <div style="font-size:11px;color:var(--text3);margin-top:8px">支払方法：${getPaymentLabel(form.payment)}</div>
     ${isAmountLater(form.payment) ? `<div style="margin-top:8px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:10px;padding:8px 10px;font-size:11px;color:#854D0E;line-height:1.7">
       💡 金額は<b>空欄のままでも保存できます</b>。<br>
@@ -1438,6 +1561,26 @@ function renderInput(){
   if(!simple) renderCatTabs();
   updateTotalBar();
   if(editingRegister) updateRegDiff();
+  if(form.payment === '混在') updateMixDiff();
+}
+
+// 混在の内訳を入れている最中に、合計がいくらになるかをその場で見せる。
+// 商品明細から金額を出しているときは、商品の合計とのズレも一緒に出す。
+function updateMixDiff(){
+  const box = document.getElementById('mix-diff-info'); if(!box) return;
+  const sum = mixedSum();
+  if(isAmountMode()){
+    // 金額だけ入力：内訳の合計がそのまま売上
+    box.innerHTML = `<div style="color:var(--text3)">内訳の合計：<b style="color:var(--text)">${fmt(sum)}</b> ＝ この日の売上</div>`;
+    return;
+  }
+  const t = calcTotals();
+  const gap = sum - t.total;
+  box.innerHTML =
+    `<div style="color:var(--text3)">商品の合計：${fmt(t.total)} ／ 内訳の合計：${fmt(sum)}</div>`
+    + (gap === 0
+        ? `<div style="color:#166534;font-weight:700">✓ ぴったり合っています</div>`
+        : `<div style="color:#DC2626;font-weight:700">⚠️ 内訳が ${fmt(Math.abs(gap))} ${gap > 0 ? '多い' : '少ない'}です</div>`);
 }
 
 // レジ連携レコードの編集中、「レジの記録」と「実際のお金」の差をその場で見せる。
