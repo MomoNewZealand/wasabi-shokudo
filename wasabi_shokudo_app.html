@@ -219,6 +219,21 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
 .rank-right{text-align:right;min-width:52px}
 .rank-qty{font-size:13px;font-weight:700;color:var(--g1)}
 .rank-days{font-size:10px;color:var(--text3)}
+/* 集計の年フィルター */
+.yr-bar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 0 2px}
+/* 年ごとの折りたたみ（月別売上） */
+.yacc{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden}
+.yacc-row+.yacc-row{border-top:1px solid var(--border)}
+.yacc-hdr{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer}
+.yacc-ar{font-size:11px;color:var(--text3);width:12px;flex-shrink:0}
+.yacc-y{font-size:13px;font-weight:700;color:var(--g1);min-width:52px}
+.yacc-sub{font-size:11px;color:var(--text3);flex:1}
+.yacc-val{font-size:13px;font-weight:700;text-align:right}
+.yacc-body{padding:2px 14px 8px;background:var(--bg)}
+.yacc-body .m-row:last-child{border-bottom:none}
+/* 「日別を見る」ボタン */
+.dtl-btn{width:100%;background:none;border:none;border-top:1px solid var(--border);padding:10px;font-size:11px;color:var(--text3);cursor:pointer;font-family:inherit}
+.day-chip{font-size:11px;padding:3px 8px;background:var(--bg);border-radius:20px;color:var(--text2)}
 /* 比較 */
 .cmp-tabs{display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;margin:10px 12px 0}
 .cmp-tab{flex:1;border:none;cursor:pointer;padding:8px 4px;border-radius:8px;font-size:11px;font-weight:600;font-family:inherit;background:none;color:var(--text3)}
@@ -597,6 +612,9 @@ let histYear = '全て';
 let expandedId = null;
 let cmpMode = '商品ランキング';
 let anMode = 'キッチンカー';
+let anYear = null;        // 集計画面で見ている年（null＝いちばん新しい年を自動で選ぶ）
+let anOpenYears = {};     // 月別売上で開いている年
+let okOpenPeriods = {};   // 奥多摩 期間別で日別リストを開いている期間
 
 // ══════════════════════════════════════════
 //  ユーティリティ
@@ -1757,6 +1775,44 @@ function exportCSV(){
 //  集計
 // ══════════════════════════════════════════
 function setAnMode(m){ anMode = m; renderAnalytics(); }
+// 集計画面で選んでいる年の記録かどうか
+function inAnYear(r){ return anYear === '全期間' || r.date.startsWith(anYear); }
+function setAnYear(y){ anYear = y; anOpenYears = {}; renderAnalytics(); }
+function toggleAnYear(y){ anOpenYears[y] = !anOpenYears[y]; renderAnalytics(); }
+function toggleOkPeriod(p){ okOpenPeriods[p] = !okOpenPeriods[p]; renderCompare(); }
+
+// 月別売上を「年ごとにまとめて、タップで開く」形にする。
+// 年が1つだけのときは最初から開いておく（毎回タップさせないため）
+function renderMonthlyAccordion(recs){
+  const byY = {};
+  recs.forEach(r => {
+    const y = r.date.substring(0,4), m = r.date.substring(0,7);
+    if(!byY[y]) byY[y] = {total:0, count:0, months:{}};
+    byY[y].total += r.total; byY[y].count++;
+    if(!byY[y].months[m]) byY[y].months[m] = {total:0, count:0};
+    byY[y].months[m].total += r.total; byY[y].months[m].count++;
+  });
+  const ys = Object.entries(byY).sort(([a],[b]) => b.localeCompare(a)); // 新しい年を上に
+  const single = ys.length === 1;
+  return `<div class="yacc">${ys.map(([y,d]) => {
+    const open = single || !!anOpenYears[y];
+    const ms   = Object.entries(d.months).sort(([a],[b]) => a.localeCompare(b));
+    const maxM = Math.max(...ms.map(([,v]) => v.total), 1);
+    return `<div class="yacc-row">
+      <div class="yacc-hdr" ${single ? '' : `onclick="toggleAnYear('${y}')"`}>
+        <div class="yacc-ar">${single ? '' : (open ? '▾' : '▸')}</div>
+        <div class="yacc-y">${y}年</div>
+        <div class="yacc-sub">${d.count}日 ・ 日平均 ${fmt(Math.round(d.total/d.count))}</div>
+        <div class="yacc-val">${fmt(d.total)}</div>
+      </div>
+      ${open ? `<div class="yacc-body">${ms.map(([m,v]) => `<div class="m-row">
+        <div class="m-label" style="min-width:66px">${parseInt(m.substring(5))}月<span style="font-weight:400;color:var(--text3)"> ${v.count}日</span></div>
+        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(v.total/maxM*100)}%"></div></div>
+        <div class="m-val">${fmt(v.total)}</div>
+      </div>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('')}</div>`;
+}
 
 // SVG円グラフ生成（2区分）
 function makePieChart(jpVal, enVal, jpPct, enPct){
@@ -1804,10 +1860,18 @@ function renderAnalytics(){
   const byLoc = {};
   Object.keys(LOC_CONFIG).forEach(l => { byLoc[l] = active.filter(r=>r.loc===l); });
 
+  // 年の選択肢。読み込み直しで年が変わることがあるので、無い年を選んでいたら最新年に戻す
+  const anYears = [...new Set(active.map(r=>r.date.substring(0,4)))].sort().reverse();
+  if(anYear !== '全期間' && !anYears.includes(anYear)) anYear = anYears[0];
+
   const anModes = ['キッチンカー','その他'];
   c.innerHTML = `<div class="an-wrap">
     <div class="cmp-tabs">
       ${anModes.map(m => `<button class="cmp-tab${anMode===m?' on':''}" onclick="setAnMode('${m}')">${m}</button>`).join('')}
+    </div>
+    <div class="yr-bar">
+      ${anYears.map(y => `<button class="f-btn${anYear===y?' on':''}" onclick="setAnYear('${y}')">${y}年</button>`).join('')}
+      <button class="f-btn${anYear==='全期間'?' on':''}" onclick="setAnYear('全期間')">全期間</button>
     </div>
     ${anMode==='キッチンカー' ? renderAnKitchen(byLoc) : renderAnOther(byLoc)}
     <div style="height:20px"></div>
@@ -1817,18 +1881,53 @@ function renderAnalytics(){
 // ══════════════════════════════════════════
 //  集計 - キッチンカー（食堂・イベント）
 // ══════════════════════════════════════════
-function renderAnKitchen(byLoc){
-  const kRecs = [...(byLoc['奥多摩駅前']||[]), ...(byLoc['イベント']||[])];
-  if(!kRecs.length) return `<div class="empty"><div class="empty-ico">🚚</div><div>データがありません</div></div>`;
+function renderAnKitchen(byLocAll){
+  // 全年ぶん（年ごとの推移と前年比に使う）
+  const kAll = [...(byLocAll['奥多摩駅前']||[]), ...(byLocAll['イベント']||[])];
+  if(!kAll.length) return `<div class="empty"><div class="empty-ico">🚚</div><div>データがありません</div></div>`;
+  // 選んでいる年ぶん（この下の数字はすべてこれで出す）
+  const kRecs = kAll.filter(inAnYear);
+  if(!kRecs.length) return `<div class="empty"><div class="empty-ico">🚚</div><div>${anYear}年のデータがありません</div></div>`;
+  const byLoc = {}; Object.keys(byLocAll).forEach(k => { byLoc[k] = byLocAll[k].filter(inAnYear); });
 
-  const byMonth = {};
-  kRecs.forEach(r => {
-    const m = r.date.substring(0,7);
-    if(!byMonth[m]) byMonth[m] = {total:0, count:0};
-    byMonth[m].total += r.total; byMonth[m].count++;
+  // ── 選んだ年のまとめ（総売上・出店日数・日平均・前年比）
+  const yTotal    = kRecs.reduce((s,r)=>s+r.total, 0);
+  const yDays     = kRecs.length;
+  const prevYear  = anYear === '全期間' ? null : String(parseInt(anYear) - 1);
+  // 今年は途中までなので、前年も「今日と同じ月日まで」に切って比べる（＝前年同期比）
+  const isThisYear = anYear === today().substring(0,4);
+  const cutMD      = today().substring(5);
+  const prevRecs  = prevYear
+    ? kAll.filter(r => r.date.startsWith(prevYear) && (!isThisYear || r.date.substring(5) <= cutMD))
+    : [];
+  const prevTotal = prevRecs.reduce((s,r)=>s+r.total, 0);
+  const yDiff     = yTotal - prevTotal;
+  const yPct      = prevTotal > 0 ? Math.round(yDiff / prevTotal * 100) : null;
+  const yearSpan  = [...new Set(kRecs.map(r=>r.date.substring(0,4)))].length;
+
+  // ── 年ごとの推移（年フィルターに関係なく全部の年を出す）
+  const yrTot = {};
+  kAll.forEach(r => {
+    const y = r.date.substring(0,4);
+    if(!yrTot[y]) yrTot[y] = {total:0, count:0};
+    yrTot[y].total += r.total; yrTot[y].count++;
   });
-  const months = Object.entries(byMonth).sort(([a],[b]) => a.localeCompare(b));
-  const maxM = Math.max(...months.map(([,d]) => d.total), 1);
+  const yrList = Object.entries(yrTot).sort(([a],[b]) => b.localeCompare(a)); // 新しい年を上に
+  const yrMax  = Math.max(...yrList.map(([,d]) => d.total), 1);
+
+  // ── 天気別の日平均（出店の判断や仕込み量の目安に）
+  const wCat = w => !w ? '' : w.includes('雨') ? '🌧 雨'
+    : w.includes('晴') ? '☀️ 晴れ'
+    : (w.includes('くもり') || w.includes('曇')) ? '☁️ くもり' : '🌤 その他';
+  const wTot = {};
+  kRecs.forEach(r => {
+    const k = wCat(r.weather); if(!k) return;
+    if(!wTot[k]) wTot[k] = {total:0, count:0};
+    wTot[k].total += r.total; wTot[k].count++;
+  });
+  const wList  = ['☀️ 晴れ','☁️ くもり','🌧 雨','🌤 その他'].filter(k=>wTot[k]).map(k=>[k,wTot[k]]);
+  const wNone  = kRecs.filter(r => !r.weather).length;
+  const wAvgMax = Math.max(...wList.map(([,d]) => d.total/d.count), 1);
 
   const ptot = {};
   kRecs.forEach(r => {
@@ -1886,6 +1985,30 @@ function renderAnKitchen(byLoc){
   const diffTxt = v => (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v));
 
   return `
+    <div class="an-ttl">🚚 ${anYear==='全期間' ? '全期間' : anYear+'年'} のまとめ</div>
+    <div class="an-big">
+      <div class="an-big-lbl">キッチンカー 総売上（食堂＋イベント）</div>
+      <div class="an-big-val">${fmt(yTotal)}</div>
+      <div class="an-big-sub">${anYear==='全期間'
+        ? `${yearSpan}年分 ・ ${yDays}日`
+        : (prevTotal > 0
+            ? `${isThisYear?'前年同期比':'前年比'} ${yDiff>=0?'▲':'▼'} ${Math.abs(yPct)}%（${yDiff>=0?'+':'−'}${fmt(Math.abs(yDiff))}）<br>${prevYear}年${isThisYear?'の同じ時期（〜'+parseInt(cutMD.substring(0,2))+'/'+parseInt(cutMD.substring(3))+'）':''}は ${fmt(prevTotal)}`
+            : `${prevYear}年のデータはありません`)}</div>
+    </div>
+    <div class="stat-grid" style="margin-top:10px">
+      <div class="stat-card"><div class="stat-lbl">🚚 出店日数</div><div class="stat-val">${yDays}日</div></div>
+      <div class="stat-card"><div class="stat-lbl">📊 1日あたり平均</div><div class="stat-val">${fmt(Math.round(yTotal/yDays))}</div></div>
+    </div>
+
+    ${yrList.length>1 ? `<div class="an-ttl">📈 年ごとの推移（全期間）</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
+      ${yrList.map(([y,d]) => `<div class="m-row">
+        <div class="m-label" style="min-width:84px${y===anYear?';color:var(--g1)':''}">${y}年<span style="font-weight:400;color:var(--text3)"> ${d.count}日</span></div>
+        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round(d.total/yrMax*100)}%${y===anYear?';background:var(--g2)':''}"></div></div>
+        <div class="m-val">${fmt(d.total)}</div>
+      </div>`).join('')}
+    </div>` : ''}
+
     ${catTotal>0 ? `<div class="an-ttl">🍱 フード / ☕ ドリンク / 🛍 物販 比率</div>
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-lbl">🍱 フード</div><div class="stat-val">${fmt(foodTotal)}</div><div class="stat-sub">${Math.round(foodTotal/catTotal*100)}%</div></div>
@@ -1901,8 +2024,18 @@ function renderAnKitchen(byLoc){
       </div>`).join('')}
     </div>` : ''}
 
-    <div class="an-ttl">月別売上</div>
-    ${renderMonthlyBars(months.map(([m,d])=>[m,d.total]), maxM, fmt)}
+    <div class="an-ttl">月別売上（年をタップすると月が開きます）</div>
+    ${renderMonthlyAccordion(kRecs)}
+
+    ${wList.length>0 ? `<div class="an-ttl">🌤 天気別の1日あたり平均</div>
+    <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
+      ${wList.map(([k,d]) => `<div class="m-row">
+        <div class="m-label" style="min-width:84px">${k}<span style="font-weight:400;color:var(--text3)"> ${d.count}日</span></div>
+        <div class="m-bar-bg"><div class="m-bar" style="width:${Math.round((d.total/d.count)/wAvgMax*100)}%;background:#38BDF8"></div></div>
+        <div class="m-val">${fmt(Math.round(d.total/d.count))}</div>
+      </div>`).join('')}
+    </div>
+    ${wNone>0 ? `<div style="font-size:11px;color:var(--text3);padding:8px 4px 2px;line-height:1.7">※ 天気が未記録の日が${wNone}日あります（この平均には入っていません）。</div>` : ''}` : ''}
 
     ${tops.length>0 ? `<div class="an-ttl">商品別 販売数ランキング</div>
     <div style="background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:2px 14px">
@@ -1951,9 +2084,12 @@ function renderAnKitchen(byLoc){
 // ══════════════════════════════════════════
 //  集計 - その他（体験・BBQ・撮影等・研修）
 // ══════════════════════════════════════════
-function renderAnOther(byLoc){
+function renderAnOther(byLocAll){
+  // 選んでいる年だけに絞る（この下の数字はすべて選択year基準）
+  const byLoc = {}; Object.keys(byLocAll).forEach(k => { byLoc[k] = byLocAll[k].filter(inAnYear); });
   const oRecs = [...(byLoc['わさび体験']||[]), ...(byLoc['BBQ']||[]), ...(byLoc['撮影等']||[]), ...(byLoc['研修・ワークショップ']||[])];
-  if(!oRecs.length) return `<div class="empty"><div class="empty-ico">🎪</div><div>データがありません</div></div>`;
+  if(!oRecs.length) return `<div class="empty"><div class="empty-ico">🎪</div><div>${anYear==='全期間'?'':anYear+'年の'}データがありません</div></div>`;
+  const oTotal = oRecs.reduce((s,r)=>s+r.total, 0);
 
   // 体験ツアー 日本人/インバウンド集計（人数ベース）
   // ※ 円グラフは人数で描く。tourTypeでの金額振り分けは「混合」の日を日本人側に寄せてしまうため使わない
@@ -2014,6 +2150,13 @@ function renderAnOther(byLoc){
   const payGrand = oRecs.reduce((s,r)=>s+r.total,0);
 
   return `
+    <div class="an-ttl">🎪 ${anYear==='全期間' ? '全期間' : anYear+'年'} のまとめ</div>
+    <div class="an-big">
+      <div class="an-big-lbl">体験・BBQ・撮影等・研修 の合計</div>
+      <div class="an-big-val">${fmt(oTotal)}</div>
+      <div class="an-big-sub">${oRecs.length}件</div>
+    </div>
+
     ${tourRecs.length>0 ? `
     <div class="an-ttl">🌿 わさび体験 ツアー区分（人数ベース）</div>
     ${countTotal>0 ? `
@@ -2205,25 +2348,41 @@ function renderOkCmp(active){
   });
   const pL={'GW':'🌸 GW','シルバーWK':'🍂 シルバーWK','お盆':'🏖 お盆','通常':'📅 通常日'};
   return periods.filter(p=>Object.values(bpy[p]).some(d=>d.count>0)).map(p => {
-    const data=bpy[p];
+    const data = bpy[p];
+    const yearsWith = years.filter(y=>data[y].count>0);
+    const allRecs   = Object.values(data).flatMap(d=>d.recs).sort((a,b)=>b.date.localeCompare(a.date));
+    const open      = !!okOpenPeriods[p];
+    // 期間全体でいちばん売れた日（年ごとの表にも出す）
+    const bestOf = recs => recs.reduce((a,b) => b.total > a.total ? b : a);
+    // 前の年からの増減（同じ期間どうしで比べる）
+    const prevOf = y => { const i = yearsWith.indexOf(y); return i > 0 ? data[yearsWith[i-1]] : null; };
     return `<div class="yr-card">
-      <div class="yr-card-hdr"><div class="yr-card-name">${pL[p]}</div></div>
+      <div class="yr-card-hdr">
+        <div class="yr-card-name">${pL[p]}</div>
+        <div class="yr-card-sub">${yearsWith.length}年分 ・ 計${allRecs.length}日</div>
+      </div>
       <table class="yr-tbl">
-        <thead><tr><th>年</th><th>日数</th><th>合計</th><th>日平均</th></tr></thead>
+        <thead><tr><th>年</th><th>日数</th><th>合計</th><th>日平均</th><th>いちばん売れた日</th></tr></thead>
         <tbody>
-          ${years.filter(y=>data[y].count>0).map(y => `<tr>
-            <td style="font-weight:700;color:var(--g1)">${y}</td>
-            <td>${data[y].count}日</td>
-            <td class="tc">${fmt(data[y].total)}</td>
-            <td style="font-size:11px;color:var(--text3)">${fmt(Math.round(data[y].total/data[y].count))}</td>
-          </tr>`).join('')}
+          ${yearsWith.map(y => {
+            const d = data[y], prev = prevOf(y), best = bestOf(d.recs);
+            const avg = Math.round(d.total/d.count);
+            const pAvg = prev ? Math.round(prev.total/prev.count) : null;
+            const up = pAvg !== null ? avg - pAvg : null;
+            return `<tr>
+              <td style="font-weight:700;color:var(--g1)">${y}</td>
+              <td>${d.count}日</td>
+              <td class="tc">${fmt(d.total)}</td>
+              <td style="font-size:11px">${fmt(avg)}${up !== null ? `<br><span style="color:${up>=0?'var(--g1)':'#DC2626'}">${up>=0?'▲':'▼'}${fmt(Math.abs(up))}</span>` : ''}</td>
+              <td style="font-size:11px;color:var(--text3)">${best.date.substring(5).replace('-','/')} ${getWI(best.weather)}<br>${fmt(best.total)}</td>
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
-      <div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:4px">
-        ${Object.values(data).flatMap(d=>d.recs).sort((a,b)=>b.date.localeCompare(a.date)).map(r =>
-          `<span style="font-size:11px;padding:3px 8px;background:var(--bg);border-radius:20px;color:var(--text2)">${fmtD(r.date)} ${getWI(r.weather)} ${fmt(r.total)}</span>`
-        ).join('')}
-      </div>
+      <button class="dtl-btn" onclick="toggleOkPeriod('${p}')">${open ? '▾ 日別を閉じる' : `▸ 日別を見る（${allRecs.length}日）`}</button>
+      ${open ? `<div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:4px">
+        ${allRecs.map(r => `<span class="day-chip">${fmtD(r.date)} ${getWI(r.weather)} ${fmt(r.total)}</span>`).join('')}
+      </div>` : ''}
     </div>`;
   }).join('') +
   `<div style="margin:0 12px;background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);overflow:hidden">
