@@ -599,12 +599,14 @@ const NOTION = [
 //  アプリ状態
 // ══════════════════════════════════════════
 let records = [];
-let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, mixedMethod:'PayPay',
+let form = {date:today(), loc:'奥多摩駅前', event:'', weather:'', items:{}, memo:'', payment:'現金', amount:0, tourType:'日本人', jpCount:0, enCount:0, guestCount:0, mixedMethod:'PayPay',
   // 混在：現金 / R Pay / PayPay の3つに分けて入れる金額
   mixedCash:0, mixedRakuten:0, mixedPaypay:0,
   // 食堂・イベントを「商品を選ばず金額だけ」で入れるモード（過去分をノートから入れるとき用）
   quickMode:false, quickDrink:0, quickMerch:0};
 let activeCat = 'フード';
+// 保存直後・編集開始直後は、画面に残っている前の値を読み戻さないための目印
+let skipFormReadback = false;
 let view = 'input';
 let editId = null;
 let histFilter = '全て';
@@ -621,6 +623,13 @@ let okOpenPeriods = {};   // 奥多摩 期間別で日別リストを開いて�
 // ══════════════════════════════════════════
 function today(){ return new Date().toISOString().split('T')[0]; }
 function fmt(n){ return '¥' + Math.round(n).toLocaleString(); }
+// 入力欄の value="..." に文字を埋め込むときのエスケープ。
+// ダブルクォートや < が入っていると、そこで欄が壊れて中身が消えてしまうため。
+function escAttr(s){
+  return String(s ?? '')
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function fmtD(s){ return s.replace(/-/g,'/'); }
 function isSimple(loc){ return SIMPLE_LOCS.includes(loc); }
 // 食堂・イベントで「金額だけ入力」に切り替えられるか（体験・BBQ等はもともと金額だけ）
@@ -1143,6 +1152,8 @@ async function saveRecord(){
     mixedCash:0, mixedRakuten:0, mixedPaypay:0, mixedMethod:'PayPay', quickMode:keepQuick, quickDrink:0, quickMerch:0};
   editId = null;
   if(!simple) activeCat = 'フード';
+  // 保存後は画面をまっさらにする（前の入力を読み戻さない）
+  skipFormReadback = true;
   renderInput(); updateTotalBar();
 }
 
@@ -1291,6 +1302,8 @@ function editRecord(id){
   };
   editId = id;
   if(!isSimple(rec.loc)) activeCat = 'フード';
+  // 編集を開こうとしているので、画面に残っている前の値は読み戻さない
+  skipFormReadback = true;
   sv('input');
 }
 
@@ -1346,12 +1359,19 @@ function renderCatTabs(){
   }).join('');
 }
 function setCat(cat){ activeCat = cat; renderInput(); }
-function setLoc(l){ form.loc = l; form.amount = 0; if(l!=='わさび体験') form.tourType='日本人'; renderInput(); }
+function setLoc(l){
+  form.loc = l; form.amount = 0;
+  // 部門が変わると金額の意味も変わるので、画面の金額欄も空にしてから描き直す
+  // （空にしないと、描き直しのときに前の部門の金額が読み戻されてしまう）
+  const amtEl = document.getElementById('simple-amount'); if(amtEl) amtEl.value = '';
+  if(l!=='わさび体験') form.tourType='日本人';
+  renderInput();
+}
 function setPayment(p){ form.payment = p; renderInput(); }
 function setMixedMethod(m){ form.mixedMethod = m; renderInput(); }
 function setTourType(t){ form.tourType = t; renderInput(); }
 function cancelEdit(){ form={date:today(),loc:'奥多摩駅前',event:'',weather:'',items:{},memo:'',payment:'現金',amount:0,tourType:'日本人',jpCount:0,enCount:0,guestCount:0,
-  mixedCash:0,mixedRakuten:0,mixedPaypay:0,mixedMethod:'PayPay',quickMode:false,quickDrink:0,quickMerch:0}; editId=null; renderInput(); }
+  mixedCash:0,mixedRakuten:0,mixedPaypay:0,mixedMethod:'PayPay',quickMode:false,quickDrink:0,quickMerch:0}; editId=null; skipFormReadback=true; renderInput(); }
 // 食堂・イベントの入力方法（商品明細 ⇄ 金額だけ）を切り替える
 function setQuickMode(on){ form.quickMode = on; renderInput(); updateTotalBar(); }
 
@@ -1362,30 +1382,45 @@ function setQuickMode(on){ form.quickMode = on; renderInput(); updateTotalBar();
 
 function renderInput(){
   const c = document.getElementById('content'); if(!c||view!=='input') return;
+  // 保存直後・編集開始直後は、画面に残っている前の値を読み戻さない
+  const readBack = !skipFormReadback;
+  skipFormReadback = false;
+  if (readBack) {
   // 再描画前に日付・うち現金の現在値を保持（ボタン操作でリセットされるのを防止）
   const existingDate = document.querySelector('input[type=date]')?.value;
   if (existingDate) form.date = existingDate;
-  const existingMixedCash = document.getElementById('mixed-cash-input')?.value;
-  if (existingMixedCash) form.mixedCash = parseInt(existingMixedCash) || 0;
-  const existingMixedRakuten = document.getElementById('mixed-rakuten-input')?.value;
-  if (existingMixedRakuten) form.mixedRakuten = parseInt(existingMixedRakuten) || 0;
-  const existingMixedPaypay = document.getElementById('mixed-paypay-input')?.value;
-  if (existingMixedPaypay) form.mixedPaypay = parseInt(existingMixedPaypay) || 0;
-  const existingQuickDrink = document.getElementById('quick-drink')?.value;
-  if (existingQuickDrink) form.quickDrink = parseInt(existingQuickDrink) || 0;
-  const existingQuickMerch = document.getElementById('quick-merch')?.value;
-  if (existingQuickMerch) form.quickMerch = parseInt(existingQuickMerch) || 0;
+  // イベント名・メモも読み戻す。
+  // スマホの日本語入力（変換の確定前）だと oninput が飛ばないことがあり、
+  // そのままフード/ドリンク/物販を押すと描き直しで入力が消えてしまうため。
+  const existingEvent = document.getElementById('input-event-name')?.value;
+  if (existingEvent !== undefined) form.event = existingEvent;
+  const existingMemo = document.getElementById('memo-input')?.value;
+  if (existingMemo !== undefined) form.memo = existingMemo;
+  // 数値の欄は「画面に欄があるなら、そこに入っている値が正しい」として読み戻す。
+  // 空欄なら0に戻す（前は空欄にしても古い数字が復活してしまっていた）
+  const numBack = (id, key) => {
+    const v = document.getElementById(id)?.value;
+    if (v !== undefined) form[key] = parseInt(v) || 0;
+  };
+  numBack('mixed-cash-input',    'mixedCash');
+  numBack('mixed-rakuten-input', 'mixedRakuten');
+  numBack('mixed-paypay-input',  'mixedPaypay');
+  numBack('quick-drink', 'quickDrink');
+  numBack('quick-merch', 'quickMerch');
+  numBack('simple-amount', 'amount');
+  // わさび体験の人数・BBQの人数。
+  // 支払方法や日本人／インバウンドのボタンを押すと画面を作り直すため、
+  // ここで読み戻さないと入力した人数が消えてしまう。
+  numBack('jp-count-input',    'jpCount');
+  numBack('en-count-input',    'enCount');
+  numBack('guest-count-input', 'guestCount');
+  // レジ連携の支払い内訳入力欄（再描画で値が消えないように読み戻す）
+  numBack('reg-cash-input',    'regCash');
+  numBack('reg-rakuten-input', 'regRakuten');
+  numBack('reg-paypay-input',  'regPaypay');
   const existingWeather = document.getElementById('weather-select')?.value;
   if (existingWeather !== undefined) form.weather = existingWeather;
-  const existingAmount = document.getElementById('simple-amount')?.value;
-  if (existingAmount) form.amount = parseInt(existingAmount) || 0;
-  // レジ連携の支払い内訳入力欄（再描画で値が消えないように読み戻す）
-  const existingRegCash = document.getElementById('reg-cash-input')?.value;
-  if (existingRegCash) form.regCash = parseInt(existingRegCash) || 0;
-  const existingRegRakuten = document.getElementById('reg-rakuten-input')?.value;
-  if (existingRegRakuten) form.regRakuten = parseInt(existingRegRakuten) || 0;
-  const existingRegPaypay = document.getElementById('reg-paypay-input')?.value;
-  if (existingRegPaypay) form.regPaypay = parseInt(existingRegPaypay) || 0;
+  } // ← readBack ここまで
   const simple = isAmountMode();
   // 混在は記入した内訳の合計がその日の売上（商品の合計ではない）
   const tot = (form.payment === '混在' && !(editId && records.find(r => r.id === editId)?.source === 'register'))
@@ -1435,7 +1470,7 @@ function renderInput(){
     </div>
     ${form.loc==='イベント' ? `<div class="field">
       <div class="field-lbl">イベント名</div>
-      <input type="text" id="input-event-name" value="${form.event}" placeholder="例: VERTERE BEER FEST" oninput="form.event=this.value">
+      <input type="text" id="input-event-name" value="${escAttr(form.event)}" placeholder="例: VERTERE BEER FEST" oninput="form.event=this.value" onchange="form.event=this.value">
     </div>` : ''}
     ${editingRegister ? `
     <!-- レジ連携レコード：実際に数えたお金を入れる欄。レジ記録との差は現金過不足になる -->
@@ -1498,7 +1533,7 @@ function renderInput(){
       </div>
       <div class="field" style="margin:0">
         <div class="field-lbl">メモ</div>
-        <input type="text" id="memo-input" value="${form.memo}" placeholder="客数など..." oninput="form.memo=this.value" onchange="form.memo=this.value">
+        <input type="text" id="memo-input" value="${escAttr(form.memo)}" placeholder="客数など..." oninput="form.memo=this.value" onchange="form.memo=this.value">
       </div>
     </div>
     ${canQuickMode() && !editingRegister ? `
