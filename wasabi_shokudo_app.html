@@ -373,6 +373,8 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oe
 const STORAGE_KEY = 'wasabi_v3';
 // レジで追加した品目（カスタム商品）をこの端末に覚えておくための保存先
 const CUSTOM_PRODS_KEY = 'wasabi_custom_prods_v1';
+// 過去データの直しを「この端末でもう当てたか」を覚えておく場所
+const DATA_FIXES_KEY = 'wasabi_data_fixes_v1';
 
 // 簡易入力モードの部門（商品明細なし・金額直接入力）
 const SIMPLE_LOCS = ['わさび体験','BBQ','撮影等','研修・ワークショップ'];
@@ -696,6 +698,44 @@ function getCountTag(rec){
 }
 
 // ══════════════════════════════════════════
+//  過去データの直し
+//  一度でもアプリを使った端末は、この端末に保存したデータを読むので、
+//  上の HIST を直しても反映されない。そこで「直した内容」をここに書いて、
+//  端末ごとに1回だけ当てる。当てたかどうかは DATA_FIXES_KEY に控える。
+//  ★新しい直しを足すときは、下に if ブロックを1つ増やすだけ。
+// ══════════════════════════════════════════
+function applyDataFixes(){
+  let done = [];
+  try{ done = JSON.parse(localStorage.getItem(DATA_FIXES_KEY)) || []; }catch(e){}
+  let changed = false;
+
+  // 2026-09-15 イベントで出していたのはソーセージ単品。
+  //   ドッグ(sausage_dog)は奥多摩駅前のメニューなので、過去データを書き写したときの取り違え。
+  //   対象は過去データ(imported)のイベントだけ。駅前と、レジ・CSVから入った記録は触らない。
+  if(!done.includes('event_sausage_20260915')){
+    records.forEach(r => {
+      if(r.loc !== 'イベント' || r.source !== 'imported') return;
+      const dog = r.items && r.items.sausage_dog;
+      const qty = dog ? (typeof dog === 'object' ? (dog.qty || 0) : dog) : 0;
+      if(!qty) return;
+      const items = {...r.items};
+      delete items.sausage_dog;
+      // すでにソーセージが入っていたら足す（二重に数えず、消しもしない）
+      const cur = items.sausage;
+      const curQty = cur ? (typeof cur === 'object' ? (cur.qty || 0) : cur) : 0;
+      items.sausage = {qty: curQty + qty};
+      r.items = items;
+      changed = true;
+    });
+    done.push('event_sausage_20260915');
+  }
+
+  if(changed) saveToStorage();
+  try{ localStorage.setItem(DATA_FIXES_KEY, JSON.stringify(done)); }catch(e){}
+  return changed;
+}
+
+// ══════════════════════════════════════════
 //  ストレージ
 // ══════════════════════════════════════════
 function loadFromStorage(){
@@ -745,6 +785,8 @@ function init(){
   // 端末に残っているデータにIDのぶつかりがあれば、ここで直しておく
   const fixed = ensureUniqueIds(records);
   if(fixed.changed){ records = fixed.list; saveToStorage(); }
+  // 過去データの直しを当てる（この端末でまだなら）
+  applyDataFixes();
   // 通信の前に、前回覚えたカスタム商品を先に反映する（電波が悪くても品目が消えないように）
   applyCustomProds(loadCachedCustomProds());
   render();
