@@ -618,6 +618,7 @@ let anMode = 'キッチンカー';
 let anYear = null;        // 集計画面で見ている年（null＝いちばん新しい年を自動で選ぶ）
 let anOpenYears = {};     // 月別売上で開いている年
 let okOpenPeriods = {};   // 奥多摩 期間別で日別リストを開いている期間
+let evOpenEvents = {};    // イベント年比較で「売れたもの」を開いているイベント
 
 // ══════════════════════════════════════════
 //  ユーティリティ
@@ -1816,6 +1817,7 @@ function inAnYear(r){ return anYear === '全期間' || r.date.startsWith(anYear)
 function setAnYear(y){ anYear = y; anOpenYears = {}; renderAnalytics(); }
 function toggleAnYear(y){ anOpenYears[y] = !anOpenYears[y]; renderAnalytics(); }
 function toggleOkPeriod(p){ okOpenPeriods[p] = !okOpenPeriods[p]; renderCompare(); }
+function toggleEvItems(ev){ evOpenEvents[ev] = !evOpenEvents[ev]; renderCompare(); }
 
 // 月別売上を「年ごとにまとめて、タップで開く」形にする。
 // 年が1つだけのときは最初から開いておく（毎回タップさせないため）
@@ -2320,6 +2322,86 @@ function renderProdCmp(active){
   }).join('');
 }
 
+// ── イベントの「何が何個売れたか」内訳 ──────────────────────
+//  イベント準備のときに「去年はこれが何個出たから、今年はこれくらい用意しよう」と
+//  考えられるようにするための表。年を横に並べて見比べられるようにしている。
+
+// 商品IDのカテゴリを出す。マスタから消えた商品でも表から落とさず「その他」に入れる
+// （売れた記録があるのに表から消えると、準備のときに見落とすため）
+function itemCatOf(id){
+  if(FOOD_IDS.has(id))  return 'フード';
+  if(DRINK_IDS.has(id)) return 'ドリンク';
+  return ALL.some(p => p.id === id) ? '物販' : 'その他';
+}
+
+// 年ごとの記録をまとめて、商品別の個数と金額を数える
+//  ye … [年, {total, days:[その年のレコード]}] の配列
+function tallyEvItems(ye){
+  const rows = {};      // 商品ID → {name, cat, byYear:{年:{qty,amount}}, qty}
+  let noItemDays = 0;   // 金額だけ入力した日（商品の内訳が無い日）
+  ye.forEach(([y, d]) => {
+    d.days.forEach(r => {
+      let has = false;
+      Object.entries(r.items || {}).forEach(([id, val]) => {
+        const qty = typeof val === 'object' ? (val.qty || 0) : (val || 0);
+        if(!qty) return;
+        has = true;
+        const p = ALL.find(x => x.id === id);
+        // 金額の出し方は入力画面(calcTotals)と同じ。
+        // 生わさびのように単価が日によって変わるものは、その日に記録した単価を使う
+        const price = !p ? 0 : (p.price === null ? (typeof val === 'object' ? (val.price || 0) : 0) : p.price);
+        if(!rows[id]) rows[id] = {name: prodName(id), cat: itemCatOf(id), byYear: {}, qty: 0};
+        if(!rows[id].byYear[y]) rows[id].byYear[y] = {qty: 0, amount: 0};
+        rows[id].byYear[y].qty    += qty;
+        rows[id].byYear[y].amount += price * qty;
+        rows[id].qty += qty;
+      });
+      if(!has) noItemDays++;
+    });
+  });
+  return {rows, noItemDays};
+}
+
+// 内訳の表を作る（tal は tallyEvItems の結果）
+function renderEvItems(ye, tal){
+  const years  = ye.map(([y]) => y);
+  const newest = years[years.length - 1];
+  const list   = Object.values(tal.rows);
+  // いちばん新しい年でよく売れた順。その年に無い商品は全体の個数で並べる
+  const key  = r => (r.byYear[newest] ? r.byYear[newest].qty : 0);
+  const cats = ['フード','ドリンク','物販','その他'];
+  const body = cats.map(cat => {
+    const items = list.filter(r => r.cat === cat).sort((a,b) => key(b)-key(a) || b.qty-a.qty);
+    if(!items.length) return '';
+    const ico = cat==='フード'?'🍱':cat==='ドリンク'?'☕':cat==='物販'?'🛍':'📦';
+    return `<tr style="background:var(--g5)">
+        <td style="font-size:11px;font-weight:700;color:var(--g1)">${ico} ${cat}</td>
+        ${years.map(y => {
+          const sub = items.reduce((s,r) => s + (r.byYear[y] ? r.byYear[y].qty : 0), 0);
+          return `<td style="font-size:11px;font-weight:700;color:var(--g1);text-align:right">${sub ? sub+'個' : '—'}</td>`;
+        }).join('')}
+      </tr>
+      ${items.map(r => `<tr>
+        <td style="font-size:12px;line-height:1.4">${r.name}</td>
+        ${years.map(y => {
+          const d = r.byYear[y];
+          if(!d) return `<td style="text-align:right;color:var(--text3)">—</td>`;
+          return `<td style="text-align:right;font-size:12px;font-weight:700;line-height:1.4">${d.qty}個<br><span style="font-size:10px;font-weight:400;color:var(--text3)">${fmt(d.amount)}</span></td>`;
+        }).join('')}
+      </tr>`).join('')}`;
+  }).join('');
+  // 金額は「いまの売価 × 個数」なので、上の売上とはピッタリ合わない。
+  // （商品を入れずに金額だけ足した日や、当時と売価が変わった商品があるため）
+  // 合っていないと不安になるので、目安だと先に書いておく。
+  return `<div style="padding:8px 12px 2px;font-size:11px;color:var(--text3);line-height:1.5">個数の下は「いまの売価 × 個数」のおよその金額です（上の売上とはピッタリ合いません）。日数がちがう年もあるので、日数もあわせて見てください</div>
+    <table class="yr-tbl" style="table-layout:fixed;width:100%">
+      <colgroup><col style="width:42%">${years.map(() => '<col>').join('')}</colgroup>
+      <thead><tr><th>商品</th>${ye.map(([y,d]) => `<th style="text-align:right">${y}<br><span style="font-size:10px;font-weight:400">${d.days.length}日</span></th>`).join('')}</tr></thead>
+      <tbody>${body}</tbody>
+    </table>
+    ${tal.noItemDays ? `<div style="padding:8px 14px;font-size:11px;color:var(--text3)">※ ${tal.noItemDays}日分は金額だけの記録なので、この表には入っていません</div>` : ''}`;
+}
+
 function renderEvCmp(active){
   const grouped = {};
   active.filter(r=>r.loc==='イベント'&&r.event).forEach(r => {
@@ -2343,6 +2425,10 @@ function renderEvCmp(active){
     const ye=Object.entries(byYear).sort(([a],[b])=>a.localeCompare(b));
     const multi=ye.length>1;
     const diff=multi?ye[ye.length-1][1].total-ye[0][1].total:0;
+    // 何がどのくらい売れたかの内訳（イベント準備用）
+    const tal   = tallyEvItems(ye);
+    const kinds = Object.keys(tal.rows).length;
+    const open  = !!evOpenEvents[ev];
     return `<div class="yr-card">
       <div class="yr-card-hdr">
         <div class="yr-card-name">${ev}</div>
@@ -2363,6 +2449,9 @@ function renderEvCmp(active){
           </tr>`:''}
         </tbody>
       </table>
+      ${kinds ? `<button class="dtl-btn" onclick="toggleEvItems(this.dataset.ev)" data-ev="${escAttr(ev)}">${open ? '▾ 売れたものを閉じる' : `▸ 売れたものを見る（${kinds}品目）`}</button>
+      ${open ? renderEvItems(ye, tal) : ''}`
+      : `<div style="padding:8px 14px;font-size:11px;color:var(--text3);border-top:1px solid var(--border)">金額だけの記録のため、商品の内訳はありません</div>`}
     </div>`;
   }).join('')}`;
 }
