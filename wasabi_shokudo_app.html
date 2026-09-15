@@ -499,6 +499,9 @@ function fmtGram(g){ return g >= 1000 ? (g/1000).toFixed(2) + 'kg' : g + 'g'; }
 
 // ══════════════════════════════════════════
 //  過去データ（2021〜2025）
+//  ★ソーセージの扱い：イベントで出していたのは「わさびソーセージ」単品(sausage)。
+//    「わさびソーセージドッグ」(sausage_dog)は奥多摩駅前で出しているもの。
+//    2026-09-15に、イベントの記録をまとめて sausage に直した（Momo確認済み）。
 // ══════════════════════════════════════════
 const HIST = [
   {id:'h01',date:'2021-03-13',loc:'奥多摩駅前',event:'',weather:'雨',total:22900,memo:'ガス釜レンタル',items:{},source:'imported'},
@@ -528,16 +531,16 @@ const HIST = [
   {id:'h26',date:'2024-04-06',loc:'イベント',event:'日本酒若手の夜明け',weather:'曇り',total:85500,items:{},source:'imported'},
   {id:'h27',date:'2024-04-07',loc:'イベント',event:'日本酒若手の夜明け',weather:'晴れ',total:114300,items:{},source:'imported'},
   {id:'h28',date:'2025-02-08',loc:'イベント',event:'交通会館マルシェ',weather:'',total:59900,items:{},source:'imported'},
-  {id:'h29',date:'2025-03-27',loc:'イベント',event:'江戸東京たてもの園',weather:'',total:36500,items:{inari:{qty:18},mini_don:{qty:22},sausage_dog:{qty:8}},source:'imported'},
-  {id:'h30',date:'2025-03-28',loc:'イベント',event:'江戸東京たてもの園',weather:'',total:52450,items:{inari:{qty:26},mini_don:{qty:24},sausage_dog:{qty:14}},source:'imported'},
+  {id:'h29',date:'2025-03-27',loc:'イベント',event:'江戸東京たてもの園',weather:'',total:36500,items:{inari:{qty:18},mini_don:{qty:22},sausage:{qty:8}},source:'imported'},
+  {id:'h30',date:'2025-03-28',loc:'イベント',event:'江戸東京たてもの園',weather:'',total:52450,items:{inari:{qty:26},mini_don:{qty:24},sausage:{qty:14}},source:'imported'},
   {id:'h31',date:'2025-04-11',loc:'イベント',event:'AnnBeeまつり',weather:'晴れ',total:105150,items:{inari:{qty:10},mini_don:{qty:72}},source:'imported'},
   {id:'h32',date:'2025-04-12',loc:'イベント',event:'やまふる春祭り',weather:'',total:12300,items:{inari:{qty:5},onigiri:{qty:6},mini_don:{qty:10}},source:'imported'},
   {id:'h33',date:'2025-04-19',loc:'イベント',event:'Roof Park',weather:'',total:218640,items:{inari:{qty:27},onigiri:{qty:20},mini_don:{qty:146}},source:'imported'},
   {id:'h34',date:'2025-04-20',loc:'イベント',event:'こりま',weather:'',total:47650,items:{inari:{qty:18},onigiri:{qty:12},mini_don:{qty:14}},source:'imported'},
-  {id:'h35',date:'2025-05-18',loc:'イベント',event:'ボッパルト(青梅)',weather:'',total:95450,items:{inari:{qty:8},onigiri:{qty:10},mini_don:{qty:57},sausage_dog:{qty:25}},source:'imported'},
-  {id:'h36',date:'2025-06-17',loc:'イベント',event:'Otemachi One',weather:'',total:47300,items:{mini_don:{qty:10},sausage_dog:{qty:21}},source:'imported'},
-  {id:'h37',date:'2025-08-09',loc:'イベント',event:'府中商工まつり',weather:'晴れ',total:172950,items:{mini_don:{qty:105},sausage_dog:{qty:80}},source:'imported'},
-  {id:'h38',date:'2025-08-10',loc:'イベント',event:'府中商工まつり',weather:'雨',total:132950,items:{mini_don:{qty:75},sausage_dog:{qty:66}},source:'imported'},
+  {id:'h35',date:'2025-05-18',loc:'イベント',event:'ボッパルト(青梅)',weather:'',total:95450,items:{inari:{qty:8},onigiri:{qty:10},mini_don:{qty:57},sausage:{qty:25}},source:'imported'},
+  {id:'h36',date:'2025-06-17',loc:'イベント',event:'Otemachi One',weather:'',total:47300,items:{mini_don:{qty:10},sausage:{qty:21}},source:'imported'},
+  {id:'h37',date:'2025-08-09',loc:'イベント',event:'府中商工まつり',weather:'晴れ',total:172950,items:{mini_don:{qty:105},sausage:{qty:80}},source:'imported'},
+  {id:'h38',date:'2025-08-10',loc:'イベント',event:'府中商工まつり',weather:'雨',total:132950,items:{mini_don:{qty:75},sausage:{qty:66}},source:'imported'},
   {id:'h39',date:'2025-09-23',loc:'イベント',event:'しいたけ収穫祭',weather:'',total:60300,items:{inari:{qty:12},onigiri:{qty:19},mini_don:{qty:32}},source:'imported'},
   {id:'h40',date:'2025-09-28',loc:'イベント',event:'まいたけ祭',weather:'',total:69250,items:{inari:{qty:14},onigiri:{qty:29},mini_don:{qty:23}},source:'imported'},
   {id:'h41',date:'2025-10-04',loc:'イベント',event:'やまくらし市',weather:'',total:113000,items:{inari:{qty:19},onigiri:{qty:27},mini_don:{qty:71}},source:'imported'},
@@ -550,7 +553,6 @@ const HIST = [
   {id:'h49',date:'2025-11-02',loc:'イベント',event:'VERTERE BEER FEST',weather:'',total:238000,items:{mini_don:{qty:90}},source:'imported'},
   {id:'h51',date:'2025-11-08',loc:'イベント',event:'山ふる秋まつり',weather:'',total:48600,items:{inari:{qty:12},onigiri:{qty:12},mini_don:{qty:44}},source:'imported'},
   {id:'h52',date:'2025-11-16',loc:'イベント',event:'町政70周年記念イベント',weather:'',total:99370,items:{inari:{qty:17},onigiri:{qty:19},mini_don:{qty:57}},source:'imported'},
-  // 周獲祭で出したのはソーセージ単品（ドッグではない）ので sausage に修正 2026-09-15
   {id:'h53',date:'2025-11-22',loc:'イベント',event:'TOKYO周獲祭',weather:'',total:291200,items:{inari:{qty:22},onigiri:{qty:19},mini_don:{qty:204},sausage:{qty:90}},source:'imported'},
   {id:'h54',date:'2025-11-23',loc:'イベント',event:'TOKYO周獲祭',weather:'',total:271000,items:{inari:{qty:20},onigiri:{qty:21},mini_don:{qty:232}},source:'imported'},
   {id:'h55',date:'2025-11-24',loc:'イベント',event:'山麓百貨店',weather:'',total:49350,items:{inari:{qty:14},onigiri:{qty:14},mini_don:{qty:13}},source:'imported'},
