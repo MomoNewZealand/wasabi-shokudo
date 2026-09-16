@@ -234,9 +234,17 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
 /* 「日別を見る」ボタン */
 .dtl-btn{width:100%;background:none;border:none;border-top:1px solid var(--border);padding:10px;font-size:11px;color:var(--text3);cursor:pointer;font-family:inherit}
 .day-chip{font-size:11px;padding:3px 8px;background:var(--bg);border-radius:20px;color:var(--text2)}
+/* 準備の目安 */
+.prep-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);margin:8px 12px;padding:12px 14px}
+.prep-lbl{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px}
+.prep-sel{width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;background:var(--white);color:var(--text)}
+.prep-note{font-size:11px;color:var(--text3);line-height:1.6;margin-top:6px}
+.prep-row{display:flex;gap:10px;margin-top:12px;align-items:flex-start}
+.prep-days{width:64px;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;text-align:center}
+.prep-gram{padding:10px 14px;background:var(--g5);font-size:12px;color:var(--g1);border-top:1px solid var(--g4)}
 /* 比較 */
 .cmp-tabs{display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;margin:10px 12px 0}
-.cmp-tab{flex:1;border:none;cursor:pointer;padding:8px 4px;border-radius:8px;font-size:11px;font-weight:600;font-family:inherit;background:none;color:var(--text3)}
+.cmp-tab{flex:1;border:none;cursor:pointer;padding:8px 2px;border-radius:8px;font-size:11px;font-weight:600;font-family:inherit;background:none;color:var(--text3);white-space:nowrap}
 .cmp-tab.on{background:var(--g2);color:#fff}
 .yr-card{background:var(--white);border-radius:var(--radius-lg);margin:8px 12px;border:1px solid var(--border);overflow:hidden}
 .yr-card-hdr{background:var(--g5);border-bottom:1px solid var(--g4);padding:10px 14px}
@@ -624,6 +632,10 @@ let anYear = null;        // 集計画面で見ている年（null＝いちば�
 let anOpenYears = {};     // 月別売上で開いている年
 let okOpenPeriods = {};   // 奥多摩 期間別で日別リストを開いている期間
 let evOpenEvents = {};    // イベント年比較で「売れたもの」を開いているイベント
+let prepEvent = '';       // 準備の目安で選んでいるイベント（空＝まだ選んでいない）
+let prepDays  = 1;        // 出店する日数
+let prepLevel = '同じくらい';  // 人出の見込み（控えめ／同じくらい／多め）
+let prepYear  = '';       // 目安のもとにする年（空＝いちばん新しい年）
 
 // ══════════════════════════════════════════
 //  ユーティリティ
@@ -2325,12 +2337,17 @@ function renderAnOther(byLocAll){
 function renderCompare(){
   const c = document.getElementById('content'); if(!c||view!=='compare') return;
   const active = records.filter(r => r.total > 0);
-  const modes = ['商品ランキング','イベント年比較','奥多摩 期間別'];
+  const modes = ['商品ランキング','イベント年比較','奥多摩 期間別','🎪 準備'];
+  // タブが4つだとスマホで文字が折り返すので、ボタンの見出しだけ短くする
+  const cmpLabel = {'商品ランキング':'ランキング','イベント年比較':'イベント','奥多摩 期間別':'奥多摩','🎪 準備':'🎪 準備'};
   c.innerHTML = `
   <div class="cmp-tabs">
-    ${modes.map(m => `<button class="cmp-tab${cmpMode===m?' on':''}" onclick="setCmpMode('${m}')">${m}</button>`).join('')}
+    ${modes.map(m => `<button class="cmp-tab${cmpMode===m?' on':''}" onclick="setCmpMode('${m}')">${cmpLabel[m]||m}</button>`).join('')}
   </div>
-  ${cmpMode==='商品ランキング' ? renderProdCmp(active) : cmpMode==='イベント年比較' ? renderEvCmp(active) : renderOkCmp(active)}
+  ${cmpMode==='商品ランキング' ? renderProdCmp(active)
+    : cmpMode==='イベント年比較' ? renderEvCmp(active)
+    : cmpMode==='🎪 準備' ? renderPrep(active)
+    : renderOkCmp(active)}
   <div style="height:20px"></div>`;
 }
 
@@ -2569,6 +2586,139 @@ function renderOkCmp(active){
 }
 
 function setCmpMode(m){ cmpMode = m; renderCompare(); }
+
+// ══════════════════════════════════════════
+//  🎪 準備の目安
+//  「前に同じイベントで何がどれだけ売れたか」から、次の仕込み量を出す。
+//  実績どおり（ぴったりめ）を出して、増やすのは現場の判断にまかせる。
+// ══════════════════════════════════════════
+const PREP_LEVELS = {'控えめ':0.8, '同じくらい':1.0, '多め':1.2};
+
+function setPrepEvent(v){ prepEvent = v; prepYear = ''; renderCompare(); }
+function setPrepYear(v){ prepYear = v; renderCompare(); }
+function setPrepDays(v){ prepDays = Math.max(1, parseInt(v)||1); renderCompare(); }
+function setPrepLevel(v){ prepLevel = v; renderCompare(); }
+
+// イベント名ごとに、年別の「何日出て・いくら売れて・何が何個出たか」をまとめる
+function prepStats(active){
+  const byEvent = {};
+  active.filter(r => r.loc==='イベント' && r.event).forEach(r => {
+    const y = r.date.substring(0,4);
+    const e = byEvent[r.event] = byEvent[r.event] || {};
+    const d = e[y] = e[y] || {days:0, total:0, items:{}};
+    d.days++; d.total += r.total;
+    Object.entries(r.items||{}).forEach(([id,v]) => {
+      const q = typeof v==='object' ? (v.qty||0) : (v||0);
+      if(q) d.items[id] = (d.items[id]||0) + q;
+    });
+  });
+  return byEvent;
+}
+
+function renderPrep(active){
+  const byEvent = prepStats(active);
+  // 選択肢は「1日あたりの売上が大きい順」。初めてのイベントのとき、規模が近いものを選びやすくするため
+  const options = Object.entries(byEvent).map(([name, years]) => {
+    const ys = Object.keys(years).sort();
+    const d  = years[ys[ys.length-1]];
+    return {name, last: ys[ys.length-1], perDay: Math.round(d.total/d.days),
+            hasItems: Object.keys(d.items).length > 0};
+  }).filter(o => o.hasItems).sort((a,b) => b.perDay - a.perDay);
+
+  const sel = `<div class="prep-box">
+    <div class="prep-lbl">どのイベントですか？</div>
+    <select class="prep-sel" onchange="setPrepEvent(this.value)">
+      <option value="">選んでください</option>
+      ${options.map(o => `<option value="${escAttr(o.name)}"${prepEvent===o.name?' selected':''}>${o.name}（${o.last}年 ${fmt(o.perDay)}/日）</option>`).join('')}
+    </select>
+    <div class="prep-note">初めて出るイベントは、<b>人出や規模が近いもの</b>を選んでください（金額は1日あたりの売上です）</div>
+    <div class="prep-row">
+      <div><div class="prep-lbl">出る日数</div>
+        <input class="prep-days" type="number" min="1" max="10" value="${prepDays}" onchange="setPrepDays(this.value)"></div>
+      <div style="flex:1"><div class="prep-lbl">人出の見込み</div>
+        <div style="display:flex;gap:4px">
+          ${Object.keys(PREP_LEVELS).map(k => `<button class="f-btn${prepLevel===k?' on':''}" style="flex:1;padding:6px 2px" onclick="setPrepLevel('${k}')">${k}</button>`).join('')}
+        </div></div>
+    </div>
+  </div>`;
+
+  if(!prepEvent || !byEvent[prepEvent]) return sel + `<div class="empty">イベントを選ぶと、仕込みの目安が出ます</div>`;
+
+  const years = byEvent[prepEvent];
+  const ys    = Object.keys(years).sort();
+  // もとにする年。ふだんはいちばん新しい年だが、その年の記録が薄いこともあるので選べるようにする
+  //（例：VERTERE BEER FEST の2025年はミニ丼しか記録が残っていない）
+  const lastY = (prepYear && years[prepYear]) ? prepYear : ys[ys.length-1];
+  const base  = years[lastY];
+  const rate  = PREP_LEVELS[prepLevel] || 1;
+  const plan  = {};
+  Object.entries(base.items).forEach(([id,q]) => {
+    plan[id] = Math.round(q / base.days * prepDays * rate);
+  });
+  const sorted = Object.entries(plan).filter(([,q]) => q > 0).sort((a,b) => b[1]-a[1]);
+  // すりおろしわさびの量も出す。仕込みで実際に必要になるのはこれ
+  const gram = calcWasabiGram(Object.fromEntries(sorted.map(([id,q]) => [id, {qty:q}])));
+
+  // 前の年からどう変わったか。伸びていれば「多め」を選ぶ判断材料になる。
+  // もとにする年を選び直せるので、「その年のひとつ前」と比べる
+  const trend = (() => {
+    const i = ys.indexOf(lastY);
+    if(i <= 0) return null;
+    const prev = years[ys[i-1]];
+    const a = Math.round(prev.total/prev.days), b = Math.round(base.total/base.days);
+    return {year: ys[i-1], nowYear: lastY, prevPerDay: a, perDay: b, pct: Math.round((b-a)/a*100)};
+  })();
+
+  // 年が複数あるときは「どの年をもとにするか」を選べるようにする。
+  // 品目の数も出しておく（少ない年は記録が足りていないサイン）
+  const yearPick = ys.length > 1 ? `<div class="prep-box" style="margin-top:0">
+    <div class="prep-lbl">どの年をもとにしますか？</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap">
+      ${ys.slice().reverse().map(y => `<button class="f-btn${y===lastY?' on':''}" onclick="setPrepYear('${y}')">${y}年<span style="font-size:10px;color:var(--text3)">（${Object.keys(years[y].items).length}品目）</span></button>`).join('')}
+    </div>
+    ${Object.keys(base.items).length < Math.max(...ys.map(y => Object.keys(years[y].items).length))
+      ? `<div class="prep-note">⚠️ この年は品目の記録が少なめです。品目の多い年を選ぶほうが目安として使えます</div>` : ''}
+  </div>` : '';
+
+  return sel + yearPick + `
+  <div class="yr-card">
+    <div class="yr-card-hdr">
+      <div class="yr-card-name">🎪 ${prepEvent}　${prepDays}日ぶんの目安</div>
+      <div class="yr-card-sub">${lastY}年の実績（${base.days}日・${fmt(base.total)}）をもとに計算${rate!==1?`／人出「${prepLevel}」で${rate}倍`:''}</div>
+    </div>
+    <table class="yr-tbl">
+      <colgroup><col style="width:46%"><col><col></colgroup>
+      <thead><tr><th>商品</th><th style="text-align:right">${lastY}年<br><span style="font-size:10px;font-weight:400">1日あたり</span></th><th style="text-align:right">用意する数</th></tr></thead>
+      <tbody>
+        ${sorted.map(([id,q]) => `<tr>
+          <td style="font-size:12px;line-height:1.4">${prodName(id)}</td>
+          <td style="text-align:right;font-size:11px;color:var(--text3)">${(base.items[id]/base.days).toFixed(1)}</td>
+          <td style="text-align:right;font-size:15px;font-weight:700;color:var(--g1)">${q}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${gram ? `<div class="prep-gram">🌿 すりおろしわさび <b>${fmtGram(gram)}</b> ぶん</div>` : ''}
+  </div>
+
+  <div class="yr-card">
+    <div class="yr-card-hdr"><div class="yr-card-name">これまでの実績</div></div>
+    <table class="yr-tbl">
+      <thead><tr><th>年</th><th>日数</th><th style="text-align:right">売上</th><th style="text-align:right">1日あたり</th></tr></thead>
+      <tbody>
+        ${ys.map(y => { const d = years[y]; return `<tr>
+          <td style="font-weight:700;color:var(--g1)">${y}</td>
+          <td>${d.days}日</td>
+          <td style="text-align:right">${fmt(d.total)}</td>
+          <td style="text-align:right;font-weight:700">${fmt(Math.round(d.total/d.days))}</td>
+        </tr>`; }).join('')}
+      </tbody>
+    </table>
+    ${trend ? `<div class="prep-note" style="padding:10px 14px">${trend.year}年 → ${trend.nowYear}年で、1日あたりの売上は
+      <b style="color:${trend.pct>=0?'var(--g1)':'#DC2626'}">${trend.pct>=0?'+':''}${trend.pct}%</b>
+      （${fmt(trend.prevPerDay)} → ${fmt(trend.perDay)}）。伸びているなら「多め」を選ぶのも手です。</div>` : ''}
+  </div>
+  ${Object.keys(base.items).length <= 4 ? `<div class="prep-note" style="margin:0 12px 8px">※ ${lastY}年はフードの記録しかありません。ドリンク・物販は別に見積もってください</div>` : ''}`;
+}
 
 function render(){
   document.getElementById('total-bar').style.display = 'none';
