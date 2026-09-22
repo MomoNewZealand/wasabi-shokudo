@@ -242,6 +242,7 @@ input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,
 .prep-row{display:flex;gap:10px;margin-top:12px;align-items:flex-start}
 .prep-days{width:64px;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:inherit;text-align:center}
 .prep-gram{padding:10px 14px;background:var(--g5);font-size:12px;color:var(--g1);border-top:1px solid var(--g4)}
+.prep-warn{margin:0 12px 8px;padding:10px 14px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:var(--radius);font-size:11px;color:#854D0E;line-height:1.7}
 /* 比較 */
 .cmp-tabs{display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;margin:10px 12px 0}
 .cmp-tab{flex:1;border:none;cursor:pointer;padding:8px 2px;border-radius:8px;font-size:11px;font-weight:600;font-family:inherit;background:none;color:var(--text3);white-space:nowrap}
@@ -2615,6 +2616,21 @@ function setPrepGuess(v){ prepGuess = Math.max(0, parseInt(v)||0); renderCompare
 function setPrepDays(v){ prepDays = Math.max(1, parseInt(v)||1); renderCompare(); }
 function setPrepLevel(v){ prepLevel = v; renderCompare(); }
 
+// その年の記録が「売上のうち何割ぶんの品目まで書けているか」を出す。
+// 8割を切っていたら、書き残した品目があるサイン（例：2025年のしいたけ収穫祭は
+// ソーセージと缶ビールが抜けていて63%だった）。
+// 生わさびは日によって金額が変わるので、金額の計算には入れられない。
+function prepCoverage(d){
+  let yen = 0, namaQty = 0;
+  Object.entries(d.items).forEach(([id,q]) => {
+    const p = ALL.find(x => x.id === id);
+    if(!p) return;
+    if(p.price === null){ namaQty += q; return; }
+    yen += p.price * q;
+  });
+  return {yen, namaQty, pct: d.total > 0 ? Math.round(yen / d.total * 100) : 100};
+}
+
 // イベント名ごとに、年別の「何日出て・いくら売れて・何が何個出たか」をまとめる
 function prepStats(active){
   const byEvent = {};
@@ -2735,6 +2751,16 @@ function renderPrep(active){
     </table>
     ${gram ? `<div class="prep-gram">🌿 すりおろしわさび <b>${fmtGram(gram)}</b> ぶん</div>` : ''}
   </div>
+  ${(() => {
+    // 品目の記録が足りない年をもとにすると、目安が少なめに出てしまう。先に知らせる
+    const c = prepCoverage(base);
+    if(c.pct >= 80) return '';
+    return `<div class="prep-warn">
+      ⚠️ ${lastY}年は、売上 ${fmt(base.total)} のうち <b>${fmt(c.yen)}（${c.pct}%）</b> ぶんの品目しか記録されていません。<br>
+      書き残した品目がありそうなので、<b>上の目安は少なめに出ています</b>。
+      ${c.namaQty > 0 ? '（生わさび'+c.namaQty+'個は金額が日によって変わるため、この計算に入れていません）' : ''}
+    </div>`;
+  })()}
 
   <div class="yr-card">
     <div class="yr-card-hdr"><div class="yr-card-name">これまでの実績</div></div>
