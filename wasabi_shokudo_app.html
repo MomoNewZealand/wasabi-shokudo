@@ -642,7 +642,9 @@ let prepGuess = 0;        // 今回の来場予想（0＝未入力。入れる�
 // ══════════════════════════════════════════
 //  ユーティリティ
 // ══════════════════════════════════════════
-function today(){ return new Date().toISOString().split('T')[0]; }
+// 日付を「YYYY-MM-DD」にする。端末の日本時間で作る（toISOString()は世界標準時なので朝9時まで前日になってしまう）
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function today(){ return ymd(new Date()); }
 function fmt(n){ return '¥' + Math.round(n).toLocaleString(); }
 // 入力欄の value="..." に文字を埋め込むときのエスケープ。
 // ダブルクォートや < が入っていると、そこで欄が壊れて中身が消えてしまうため。
@@ -920,13 +922,13 @@ async function syncToSheets(recs){
   setTimeout(() => { icon.textContent = '☁️'; status.textContent = ''; }, 5000);
 }
 async function syncAll(){
-  const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
+  const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return ymd(d); })();
   const recent = records.filter(r => r.date >= threeMonthsAgo && (r.total > 0 || isMarkOnly(r)));
   await syncToSheets(recent);
 }
 async function syncAllFull(){ await syncToSheets(records); }
 async function syncAllConfirm(){
-  const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
+  const threeMonthsAgo = (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return ymd(d); })();
   const recent = records.filter(r => r.date >= threeMonthsAgo && (r.total > 0 || isMarkOnly(r)));
   if(!confirm('直近3ヶ月のデータ ' + recent.length + '件 をスプレッドシートに送信します。\n（既存データは上書きされます）\n\nよろしいですか？')) return;
   await syncToSheets(recent);
@@ -936,7 +938,7 @@ async function syncFromSheets(fullLoad = false){
   const btns = document.querySelectorAll('.sync-banner-btn');
   btns.forEach(b => { b.textContent = '読込中…'; b.disabled = true; });
   try {
-    const from = fullLoad ? '' : (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return d.toISOString().split('T')[0]; })();
+    const from = fullLoad ? '' : (() => { const d=new Date(); d.setMonth(d.getMonth()-3); return ymd(d); })();
     const url = GAS_URL + '?action=getData' + (from ? '&from='+from : '');
     const res  = await fetch(url);
     const json = await res.json();
@@ -3136,7 +3138,7 @@ async function buildReportPages(){
   // ── 表紙ヘッダー ──
   d.p.ctx.fillStyle = REP.BLUE; d.p.ctx.fillRect(0, 0, REP.W, 10);
   repTxt(d.p, 'TOKYO WASABI / わさび食堂', REP.M, d.p.y+18, {size:20, weight:'700', color:REP.BLUE});
-  repTxt(d.p, `発行日 ${fmtD(new Date().toISOString().split('T')[0])}`, REP.W-REP.M, d.p.y+18, {size:17, color:REP.GRAY, align:'right'});
+  repTxt(d.p, `発行日 ${fmtD(today())}`, REP.W-REP.M, d.p.y+18, {size:17, color:REP.GRAY, align:'right'});
   d.p.y += 66;
   repTxt(d.p, '売上明細', REP.M, d.p.y, {size:40, weight:'700'});
   d.p.y += 26; repRule(d.p, d.p.y, REP.BLUE); d.p.y += 4;
