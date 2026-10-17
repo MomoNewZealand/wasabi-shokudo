@@ -767,7 +767,8 @@ function loadTodayData(){
   return{date:today,orders:[],nextNo:1};
 }
 function saveTodayData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(todayData));}
-function todayStr(){return new Date().toISOString().split('T')[0];}
+// 端末の時刻（日本時間）で日付を作る。toISOString()は世界標準時なので朝9時に日付が変わってしまう
+function todayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 const fmt=n=>'¥'+Math.round(n).toLocaleString();
 function fmtOrderTime(t){
   if(!t)return'';
