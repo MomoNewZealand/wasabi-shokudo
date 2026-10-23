@@ -1415,7 +1415,8 @@ function _openSendModal(targetData){
   updateCashDiff();
   sendWeather='';document.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('send-memo').value='';document.getElementById('send-event').value='';
-  document.getElementById('send-event-field').style.display='none';
+  // 端末名が「イベント」で最初からイベントが選ばれているときも、イベント名の欄を出す
+  document.getElementById('send-event-field').style.display=locSel.value==='イベント'?'block':'none';
   document.getElementById('sent-banner').classList.remove('show');
   document.getElementById('send-ok-btn').disabled=false;
   document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';
@@ -1473,6 +1474,7 @@ async function executeSend(){
   const loc=document.getElementById('send-loc').value;
   const event=document.getElementById('send-event').value.trim();
   const memo=document.getElementById('send-memo').value.trim();
+  if(loc==='イベント'&&!event){showToast('イベント名を入れてください');document.getElementById('send-event').focus();return;}
   const btn=document.getElementById('send-ok-btn');
   btn.disabled=true;btn.className='send-ok sending';
   document.getElementById('send-ok-ico').textContent='⏳';document.getElementById('send-ok-txt').textContent='送信中…';
