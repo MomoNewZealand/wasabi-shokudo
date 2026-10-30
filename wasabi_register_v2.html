@@ -691,7 +691,10 @@ const GAS_URL='https://script.google.com/macros/s/AKfycbyWGZqabQdPqQpwRJbCU4oeji
 const DEVICE_NAME_KEY='wasabi_device_name';
 function getDeviceName(){return localStorage.getItem(DEVICE_NAME_KEY)||'';}
 function saveDeviceName(name){localStorage.setItem(DEVICE_NAME_KEY,name.trim());updateDeviceBanner();}
-const DEVICE_PREFIX={'奥多摩駅前':'OT','イベント':'EV','その他':'ZZ'};
+// ★ 同じ日にイベントが2件ある日は、2台目を「イベント②」にする（シート上で別端末として扱われ、注文番号の上書きが起きない）
+const DEVICE_PREFIX={'奥多摩駅前':'OT','イベント':'EV','イベント②':'EV2','その他':'ZZ'};
+// イベント用の端末か（送信時の出店場所は「イベント」にまとめる）
+const isEventDevice=name=>String(name||'').startsWith('イベント');
 function fmtOrderNo(no){const prefix=DEVICE_PREFIX[getDeviceName()]||'OT';return`${prefix}-${no}`;}
 function updateDeviceBanner(){
   const name=getDeviceName(),b=document.getElementById('device-banner'),t=document.getElementById('device-banner-txt');
@@ -1409,7 +1412,9 @@ function _openSendModal(targetData){
   document.getElementById('send-head-date').textContent=d.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'})+' の売上';
   _renderSendSummary(orders);_renderSendProdPreview(orders);
   const deviceName=getDeviceName();const locSel=document.getElementById('send-loc');
-  if(deviceName&&locSel){const exists=Array.from(locSel.options).some(o=>o.value===deviceName);if(!exists){const opt=document.createElement('option');opt.value=deviceName;opt.textContent=`🏔 ${deviceName}`;locSel.insertBefore(opt,locSel.options[locSel.options.length-1]);}locSel.value=deviceName;}
+  // ★ イベント用の端末（イベント／イベント②）は、出店場所を「イベント」にする
+  if(isEventDevice(deviceName)&&locSel){locSel.value='イベント';}
+  else if(deviceName&&locSel){const exists=Array.from(locSel.options).some(o=>o.value===deviceName);if(!exists){const opt=document.createElement('option');opt.value=deviceName;opt.textContent=`🏔 ${deviceName}`;locSel.insertBefore(opt,locSel.options[locSel.options.length-1]);}locSel.value=deviceName;}
   document.getElementById('send-loc').onchange=function(){document.getElementById('send-event-field').style.display=this.value==='イベント'?'block':'none';};
   const acEl=document.getElementById('send-actual-cash');if(acEl)acEl.value='';
   updateCashDiff();
@@ -1498,12 +1503,15 @@ async function executeSend(){
       cashTotal:actualCash,paypayTotal:merged.paypayTotal,qrTotal:merged.qrTotal,rakutenTotal:merged.qrTotal,
       // レジが記録した現金と、実際に数えた現金の差（現金過不足）
       registerCash:merged.cashTotal,actualCash,cashDiff,
-      total:merged.total+cashDiff,source:'register'
+      total:merged.total+cashDiff,source:'register',
+      // ★ どの端末の売上か（売上管理アプリの「再取得」で、この端末の注文だけを集計するため）
+      device:getDeviceName()
     };
     const raw=localStorage.getItem(SALES_APP_KEY);
     let records=raw?JSON.parse(raw):[];if(!Array.isArray(records))records=[];
-    const dupIdx=records.findIndex(r=>r.date===record.date&&r.loc===record.loc&&r.source==='register');
-    if(dupIdx>=0){if(!confirm(`${record.date} の ${loc} のレジデータが既に存在します。上書きしますか？`)){btn.disabled=false;btn.className='send-ok';document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';return;}records.splice(dupIdx,1);}
+    // ★ イベント名も比べる（同じ日の別イベントを上書きしないため）
+    const dupIdx=records.findIndex(r=>r.date===record.date&&r.loc===record.loc&&(r.event||'')===(record.event||'')&&r.source==='register');
+    if(dupIdx>=0){if(!confirm(`${record.date} の ${loc}${record.event?'（'+record.event+'）':''} のレジデータが既に存在します。上書きしますか？`)){btn.disabled=false;btn.className='send-ok';document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';return;}records.splice(dupIdx,1);}
     records.push(record);localStorage.setItem(SALES_APP_KEY,JSON.stringify(records));
     // ★NEW 送信済みフラグ
     if(_unsentTargetData){
@@ -1546,7 +1554,7 @@ function renderMasterList(){
 // ── 設定パネル ──
 function renderSettingsPanel(el){
   const name=getDeviceName();
-  el.innerHTML=`<div class="settings-section"><div class="settings-title">📱 端末設定</div><div class="settings-field"><label class="settings-label">端末名（出店場所として使用されます）</label><select class="settings-input" id="settings-device-name"><option value="">-- 選択してください --</option><option value="奥多摩駅前">🏔 奥多摩駅前</option><option value="イベント">🎪 イベント</option><option value="その他">📍 その他</option></select><div class="settings-hint">「売上管理に送る」時の出店場所に自動入力されます。</div></div><button class="settings-save-btn" onclick="saveDeviceNameFromInput()">💾 保存する</button></div>`;
+  el.innerHTML=`<div class="settings-section"><div class="settings-title">📱 端末設定</div><div class="settings-field"><label class="settings-label">端末名（出店場所として使用されます）</label><select class="settings-input" id="settings-device-name"><option value="">-- 選択してください --</option><option value="奥多摩駅前">🏔 奥多摩駅前</option><option value="イベント">🎪 イベント</option><option value="イベント②">🎪 イベント②（同じ日の2件目）</option><option value="その他">📍 その他</option></select><div class="settings-hint">「売上管理に送る」時の出店場所に自動入力されます。<br>同じ日にイベントが2件あるときは、2台目を「イベント②」にしてください。</div></div><button class="settings-save-btn" onclick="saveDeviceNameFromInput()">💾 保存する</button></div>`;
   const sel=document.getElementById('settings-device-name');if(sel&&name)sel.value=name;
   el.innerHTML+=`<div class="settings-section"><div class="settings-title">☁️ 商品マスタ同期</div><div class="settings-field"><div class="settings-hint">GASのスプレッドシートに保存された商品マスタを手動で同期します。起動時に自動同期されます。</div></div><button class="settings-save-btn" style="background:var(--blue)" onclick="syncProductMasterFromGAS().then(()=>renderMasterList())">🔄 今すぐ商品マスタを同期</button></div>`;
 }

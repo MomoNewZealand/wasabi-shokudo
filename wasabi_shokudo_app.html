@@ -1176,7 +1176,8 @@ async function saveRecord(){
     guestCount: (form.loc === 'BBQ' || form.loc === 'イベント') ? (form.guestCount||0) : 0,
     mixedMethod: form.payment === '混在' ? autoMixedMethod : '',  // 混在のキャッシュレス種類（金額から自動判定）
     memo: form.memo,
-    source: existingRec?.source || 'manual'  // レジ連携バッジを保持する
+    source: existingRec?.source || 'manual',  // レジ連携バッジを保持する
+    ...(existingRec?.device ? {device: existingRec.device} : {}),  // レジ端末名を保持する（再取得で使う）
   };
 
   // 編集で「日付・部門・イベント名」を変えると、シート側は別の記録扱いになり
@@ -1235,7 +1236,21 @@ async function restoreFromRegister(date, recId){
     if(!json.success || !json.orders || !json.orders.length){
       showToast('❌ データが見つかりませんでした'); return;
     }
-    const orders = json.orders;
+    // 既存レコードのloc/event/weather/memoを引き継ぐ（イベント日の再取得でlocが上書きされるのを防ぐ）
+    // ★ 引き継ぎ元は「今まさに再取得しようとしているレジ連携レコード」に限定する。
+    //   日付だけで探すと、同じ日のBBQや体験ツアーの記録を先に拾ってしまい、
+    //   部門もメモもそちらに化ける（2026-07-19が「BBQ」になった不具合）。
+    const sameDay = records.filter(r => r.date === date);
+    let existingRec = (recId && sameDay.find(r => r.id === recId))
+                   || sameDay.find(r => r.source === 'register')
+                   || null;
+    // BBQ・わさび体験などの簡易入力部門はレジ売上ではないので引き継がない
+    if(existingRec && isSimple(existingRec.loc)) existingRec = null;
+    // ★ 端末名が記録されているレコードは、その端末の注文だけを集計する
+    //   （同じ日にイベントが2件あると、2台分の注文が1件にまとまってしまうため）
+    const device = existingRec?.device || '';
+    const orders = device ? json.orders.filter(o => o.device === device) : json.orders;
+    if(!orders.length){ showToast(`❌ 端末「${device}」の注文が見つかりませんでした`); return; }
     // 集計
     let total=0, cashTotal=0, paypayTotal=0, qrTotal=0, foodTotal=0, drinkTotal=0, merchTotal=0;
     const items = {};
@@ -1257,16 +1272,6 @@ async function restoreFromRegister(date, recId){
         else                       merchTotal += lt;
       });
     });
-    // 既存レコードのloc/event/weather/memoを引き継ぐ（イベント日の再取得でlocが上書きされるのを防ぐ）
-    // ★ 引き継ぎ元は「今まさに再取得しようとしているレジ連携レコード」に限定する。
-    //   日付だけで探すと、同じ日のBBQや体験ツアーの記録を先に拾ってしまい、
-    //   部門もメモもそちらに化ける（2026-07-19が「BBQ」になった不具合）。
-    const sameDay = records.filter(r => r.date === date);
-    let existingRec = (recId && sameDay.find(r => r.id === recId))
-                   || sameDay.find(r => r.source === 'register')
-                   || null;
-    // BBQ・わさび体験などの簡易入力部門はレジ売上ではないので引き継がない
-    if(existingRec && isSimple(existingRec.loc)) existingRec = null;
     // 引き継ぎ元が無いときは、レジ端末名（＝出店場所）から部門を判断する
     const devLoc = (orders.find(o => o.device && LOC_CONFIG[o.device]) || {}).device;
     const rec = {
@@ -1280,10 +1285,13 @@ async function restoreFromRegister(date, recId){
       total, cashTotal, paypayTotal, qrTotal, rakutenTotal: qrTotal,
       // レジの記録どおりに戻すので、現金過不足はいったん0に戻る
       registerCash: cashTotal, actualCash: cashTotal, cashDiff: 0,
-      source:'register'
+      source:'register',
+      ...(device ? {device} : {})
     };
-    // 既存のレジ連携レコード（同日）をすべて削除して差し替え
-    records = records.filter(r => !(r.date===date && r.source==='register'));
+    // 端末名ありのレコードは、そのレコード1件だけを差し替える（同じ日の別イベントの記録は残す）
+    // 端末名なし（以前のレコード）は、従来どおり同日のレジ連携レコードをすべて差し替え
+    if(device) records = records.filter(r => r.id !== existingRec.id);
+    else       records = records.filter(r => !(r.date===date && r.source==='register'));
     records = [...records, rec].sort((a,b)=>a.date.localeCompare(b.date));
     saveToStorage();
     showToast(`✅ ${date} を復元しました（${orders.length}件 ${fmt(total)}）`);
