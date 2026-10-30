@@ -246,6 +246,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .send-field-lbl .req{font-size:9px;background:var(--red);color:#fff;padding:1px 4px;border-radius:3px;font-weight:700}
 .send-select,.send-input,.send-textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--white);color:var(--text);outline:none;-webkit-appearance:none}
 .send-select:focus,.send-input:focus,.send-textarea:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(217,119,6,.12)}
+/* イベント名の候補 */
+.ev-sugg{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow-y:auto}
+.ev-sugg-lbl{width:100%;font-size:10px;font-weight:700;color:var(--text3)}
+.ev-chip{font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:16px;background:var(--white);color:var(--text);cursor:pointer;font-family:inherit}
+.ev-chip.season{border-color:var(--amber);background:var(--amber-bg)}
+.ev-sugg-ok{font-size:11px;color:var(--green);font-weight:700}
 .send-textarea{resize:none;height:60px;font-size:13px}
 .weather-btns{display:flex;gap:6px;flex-wrap:wrap}
 .weather-btn{padding:7px 12px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--white);font-size:13px;cursor:pointer;font-family:inherit;font-weight:600;color:var(--text2);transition:all .12s}
@@ -585,7 +591,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
       </div>
       <div class="send-field" id="send-event-field" style="display:none">
         <div class="send-field-lbl">イベント名</div>
-        <input class="send-input" id="send-event" type="text" placeholder="例：まいたけ祭">
+        <input class="send-input" id="send-event" type="text" placeholder="例：まいたけ祭" autocomplete="off" oninput="renderEventSugg()">
+        <div class="ev-sugg" id="send-event-sugg"></div>
       </div>
       <div class="send-field">
         <div class="send-field-lbl">天気</div>
@@ -1415,13 +1422,14 @@ function _openSendModal(targetData){
   // ★ イベント用の端末（イベント／イベント②）は、出店場所を「イベント」にする
   if(isEventDevice(deviceName)&&locSel){locSel.value='イベント';}
   else if(deviceName&&locSel){const exists=Array.from(locSel.options).some(o=>o.value===deviceName);if(!exists){const opt=document.createElement('option');opt.value=deviceName;opt.textContent=`🏔 ${deviceName}`;locSel.insertBefore(opt,locSel.options[locSel.options.length-1]);}locSel.value=deviceName;}
-  document.getElementById('send-loc').onchange=function(){document.getElementById('send-event-field').style.display=this.value==='イベント'?'block':'none';};
+  document.getElementById('send-loc').onchange=function(){document.getElementById('send-event-field').style.display=this.value==='イベント'?'block':'none';renderEventSugg();};
   const acEl=document.getElementById('send-actual-cash');if(acEl)acEl.value='';
   updateCashDiff();
   sendWeather='';document.querySelectorAll('.weather-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('send-memo').value='';document.getElementById('send-event').value='';
   // 端末名が「イベント」で最初からイベントが選ばれているときも、イベント名の欄を出す
   document.getElementById('send-event-field').style.display=locSel.value==='イベント'?'block':'none';
+  _sendTargetDate=targetData.date;renderEventSugg();refreshEventNames();
   document.getElementById('sent-banner').classList.remove('show');
   document.getElementById('send-ok-btn').disabled=false;
   document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';
@@ -1480,6 +1488,8 @@ async function executeSend(){
   const event=document.getElementById('send-event').value.trim();
   const memo=document.getElementById('send-memo').value.trim();
   if(loc==='イベント'&&!event){showToast('イベント名を入れてください');document.getElementById('send-event').focus();return;}
+  // ★ 過去にない名前なら一度確認する（「まいたけ祭り」のような書き間違いで統計が分かれるのを防ぐ）
+  if(loc==='イベント'&&!confirmNewEventName(event,loadEventNames()))return;
   const btn=document.getElementById('send-ok-btn');
   btn.disabled=true;btn.className='send-ok sending';
   document.getElementById('send-ok-ico').textContent='⏳';document.getElementById('send-ok-txt').textContent='送信中…';
@@ -1531,6 +1541,58 @@ async function executeSend(){
     console.error(e);showToast('送信エラーが発生しました');
     btn.disabled=false;btn.className='send-ok';document.getElementById('send-ok-ico').textContent='📤';document.getElementById('send-ok-txt').textContent='売上管理に送る';
   }
+}
+// ── イベント名の候補 ──
+// 過去のイベント名を「例年この時期（前後30日）」→「最近出店した順」に並べて出す
+const EVENT_NAMES_KEY='wasabi_event_names_v1'; // 会場で電波が弱くても使えるよう端末に保存しておく
+let _sendTargetDate='';
+const normEv=s=>String(s||'').normalize('NFKC').trim().toLowerCase(); // 全角半角・大文字小文字の違いをならす
+const escHtml=s=>String(s??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// 売上記録の一覧から [{name, dates}] を作る
+function collectEventNames(recs){
+  const m={};
+  (recs||[]).forEach(r=>{if(r&&r.loc==='イベント'&&r.event&&r.date){(m[r.event]=m[r.event]||[]).push(String(r.date).substring(0,10));}});
+  return Object.entries(m).map(([name,dates])=>({name,dates}));
+}
+function loadEventNames(){
+  let list=[];try{list=JSON.parse(localStorage.getItem(EVENT_NAMES_KEY)||'[]');}catch(e){}
+  // この端末から送った記録も足す（スプレッドシートの読み込み前でも候補に出るように）
+  let local=[];try{local=JSON.parse(localStorage.getItem(SALES_APP_KEY)||'[]');}catch(e){}
+  const m={};[...list,...collectEventNames(local)].forEach(e=>{m[e.name]=[...new Set([...(m[e.name]||[]),...e.dates])];});
+  return Object.entries(m).map(([name,dates])=>({name,dates}));
+}
+// スプレッドシートの売上記録から最新のイベント名を読み直す（読むだけ）
+async function refreshEventNames(){
+  if(!GAS_URL)return;
+  try{
+    const res=await fetch(`${GAS_URL}?action=getData`);const json=await res.json();
+    if(json.success&&Array.isArray(json.records)){localStorage.setItem(EVENT_NAMES_KEY,JSON.stringify(collectEventNames(json.records)));renderEventSugg();}
+  }catch(e){console.warn('イベント名の取得エラー:',e);}
+}
+function rankEventNames(list,baseDate,query){
+  const doy=d=>{const x=new Date(d+'T00:00:00');return Math.round((x-new Date(x.getFullYear(),0,1))/864e5);};
+  const bd=doy(baseDate||todayStr()),q=normEv(query);
+  return list.filter(e=>!q||normEv(e.name).includes(q)).map(e=>{
+    const dist=Math.min(...e.dates.map(d=>{const k=Math.abs(doy(d)-bd);return Math.min(k,365-k);}));
+    return{name:e.name,season:dist<=30,dist,last:e.dates.reduce((a,c)=>c>a?c:a,'')};
+  }).sort((a,b)=>a.season!==b.season?(a.season?-1:1):a.season?a.dist-b.dist:b.last.localeCompare(a.last));
+}
+function renderEventSugg(){
+  const box=document.getElementById('send-event-sugg'),inp=document.getElementById('send-event');if(!box||!inp)return;
+  const list=loadEventNames(),val=inp.value.trim();
+  if(val&&list.some(e=>e.name===val)){box.innerHTML='<span class="ev-sugg-ok">✓ 過去と同じイベント名です</span>';return;}
+  const ranked=rankEventNames(list,_sendTargetDate,val).slice(0,20);
+  if(!ranked.length){box.innerHTML=val?'<span class="ev-sugg-lbl">候補なし（新しいイベント名になります）</span>':'';return;}
+  const chip=r=>`<button type="button" class="ev-chip${r.season?' season':''}" data-n="${escHtml(r.name)}" onclick="pickEventName(this.dataset.n)">${r.season?'📅 ':''}${escHtml(r.name)}</button>`;
+  box.innerHTML=`<div class="ev-sugg-lbl">${ranked[0].season?'📅 例年この時期のイベントが上に出ます':'過去のイベント名'}（押すと入ります）</div>`+ranked.map(chip).join('');
+}
+function pickEventName(name){const inp=document.getElementById('send-event');inp.value=name;renderEventSugg();}
+// 過去にない名前なら確認する。似た名前があれば一緒に見せる。送ってよければ true
+function confirmNewEventName(name,list){
+  if(!list.length||list.some(e=>e.name===name))return true;
+  const n=normEv(name);
+  const similar=list.map(e=>e.name).filter(x=>{const y=normEv(x);return y.includes(n)||n.includes(y)||(n.length>=2&&y.startsWith(n.substring(0,2)));}).slice(0,3);
+  return confirm(`「${name}」は過去にないイベント名です。`+(similar.length?`\n\n似た名前：${similar.join('、')}\n同じイベントなら「キャンセル」して候補から選んでください。`:'')+`\n\n新しいイベント名として送りますか？`);
 }
 async function sendRecordToGAS(record){try{const p=new URLSearchParams({action:'addSalesRecord',data:JSON.stringify(record)});await fetch(`${GAS_URL}?${p}`,{method:'GET',mode:'no-cors'});}catch(e){console.warn('GAS送信エラー:',e);}}
 

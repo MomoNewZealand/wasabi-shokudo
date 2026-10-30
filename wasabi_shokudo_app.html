@@ -91,6 +91,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Noto Sans JP'
 .field-lbl{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
 input[type=date],input[type=text],input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px;font-family:inherit;background:var(--white);color:var(--text);outline:none;-webkit-appearance:none}
 input:focus,select:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(30,64,175,.15)}
+/* イベント名の候補 */
+.ev-sugg{margin-top:6px;display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow-y:auto}
+.ev-sugg-lbl{width:100%;font-size:10px;font-weight:600;color:var(--text3)}
+.ev-chip{font-size:12px;padding:5px 10px;border:1px solid var(--border);border-radius:16px;background:var(--white);color:var(--text);cursor:pointer;font-family:inherit}
+.ev-chip.season{border-color:var(--border2);background:var(--amber-bg)}
+.ev-sugg-ok{font-size:11px;color:#166534;font-weight:600}
 /* 場所・支払トグル */
 .loc-wrap{display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:3px;flex-wrap:wrap}
 .loc-btn{flex:1;border:none;cursor:pointer;padding:9px 6px;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;background:none;color:var(--text3);transition:all .15s;white-space:nowrap;min-width:0}
@@ -648,6 +654,48 @@ function today(){ return ymd(new Date()); }
 function fmt(n){ return '¥' + Math.round(n).toLocaleString(); }
 // 入力欄の value="..." に文字を埋め込むときのエスケープ。
 // ダブルクォートや < が入っていると、そこで欄が壊れて中身が消えてしまうため。
+// ── イベント名の候補 ──
+// 過去のイベント名を「例年この時期（前後30日）」→「最近出店した順」に並べて出す
+const normEv = s => String(s||'').normalize('NFKC').trim().toLowerCase(); // 全角半角・大文字小文字の違いをならす
+// 売上記録の一覧から [{name, dates}] を作る
+function collectEventNames(recs){
+  const m = {};
+  (recs||[]).forEach(r => { if(r && r.loc==='イベント' && r.event && r.date) (m[r.event] = m[r.event] || []).push(String(r.date).substring(0,10)); });
+  return Object.entries(m).map(([name, dates]) => ({name, dates}));
+}
+function rankEventNames(list, baseDate, query){
+  const doy = d => { const x = new Date(d+'T00:00:00'); return Math.round((x - new Date(x.getFullYear(),0,1)) / 864e5); };
+  const bd = doy(baseDate || today()), q = normEv(query);
+  return list.filter(e => !q || normEv(e.name).includes(q)).map(e => {
+    const dist = Math.min(...e.dates.map(d => { const k = Math.abs(doy(d)-bd); return Math.min(k, 365-k); }));
+    return {name:e.name, season:dist<=30, dist, last:e.dates.reduce((a,c) => c>a ? c : a, '')};
+  }).sort((a,b) => a.season!==b.season ? (a.season?-1:1) : a.season ? a.dist-b.dist : b.last.localeCompare(a.last));
+}
+function eventSuggHtml(val, date){
+  const list = collectEventNames(records); val = String(val||'').trim();
+  if(val && list.some(e => e.name===val)) return '<span class="ev-sugg-ok">✓ 過去と同じイベント名です</span>';
+  const ranked = rankEventNames(list, date, val).slice(0,20);
+  if(!ranked.length) return val ? '<span class="ev-sugg-lbl">候補なし（新しいイベント名になります）</span>' : '';
+  const chip = r => `<button type="button" class="ev-chip${r.season?' season':''}" data-n="${escAttr(r.name)}" onclick="pickEventName(this.dataset.n)">${r.season?'📅 ':''}${escAttr(r.name)}</button>`;
+  return `<div class="ev-sugg-lbl">${ranked[0].season?'📅 例年この時期のイベントが上に出ます':'過去のイベント名'}（押すと入ります）</div>` + ranked.map(chip).join('');
+}
+function renderEventSugg(){
+  const box = document.getElementById('event-sugg'); if(!box) return;
+  const dateEl = document.querySelector('input[type=date]');
+  box.innerHTML = eventSuggHtml(document.getElementById('input-event-name')?.value, dateEl?.value || form.date);
+}
+function pickEventName(name){
+  const inp = document.getElementById('input-event-name'); if(!inp) return;
+  inp.value = name; form.event = name; renderEventSugg();
+}
+// 過去にない名前なら確認する。似た名前があれば一緒に見せる。保存してよければ true
+function confirmNewEventName(name, list){
+  if(!list.length || list.some(e => e.name===name)) return true;
+  const n = normEv(name);
+  const similar = list.map(e => e.name).filter(x => { const y = normEv(x); return y.includes(n) || n.includes(y) || (n.length>=2 && y.startsWith(n.substring(0,2))); }).slice(0,3);
+  return confirm(`「${name}」は過去にないイベント名です。` + (similar.length ? `\n\n似た名前：${similar.join('、')}\n同じイベントなら「キャンセル」して候補から選んでください。` : '') + `\n\n新しいイベント名として保存しますか？`);
+}
+
 function escAttr(s){
   return String(s ?? '')
     .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
@@ -1023,6 +1071,8 @@ async function saveRecord(){
   if(memoEl) form.memo = memoEl.value;
   const eventEl = document.getElementById('input-event-name');
   if(eventEl) form.event = eventEl.value;
+  // ★ 過去にない名前なら一度確認する（「まいたけ祭り」のような書き間違いで統計が分かれるのを防ぐ）
+  if(form.loc === 'イベント' && form.event.trim() && !confirmNewEventName(form.event.trim(), collectEventNames(records))) return;
   // 保存ボタン押下時にonchangeが未発火でも確実に日付を取得
   const dateEl = document.querySelector('input[type=date]');
   if (dateEl?.value) form.date = dateEl.value;
@@ -1528,7 +1578,7 @@ function renderInput(){
     <div class="card-lbl">出店情報</div>
     <div class="field">
       <div class="field-lbl">日付</div>
-      <input type="date" value="${form.date}" oninput="form.date=this.value" onchange="form.date=this.value">
+      <input type="date" value="${form.date}" oninput="form.date=this.value;renderEventSugg()" onchange="form.date=this.value">
       ${!isFinanceYear(form.date) ? (Number(String(form.date).substring(0,4)) > FINANCE_YEAR ? `
       <!-- 年が変わった：財務シートの切り替え設定がまだ済んでいない -->
       <div style="margin-top:8px;background:#FEF9C3;border:1px solid #FDE68A;border-radius:10px;padding:8px 10px;font-size:11px;color:#854D0E;line-height:1.7">
@@ -1546,7 +1596,8 @@ function renderInput(){
     </div>
     ${form.loc==='イベント' ? `<div class="field">
       <div class="field-lbl">イベント名</div>
-      <input type="text" id="input-event-name" value="${escAttr(form.event)}" placeholder="例: VERTERE BEER FEST" oninput="form.event=this.value" onchange="form.event=this.value">
+      <input type="text" id="input-event-name" value="${escAttr(form.event)}" placeholder="例: VERTERE BEER FEST" autocomplete="off" oninput="form.event=this.value;renderEventSugg()" onchange="form.event=this.value">
+      <div class="ev-sugg" id="event-sugg">${eventSuggHtml(form.event, form.date)}</div>
     </div>
     <!-- 来場者数。BBQの人数と同じ欄（guestCount）を使い回している。列を増やさないため -->
     <div class="field">
